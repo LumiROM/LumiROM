@@ -215,6 +215,7 @@ jobs:
       shell: bash
       run: |
         source scripts/features/LumiROM.sh
+        DEBLOAT_WSM "$FIRM_DIR"
         DEBLOAT "$FIRM_DIR"
 
     - name: Apply prop features

@@ -135,6 +135,30 @@ DEBLOAT_VENDOR() {
     echo "${GREEN}Vendor debloat completed${RESET}"
 }
 
+DEBLOAT_WSM() {
+    local EXTRACTED_FIRM_DIR="$1"
+    echo "${YELLOW}Starting WSM Debloat...${RESET}"
+
+    local targets=(
+        "$EXTRACTED_FIRM_DIR/system/system/etc/public.libraries-wsm.samsung.txt"
+        "$EXTRACTED_FIRM_DIR/system/system/lib/libhal.wsm.samsung.so"
+        "$EXTRACTED_FIRM_DIR/system/system/lib/vendor.samsung.hardware.security.wsm.service-V1-ndk.so"
+        "$EXTRACTED_FIRM_DIR/system/system/lib64/libhal.wsm.samsung.so"
+        "$EXTRACTED_FIRM_DIR/system/system/lib64/vendor.samsung.hardware.security.wsm.service-V1-ndk.so"
+    )
+
+    for file in "${targets[@]}"; do
+        if [ -e "$file" ] || [ -L "$file" ]; then
+            sudo rm -rf "$file"
+            echo "${GREEN}Deleted${RESET} $file"
+        else
+            echo "${RED}[Omitted]${RESET} $file ${RED}not found${RESET}"
+        fi
+    done
+
+    echo "${GREEN}WSM Debloat completed${RESET}"
+}
+
 PATCH_FSTAB_EROFS() {
     local EXTRACTED_FIRM_DIR="$1"
     

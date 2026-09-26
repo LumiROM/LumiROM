@@ -240,6 +240,7 @@ apply_rom_features() {
     run DISABLE_FDE "$FIRM_DIR"
     run DELETE_ICCC "$FIRM_DIR"
     run DEBLOAT_VENDOR "$FIRM_DIR"
+    run DEBLOAT_WSM "$FIRM_DIR"
     run PATCH_FSTAB_EROFS "$FIRM_DIR"
     run APPLY_STOCK_CONFIG "$FIRM_DIR"
     run DEBLOAT "$FIRM_DIR"
