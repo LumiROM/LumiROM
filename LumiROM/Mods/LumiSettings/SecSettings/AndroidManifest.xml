@@ -1,0 +1,33 @@
+/application>/i
+        <activity android:configChanges="keyboardHidden|orientation|screenSize" android:exported="true" android:label="@string/lumi_settings_title" android:name="com.android.settings.Settings$LumiSettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="com.android.settings.FRAGMENT_CLASS" android:value="io.buizel.lumi.settings.LumiSettingsFragment"/>
+            <meta-data android:name="com.android.settings.HIGHLIGHT_MENU_KEY" android:value="@string/menu_key_lumi_top_settings"/>
+        </activity>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize" android:exported="true" android:label="@string/lumi_extra_settings_title" android:name="com.android.settings.Settings$LumiExtraSettingsActivity" android:parentActivityName="com.android.settings.Settings$LumiSettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="com.android.settings.FRAGMENT_CLASS" android:value="io.buizel.lumi.settings.extra.ExtraSettingsFragment"/>
+            <meta-data android:name="com.android.settings.HIGHLIGHT_MENU_KEY" android:value="@string/menu_key_lumi_top_settings"/>
+        </activity>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize" android:exported="true" android:label="@string/lumi_hide_dev_title" android:name="com.android.settings.Settings$LumiHideDevSettingsActivity" android:parentActivityName="com.android.settings.Settings$LumiExtraSettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="com.android.settings.FRAGMENT_CLASS" android:value="io.buizel.lumi.settings.extra.HideDeveloperStatusFragment"/>
+            <meta-data android:name="com.android.settings.HIGHLIGHT_MENU_KEY" android:value="@string/menu_key_lumi_top_settings"/>
+        </activity>
+        <activity android:configChanges="keyboardHidden|orientation|screenSize" android:exported="true" android:label="@string/lumi_ui_settings_title" android:name="com.android.settings.Settings$LumiUISettingsActivity" android:parentActivityName="com.android.settings.Settings$LumiSettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="com.android.settings.FRAGMENT_CLASS" android:value="io.buizel.lumi.settings.ui.UISettingsFragment"/>
+            <meta-data android:name="com.android.settings.HIGHLIGHT_MENU_KEY" android:value="@string/menu_key_lumi_top_settings"/>
+        </activity>

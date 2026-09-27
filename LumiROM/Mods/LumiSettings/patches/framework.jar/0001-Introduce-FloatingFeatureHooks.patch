@@ -1,0 +1,34 @@
+--- a/smali_classes6/com/samsung/android/feature/SemFloatingFeature.smali
++++ b/smali_classes6/com/samsung/android/feature/SemFloatingFeature.smali
+@@ -780,6 +780,15 @@
+ .method public whitelist getString(Ljava/lang/String;)Ljava/lang/String;
+     .locals 1
+ 
++    invoke-static {p1}, Lio/buizel/lumi/FloatingFeatureHooks;->onGetString(Ljava/lang/String;)Ljava/lang/String;
++
++    move-result-object v0
++
++    if-eqz v0, :lumi_hook_continue
++
++    return-object v0
++
++    :lumi_hook_continue
+     .line 147
+     const-string v0, ""
+ 
+@@ -815,6 +824,15 @@
+     .annotation runtime Ljava/lang/Deprecated;
+     .end annotation
+ 
++    invoke-static {p1}, Lio/buizel/lumi/FloatingFeatureHooks;->onGetString(Ljava/lang/String;)Ljava/lang/String;
++
++    move-result-object v0
++
++    if-eqz v0, :lumi_hook_continue2
++
++    return-object v0
++
++    :lumi_hook_continue2
+     .line 170
+     new-instance v0, Ljava/lang/StringBuilder;
+ 

@@ -264,6 +264,43 @@ RECOMPILE() {
     fi
 }
 
+FIX_FRAMEWORK_MIME() {
+    echo ""
+    if [ "$#" -ne 2 ]; then
+        echo "Usage: ${FUNCNAME[0]} <STOCK_FRAMEWORK_JAR> <BUILT_FRAMEWORK_JAR>"
+        echo "  Restores the raw res/*.mime.types resources that apktool drops"
+        echo "  when recompiling framework.jar (otherwise MimeMap/media provider crash)."
+        return 1
+    fi
+
+    local STOCK="$1"
+    local BUILT="$2"
+
+    if [ ! -f "$STOCK" ] || [ ! -f "$BUILT" ]; then
+        echo "${RED}FIX_FRAMEWORK_MIME: missing jar ($STOCK / $BUILT)${RESET}"
+        return 1
+    fi
+
+    if unzip -l "$BUILT" | grep -q "res/debian.mime.types"; then
+        echo "${GREEN} - framework.jar already keeps res/*.mime.types${RESET}"
+        return 0
+    fi
+
+    local BUILT_ABS
+    BUILT_ABS="$(realpath "$BUILT")"
+
+    local TMP
+    TMP="$(mktemp -d)"
+    if unzip -o "$STOCK" "res/*.mime.types" -d "$TMP" >/dev/null 2>&1 && [ -d "$TMP/res" ]; then
+        ( cd "$TMP" && zip -q "$BUILT_ABS" res/*.mime.types )
+        echo "${GREEN} - Restored res/*.mime.types in $(basename "$BUILT")${RESET}"
+        unzip -l "$BUILT_ABS" | grep -E "res/.*mime.types" | awk '{print "   - " $4}'
+    else
+        echo "${YELLOW} - [!] res/*.mime.types not found in stock framework.jar${RESET}"
+    fi
+    rm -rf "$TMP"
+}
+
 HEX_PATCH() {
     echo ""
 	if [ "$#" -ne 3 ]; then
@@ -1060,6 +1097,9 @@ APPLY_PROP_FEATURES() {
     BUILD_PROP "$EXTRACTED_FIRM_DIR" "vendor.camera.aux.packagelist" "com.sec.android.app.camera,com.samsung.android.scan3d"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.show_multiuserui" "1"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.max_users" "5"
+
+    # Related to LumiSettings
+    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.version" "$LUMIROM_VERSION"
     
 
     # Related to Updater App

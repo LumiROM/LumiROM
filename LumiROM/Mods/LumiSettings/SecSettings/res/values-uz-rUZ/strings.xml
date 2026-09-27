@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">"ASKS ni o'chirish"</string>
+    <string name="lumi_device_name_title">Qurilma nomi</string>
+    <string name="lumi_dialog_reboot_msg">"O'zgarishlarni qabul qilish uchun qayta ishga tushirish talab qilinadi."</string>
+    <string name="lumi_dialog_reboot_negative">Hozir emas</string>
+    <string name="lumi_dialog_reboot_positive">Qayta yuklash</string>
+    <string name="lumi_dialog_reboot_title">Qayta yuklash talab qilinadi</string>
+    <string name="lumi_extra_settings_title">"Qo'shimcha sozlamalar"</string>
+    <string name="lumi_hide_dev_title">Dasturchi rejimini yashirish</string>
+    <string name="lumi_launcher_anim_type_title">Launcherning animatsiya turi</string>
+    <string name="lumi_menu_item_reboot_download_title">Download rejimiga qayta yuklash</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Recovery rejimiga qayta yuklash</string>
+    <string name="lumi_menu_item_reboot_title">Qayta yoqish</string>
+    <string name="lumi_menu_reboot_title">Qayta yoqish sozlamalari</string>
+    <string name="lumi_rom_version_title">ROM versiyasi</string>
+    <string name="lumi_settings_title">LumiROM Sozlamalari</string>
+    <string name="lumi_ui_settings_title">UI sozlamalari</string>
+    <string name="lumi_updates_title">ROMni yangilash</string>
+    <string name="keywords_lumi_settings">LumiROM Sozlamalari</string>
+</resources>

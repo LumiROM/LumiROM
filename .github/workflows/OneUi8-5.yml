@@ -272,7 +272,11 @@ jobs:
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" &
         wait
@@ -293,6 +297,7 @@ jobs:
         CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
         PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
         PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
+        ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
 
     - name: Recompile framework
       shell: bash
@@ -305,16 +310,35 @@ jobs:
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
         RECOMPILE "$APKTOOL" "$WORK_DIR/services" \
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/framework" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" \
           "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk" &
+        REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" \
+          "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" \
           "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" &
         wait
+        if [ ! -f "$WORK_DIR/SecSettings_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/framework.jar" ] || \
+           [ ! -f "$WORK_DIR/services.jar" ]; then
+          echo "ERROR: a decompiled artifact failed to recompile (see the log above). Aborting."
+          exit 1
+        fi
+        FIX_FRAMEWORK_MIME \
+          "FIRMWARE/system/system/framework/framework.jar" \
+          "$WORK_DIR/framework.jar"
         cp -fv "$WORK_DIR"/*.jar \
           "FIRMWARE/system/system/framework/"
         if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
           cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" \
             "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
+        fi
+        if [ -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ]; then
+          cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" \
+            "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
         fi
         if [ -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ]; then
           cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" \

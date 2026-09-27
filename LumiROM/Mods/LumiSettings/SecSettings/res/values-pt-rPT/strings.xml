@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Desativar ASKS</string>
+    <string name="lumi_device_name_title">Nome do dispositivo</string>
+    <string name="lumi_dialog_reboot_msg">Necessário reiniciar para aplicar as alterações.</string>
+    <string name="lumi_dialog_reboot_negative">Agora não</string>
+    <string name="lumi_dialog_reboot_positive">Reiniciar</string>
+    <string name="lumi_dialog_reboot_title">Necessário reiniciar</string>
+    <string name="lumi_extra_settings_title">Definições extra</string>
+    <string name="lumi_hide_dev_title">Esconder estado de programador</string>
+    <string name="lumi_rom_version_title">Versão da ROM</string>
+    <string name="lumi_settings_title">Definições da LumiROM</string>
+    <string name="lumi_ui_settings_title">Definições da interface</string>
+    <string name="lumi_updates_title">Atualizar ROM</string>
+    <string name="keywords_lumi_settings">Definições da LumiROM</string>
+</resources>

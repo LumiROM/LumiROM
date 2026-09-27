@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">ASKS अक्षम करा</string>
+    <string name="lumi_device_name_title">डिव्हाइसचे नाव</string>
+    <string name="lumi_dialog_reboot_msg">बदल लागू करण्यासाठी, रीस्टार्ट करणे आवश्यक आहे.</string>
+    <string name="lumi_settings_title">LumiROM सेटिंग्ज</string>
+    <string name="lumi_updates_title">ROM अद्ययावत करा</string>
+    <string name="keywords_lumi_settings">LumiROM सेटिंग्ज</string>
+</resources>

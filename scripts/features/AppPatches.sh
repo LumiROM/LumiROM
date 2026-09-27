@@ -140,3 +140,122 @@ PATCH_SETUPWIZARD() {
 
     echo "${GREEN}SetupWizard patched.${RESET}"
 }
+
+
+LUMISETTINGS_SEARCH_PATCH() {
+    if [ "$#" -ne 2 ]; then
+        echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
+        return 1
+    fi
+
+    local SECSETTINGS_DIR="$1"
+    local INTELLIGENCE_DIR="$2"
+
+    echo "${YELLOW} - Registering LumiSettings in search${RESET}"
+
+    # Allow extending the stock search indexable resources.
+    local SIRM="$SECSETTINGS_DIR/smali_classes2/com/android/settingslib/search/SearchIndexableResourcesMobile.smali"
+    if [ -f "$SIRM" ]; then
+        sed -i 's#^\.class public final Lcom/android/settingslib/search/SearchIndexableResourcesMobile;#.class public Lcom/android/settingslib/search/SearchIndexableResourcesMobile;#' "$SIRM"
+    else
+        echo "${YELLOW}   [!] SearchIndexableResourcesMobile.smali not found, search may not work${RESET}"
+    fi
+
+    # Point the search provider to the LumiSettings resources.
+    local LAMBDA="$SECSETTINGS_DIR/smali_classes2/com/android/settings/search/SearchFeatureProviderImpl\$\$ExternalSyntheticLambda0.smali"
+    if [ -f "$LAMBDA" ]; then
+        sed -i 's#Lcom/android/settingslib/search/SearchIndexableResourcesMobile;#Lio/buizel/lumi/search/LumiSearchIndexableResources;#g' "$LAMBDA"
+        sed -i 's#Lcom/android/settingslib/search/SearchIndexableResourcesBase;#Lio/buizel/lumi/search/LumiSearchIndexableResources;#g' "$LAMBDA"
+    else
+        echo "${YELLOW}   [!] SearchFeatureProviderImpl lambda not found, search may not work${RESET}"
+    fi
+
+    # Add the LumiSettings top level key to the search collector.
+    local TLC="$INTELLIGENCE_DIR/smali_classes2/com/samsung/android/settings/intelligence/search/categorizing/TopLevelKeysCollector.smali"
+    if [ -f "$TLC" ] && ! grep -q "top_level_lumi" "$TLC"; then
+        sed -i 's#\.locals 36#.locals 37#' "$TLC"
+        sed -i 's#filled-new-array/range {v1 .. v35}, \[Ljava/lang/String;#const-string v36, "top_level_lumi"\n\n    filled-new-array/range {v1 .. v36}, [Ljava/lang/String;#' "$TLC"
+    else
+        echo "${YELLOW}   [!] TopLevelKeysCollector.smali not patched, search may not work${RESET}"
+    fi
+}
+
+
+ADD_LUMISETTINGS() {
+    echo ""
+    if [ "$#" -ne 4 ]; then
+        echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <FRAMEWORK_DIR> <SERVICES_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
+        echo "  Applies the LumiSettings integration (UN1CA-based, rebranded)."
+        return 1
+    fi
+
+    local SECSETTINGS_DIR="$1"
+    local FRAMEWORK_DIR="$2"
+    local SERVICES_DIR="$3"
+    local INTELLIGENCE_DIR="$4"
+    local MOD_DIR="$(pwd)/LumiROM/Mods/LumiSettings"
+
+    local DIR
+    for DIR in "$SECSETTINGS_DIR" "$FRAMEWORK_DIR" "$SERVICES_DIR" "$INTELLIGENCE_DIR"; do
+        if [ ! -d "$DIR" ]; then
+            echo "${RED}LumiSettings: directory not found: $DIR${RESET}"
+            return 1
+        fi
+    done
+
+    echo "${BLUE}============ LumiSettings ============${RESET}"
+
+    echo "${YELLOW} - Patching SecSettings${RESET}"
+    while IFS= read -r f; do
+        local REL="${f#"$MOD_DIR"/SecSettings/}"
+        local TARGET="$SECSETTINGS_DIR/$REL"
+
+        if [ ! -f "$TARGET" ] || [[ "$REL" != *".xml" ]]; then
+            mkdir -p "$(dirname "$TARGET")"
+            cp -a "$f" "$TARGET"
+        elif [[ "$REL" == *"res/values"* ]]; then
+            # Merge values literally (preserves \' escapes) before </resources>.
+            local TMPC
+            TMPC="$(mktemp)"
+            sed -e "/?xml/d" -e "/<resources>/d" -e "/<\/resources>/d" "$f" > "$TMPC"
+            awk -v extra="$TMPC" '
+                BEGIN { while ((getline l < extra) > 0) buf = buf l "\n" }
+                /<\/resources>/ && !ins { printf "%s", buf; ins=1 }
+                { print }
+            ' "$TARGET" > "$TARGET.lumi_tmp" && mv "$TARGET.lumi_tmp" "$TARGET"
+            rm -f "$TMPC"
+        else
+            local PATCH_INST CONTENT
+            PATCH_INST="$(head -n 1 "$f")"
+            CONTENT="$(tail -n +2 "$f")"
+            CONTENT="$(sed -e "s/\"/\\\\\"/g" -e "s/\\$/\\\\$/g" -e "s/ /\\\ /g" -e "s/\\\\n/\\\\\\\\\n/g" <<< "$CONTENT")"
+            CONTENT="$(sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' <<< "$CONTENT")"
+            eval "sed -i \"$PATCH_INST $CONTENT\" \"$TARGET\""
+        fi
+    done < <(find "$MOD_DIR/SecSettings" -type f)
+
+    echo "${YELLOW} - Patching framework.jar${RESET}"
+    local PATCH
+    while IFS= read -r PATCH; do
+        echo "   - $(basename "$PATCH")"
+        if ! patch -p1 --no-backup-if-mismatch -d "$FRAMEWORK_DIR" < "$PATCH" >/dev/null 2>&1; then
+            echo "${RED}LumiSettings: failed to apply $(basename "$PATCH")${RESET}"
+            return 1
+        fi
+    done < <(find "$MOD_DIR/patches/framework.jar" -name '*.patch' | sort -n)
+    # Overlay the trimmed FloatingFeatureHooks (launcher animation only).
+    cp -rfa "$MOD_DIR/framework/." "$FRAMEWORK_DIR/"
+
+    echo "${YELLOW} - Patching services.jar${RESET}"
+    while IFS= read -r PATCH; do
+        echo "   - $(basename "$PATCH")"
+        if ! patch -p1 --no-backup-if-mismatch -d "$SERVICES_DIR" < "$PATCH" >/dev/null 2>&1; then
+            echo "${RED}LumiSettings: failed to apply $(basename "$PATCH")${RESET}"
+            return 1
+        fi
+    done < <(find "$MOD_DIR/patches/services.jar" -name '*.patch' | sort -n)
+
+    LUMISETTINGS_SEARCH_PATCH "$SECSETTINGS_DIR" "$INTELLIGENCE_DIR"
+
+    echo "${GREEN} - LumiSettings applied${RESET}"
+}

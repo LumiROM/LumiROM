@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">ASKS letiltása</string>
+    <string name="lumi_device_name_title">Eszköz neve</string>
+    <string name="lumi_dialog_reboot_msg">A módosítások alkalmazásához újraindítás szükséges.</string>
+    <string name="lumi_dialog_reboot_negative">Nem most</string>
+    <string name="lumi_dialog_reboot_positive">Újraindítás</string>
+    <string name="lumi_dialog_reboot_title">Újraindítás szükséges</string>
+    <string name="lumi_extra_settings_title">Extra beállítások</string>
+    <string name="lumi_hide_dev_title">Fejlesztői állapot elrejtése</string>
+    <string name="lumi_launcher_anim_type_title">Launcher animáció stílusa</string>
+    <string name="lumi_menu_item_reboot_download_title">Újraindítás Download-ba</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Újraindítás Recovery-be</string>
+    <string name="lumi_menu_item_reboot_title">Újraindítás</string>
+    <string name="lumi_menu_reboot_title">Újraindítási opciók</string>
+    <string name="lumi_rom_version_title">ROM verziója</string>
+    <string name="lumi_settings_title">LumiROM Beállítások</string>
+    <string name="lumi_ui_settings_title">UI beállítások</string>
+    <string name="lumi_updates_title">ROM frissítése</string>
+    <string name="keywords_lumi_settings">LumiROM Beállítások</string>
+</resources>

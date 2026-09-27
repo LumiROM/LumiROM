@@ -1,0 +1,56 @@
+--- a/smali/com/android/server/asks/ASKSManagerService.smali
++++ b/smali/com/android/server/asks/ASKSManagerService.smali
+@@ -9089,12 +9089,12 @@
+ 
+     .line 21
+     :goto_0
+-    const-string/jumbo v7, "ro.build.official.release"
++    const-string/jumbo v7, "persist.sys.lumi.asks"
+ 
+     .line 22
+     .line 23
+     .line 24
+-    const-string/jumbo v8, "false"
++    const-string/jumbo v8, "true"
+ 
+     .line 25
+     .line 26
+@@ -41346,12 +41346,12 @@
+     .line 226
+     .line 227
+     :cond_6
+-    const-string/jumbo v0, "ro.build.official.release"
++    const-string/jumbo v0, "persist.sys.lumi.asks"
+ 
+     .line 228
+     .line 229
+     .line 230
+-    const-string/jumbo v2, "false"
++    const-string/jumbo v2, "true"
+ 
+     .line 231
+     .line 232
+@@ -44470,12 +44470,13 @@
+     .line 277
+     .line 278
+     .line 279
+-    const-string/jumbo v1, "ro.build.official.release"
++    const-string/jumbo v1, "persist.sys.lumi.asks"
+ 
+     .line 280
+     .line 281
+     .line 282
+-    invoke-static {v1}, Landroid/os/SystemProperties;->get(Ljava/lang/String;)Ljava/lang/String;
++    const-string/jumbo v14, "true"
++    invoke-static {v1, v14}, Landroid/os/SystemProperties;->get(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ 
+     .line 283
+     .line 284
+@@ -44483,7 +44484,6 @@
+     move-result-object v1
+ 
+     .line 286
+-    const-string/jumbo v14, "true"
+ 
+     .line 287
+     .line 288
