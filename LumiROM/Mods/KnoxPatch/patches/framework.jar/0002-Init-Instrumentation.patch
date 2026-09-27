@@ -1,0 +1,20 @@
+--- a/smali/android/app/Instrumentation.smali
++++ b/smali/android/app/Instrumentation.smali
+@@ -850,6 +850,8 @@
+     .line 1382
+     invoke-virtual {p0, p1}, Landroid/app/Application;->attach(Landroid/content/Context;)V
+ 
++    invoke-static {p1}, Lio/buizel/lumi/KnoxPatchHooks;->init(Landroid/content/Context;)V
++
+     return-object p0
+ .end method
+ 
+@@ -4853,6 +4855,8 @@
+     .line 1364
+     invoke-virtual {p0, p3}, Landroid/app/Application;->attach(Landroid/content/Context;)V
+ 
++    invoke-static {p3}, Lio/buizel/lumi/KnoxPatchHooks;->init(Landroid/content/Context;)V
++
+     return-object p0
+ .end method
+ 

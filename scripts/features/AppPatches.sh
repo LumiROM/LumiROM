@@ -259,3 +259,57 @@ ADD_LUMISETTINGS() {
 
     echo "${GREEN} - LumiSettings applied${RESET}"
 }
+
+
+ADD_KNOXPATCH() {
+    echo ""
+    if [ "$#" -ne 3 ]; then
+        echo "Usage: ${FUNCNAME[0]} <FRAMEWORK_DIR> <KNOXSDK_DIR> <SAMSUNGKEYSTOREUTILS_DIR>"
+        echo "  Applies the static KnoxPatch integration (UN1CA-based, rebranded)."
+        return 1
+    fi
+
+    local FRAMEWORK_DIR="$1"
+    local KNOXSDK_DIR="$2"
+    local SKSU_DIR="$3"
+    local MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
+
+    local DIR
+    for DIR in "$FRAMEWORK_DIR" "$KNOXSDK_DIR" "$SKSU_DIR"; do
+        if [ ! -d "$DIR" ]; then
+            echo "${RED}KnoxPatch: directory not found: $DIR${RESET}"
+            return 1
+        fi
+    done
+
+    echo "${BLUE}============ KnoxPatch ============${RESET}"
+
+    local PATCH
+    while IFS= read -r PATCH; do
+        echo "   - framework.jar/$(basename "$PATCH")"
+        if ! patch -p1 --no-backup-if-mismatch -d "$FRAMEWORK_DIR" < "$PATCH" >/dev/null 2>&1; then
+            echo "${RED}KnoxPatch: failed to apply $(basename "$PATCH")${RESET}"
+            return 1
+        fi
+    done < <(find "$MOD_DIR/patches/framework.jar" -name '*.patch' | sort -n)
+    # Overlay the KnoxPatchHooks class.
+    cp -rfa "$MOD_DIR/framework/." "$FRAMEWORK_DIR/"
+
+    while IFS= read -r PATCH; do
+        echo "   - knoxsdk.jar/$(basename "$PATCH")"
+        if ! patch -p1 --no-backup-if-mismatch -d "$KNOXSDK_DIR" < "$PATCH" >/dev/null 2>&1; then
+            echo "${RED}KnoxPatch: failed to apply $(basename "$PATCH")${RESET}"
+            return 1
+        fi
+    done < <(find "$MOD_DIR/patches/knoxsdk.jar" -name '*.patch' | sort -n)
+
+    while IFS= read -r PATCH; do
+        echo "   - samsungkeystoreutils.jar/$(basename "$PATCH")"
+        if ! patch -p1 --no-backup-if-mismatch -d "$SKSU_DIR" < "$PATCH" >/dev/null 2>&1; then
+            echo "${RED}KnoxPatch: failed to apply $(basename "$PATCH")${RESET}"
+            return 1
+        fi
+    done < <(find "$MOD_DIR/patches/samsungkeystoreutils.jar" -name '*.patch' | sort -n)
+
+    echo "${GREEN} - KnoxPatch applied${RESET}"
+}

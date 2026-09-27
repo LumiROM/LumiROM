@@ -260,6 +260,10 @@ jobs:
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" &
@@ -284,6 +288,7 @@ jobs:
         PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
         PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
         ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+        ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
 
     - name: Recompile framework
       shell: bash
@@ -298,6 +303,10 @@ jobs:
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
         RECOMPILE "$APKTOOL" "$WORK_DIR/framework" \
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" \
           "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" \
@@ -309,7 +318,9 @@ jobs:
            [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
            [ ! -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ] || \
            [ ! -f "$WORK_DIR/framework.jar" ] || \
-           [ ! -f "$WORK_DIR/services.jar" ]; then
+           [ ! -f "$WORK_DIR/services.jar" ] || \
+           [ ! -f "$WORK_DIR/knoxsdk.jar" ] || \
+           [ ! -f "$WORK_DIR/samsungkeystoreutils.jar" ]; then
           echo "ERROR: a decompiled artifact failed to recompile (see the log above). Aborting."
           exit 1
         fi

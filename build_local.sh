@@ -279,6 +279,8 @@ decompile_framework() {
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
@@ -297,6 +299,7 @@ apply_knox_patches() {
     run PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
     run PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
     run ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+    run ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
 }
 
 recompile_framework() {
@@ -304,6 +307,8 @@ recompile_framework() {
     par RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
@@ -313,7 +318,9 @@ recompile_framework() {
             [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
             [ ! -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ] || \
             [ ! -f "$WORK_DIR/framework.jar" ] || \
-            [ ! -f "$WORK_DIR/services.jar" ]; then
+            [ ! -f "$WORK_DIR/services.jar" ] || \
+            [ ! -f "$WORK_DIR/knoxsdk.jar" ] || \
+            [ ! -f "$WORK_DIR/samsungkeystoreutils.jar" ]; then
         echo "${RED}ERROR: a decompiled artifact failed to recompile (see the log above). Aborting.${RESET}"
         exit 1
     fi
