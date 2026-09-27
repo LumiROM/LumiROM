@@ -20,7 +20,8 @@
 
 ## Fixes
 - Fixed the media picker crash loop caused by missing `res/*.mime.types` resources in the rebuilt `framework.jar`.
-- SecSettings rebuild is now validated: the build aborts with an error instead of silently shipping the stock Settings app if an APK or jar fails to recompile.
+- Fixed apps that require knox patching, things like work profile should now work.
+- Fixed notification round style, now if you apply an effect, it will correctly render on the phone.
 
 ## More
 - [Repo] New `LumiSettings` mod with its own build pipeline: `framework.jar` and `SecSettingsIntelligence` are now decompiled, patched and rebuilt.
