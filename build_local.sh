@@ -296,6 +296,7 @@ apply_knox_patches() {
     run PATCH_FLAG_SECURE "$WORK_DIR/services"
     run PATCH_SECURE_FOLDER "$WORK_DIR/services"
     run CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
+    run DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
     run PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
     run PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
     run ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
