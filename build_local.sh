@@ -20,6 +20,7 @@ set_defaults() {
     USE_UI_8_TETHERING_APEX="false"
     ZIP_IMG="false"
     INCREMENTAL_FROM=""
+    SKIP_TARGET_FILES="false"
     LUMIROM_MAINTAINER="$(git config user.name 2>/dev/null)"
 }
 
@@ -54,6 +55,7 @@ usage() {
     echo "      --no-ai                Exclude Galaxy AI features"
     echo "      --bpf-legacy           Enable if your kernel BPF version is lower than 5.10"
     echo "      --img-zip              Deliver the partition images (.img) in a ZIP instead of a flashable ROM"
+    echo "      --no-target-files      Skip generating the TARGET_FILES zip (useful for test builds)"
     echo "      --incremental-from <ver>"
     echo "                             Build an incremental OTA from a previous version saved in TARGET_FILES"
     echo "  -h, --help                 Show this help"
@@ -81,6 +83,7 @@ parse_args() {
             --no-ai)      USE_GALAXY_AI="false"; shift ;;
             --bpf-legacy) USE_UI_8_TETHERING_APEX="true"; shift ;;
             --img-zip)    ZIP_IMG="true"; shift ;;
+            --no-target-files) SKIP_TARGET_FILES="true"; shift ;;
             --incremental-from) INCREMENTAL_FROM="${2:?Option $1 requires a value}"; shift 2 ;;
             -h|--help)    usage; exit 0 ;;
             *) echo "Unknown option: $1"; echo ""; usage; exit 1 ;;
@@ -142,6 +145,7 @@ setup_environment() {
     export APKTOOL="$PWD/bin/apktool/apktool.jar"
     export VNDKS_COLLECTION="$PWD/LumiROM/vndks"
     export BUILD_PARTITIONS="product,vendor,odm,system_ext,system"
+    export SKIP_TARGET_FILES
 
     # Android build-tools (zipalign/apksigner) needed by REBUILD_AND_SIGN_APK.
     # Ubuntu ships them under /usr/lib/android-sdk/build-tools/debian/ (not in PATH).
@@ -372,9 +376,16 @@ package_output() {
         fi
 
         log_section "Saving target files"
-        run CREATE_TARGET_FILES "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
+        if [ "$SKIP_TARGET_FILES" != "true" ]; then
+            run CREATE_TARGET_FILES "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
+        else
+            log_message "Skipping target files (--no-target-files)"
+        fi
 
         if [ -n "$INCREMENTAL_FROM" ]; then
+            if [ "$SKIP_TARGET_FILES" = "true" ]; then
+                log_message "[!] Target files skipped: this version won't be available as a base for a future incremental OTA."
+            fi
             log_section "Building incremental OTA"
             source scripts/package/build_incremental_ota.sh
             run BUILD_INCREMENTAL_OTA "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
