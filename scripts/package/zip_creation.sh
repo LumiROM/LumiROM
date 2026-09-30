@@ -132,6 +132,16 @@ FLASHABLE_ZIP_CREATION() {
         } > "$MAKEROM_DIR/build_info.txt"
 
         cp "$MAKEROM_DIR/build_info.txt" "$OUT_DIR/build_info.txt" 2>/dev/null || true
+        python3 scripts/utils/provenance.py create \
+            --output "$MAKEROM_DIR/provenance.json" \
+            --input-image-dir "$IMGS_DIR" --output-image-dir "$OUT_DIR" \
+            --base-cache "$IMGS_DIR/.base-cache.json" \
+            --vendor-cache "$IMGS_DIR/.vendor-cache.json" \
+            --stock-device "$STOCK_DEVICE" --base-device "$TARGET_DEVICE" \
+            --csc "$TARGET_CSC" --firmware-version "${VERSION:-}" \
+            --rom-version "$LUMIROM_VERSION" \
+            --source-commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')"
+        cp "$MAKEROM_DIR/provenance.json" "$OUT_DIR/provenance.json"
 
         SPECIFIC_BOOT="$(pwd)/LumiROM/Devices/$DEVICE/boot.img"
 
@@ -158,7 +168,7 @@ FLASHABLE_ZIP_CREATION() {
         7z a -mx=0 -mmt=4 "$ZIP_FILE" ./*.new.dat.br ./*.patch.dat 2>/dev/null || true
         
         echo "${YELLOW}Adding scripts and compressible data (Compress)...${RESET}"
-        7z a -mx=6 -mmt=4 "$ZIP_FILE" ./boot.img ./META-INF ./build_info.txt ./dynamic_partitions_op_list ./*.transfer.list 2>/dev/null || true
+        7z a -mx=6 -mmt=4 "$ZIP_FILE" ./boot.img ./META-INF ./build_info.txt ./provenance.json ./dynamic_partitions_op_list ./*.transfer.list 2>/dev/null || true
         
 
         mkdir -p "../ROM/${FOLDER_NAME}"
@@ -261,6 +271,7 @@ CREATE_TARGET_FILES() {
     cp "$OUT_DIR"/*.img "$WORK_DIR_TF"/
     cp "$OUT_DIR"/*.map "$WORK_DIR_TF"/ 2>/dev/null || true
     cp "$OUT_DIR/build_info.txt" "$WORK_DIR_TF"/
+    cp "$OUT_DIR/provenance.json" "$WORK_DIR_TF"/
 
     local SPECIFIC_BOOT="$(pwd)/LumiROM/Devices/$STOCK_DEVICE/boot.img"
     [ -f "$SPECIFIC_BOOT" ] && cp "$SPECIFIC_BOOT" "$WORK_DIR_TF"/

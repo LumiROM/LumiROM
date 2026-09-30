@@ -347,6 +347,9 @@ BUILD_INCREMENTAL_OTA() {
     fi
 
     cp "$IMG_DIR/build_info.txt" "$STAGE/build_info.txt"
+    if [ -f "$IMG_DIR/provenance.json" ]; then
+        cp "$IMG_DIR/provenance.json" "$STAGE/provenance.json"
+    fi
     {
         echo "incremental_from=$SOURCE_VERSION"
         echo "incremental_source_timestamp=$(grep "^timestamp=" <<< "$SOURCE_BUILD_INFO" | cut -d "=" -f 2-)"
