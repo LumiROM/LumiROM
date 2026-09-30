@@ -72,9 +72,16 @@ _BUILD_RELEASE_JSON() {
     PARTITION_LAYOUT="$(grep "^partition_layout=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
 
     local FILE_NAME FILE_SIZE FILE_SHA256
+    local PROVENANCE_JSON="" PROVENANCE_SHA256="" SOURCE_COMMIT="" FIRMWARE_VERSION=""
     FILE_NAME="$(basename "$ZIP_PATH")"
     FILE_SIZE="$(stat -c "%s" "$ZIP_PATH")"
     FILE_SHA256="$(sha256sum "$ZIP_PATH" | cut -d " " -f 1)"
+    if unzip -Z1 "$ZIP_PATH" | grep -qx "provenance.json"; then
+        PROVENANCE_JSON="$(unzip -p "$ZIP_PATH" "provenance.json")" || return 1
+        PROVENANCE_SHA256="$(printf '%s\n' "$PROVENANCE_JSON" | sha256sum | cut -d " " -f 1)"
+        SOURCE_COMMIT="$(jq -r '.source_commit // empty' <<< "$PROVENANCE_JSON")"
+        FIRMWARE_VERSION="$(jq -r '.firmware_version // empty' <<< "$PROVENANCE_JSON")"
+    fi
 
     jq -n \
         --arg version "$VERSION" \
@@ -92,6 +99,9 @@ _BUILD_RELEASE_JSON() {
         --arg filename "$FILE_NAME" \
         --arg size "$FILE_SIZE" \
         --arg sha256 "$FILE_SHA256" \
+        --arg provenance_sha256 "$PROVENANCE_SHA256" \
+        --arg source_commit "$SOURCE_COMMIT" \
+        --arg firmware_version "$FIRMWARE_VERSION" \
         '{
             version: $version,
             version_code: ($version_code | if length > 0 then tonumber else null end),
@@ -103,6 +113,12 @@ _BUILD_RELEASE_JSON() {
             device_model: $device_model,
             kernel_version: $kernel_version,
             partition_layout: $partition_layout,
+            provenance: (if $provenance_sha256 == "" then null else {
+                filename: "provenance.json",
+                sha256: $provenance_sha256,
+                source_commit: $source_commit,
+                firmware_version: $firmware_version
+            } end),
             changelog: ($changelog | split(";") | map(select(length > 0))),
             download: {
                 url: $url,

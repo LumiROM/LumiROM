@@ -163,6 +163,10 @@ Use the `DESTINATION` option to choose where the ROM will be uploaded - Hugging 
 
 - If you choose GoFile, it will generate a link once the ROM is uploaded, ready to be downloaded. No need for any account.
 
+For incremental OTA builds, set `INCREMENTAL_FROM` to a previously published version. The incremental ZIP is uploaded and offered to Cloudy only when it is at least 20% smaller than the full ROM ZIP. To change that threshold, set the optional repository variable `INCREMENTAL_MIN_SAVINGS` to a fraction such as `0.10` or `0.30`.
+
+Flashable ROM ZIPs and target-files ZIPs include `provenance.json`, which records the source commit, firmware/device selection, and SHA-256 hashes for source and output partition images. OTA manifests include the provenance file hash.
+
 #### 7. Images Only (Optional):
 Tick the `ZIP_IMG` option if you want the partition images (.img) inside a ZIP instead of a flashable ROM - useful if you prefer flashing the images yourself. Leave it disabled to get the normal flashable ZIP.
 

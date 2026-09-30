@@ -204,6 +204,18 @@ jobs:
         PREPARE_PARTITIONS "$IMGS_DIR"
         EXTRACT_FIRMWARE_IMG "$IMGS_DIR" "$FIRM_DIR"
 
+    - name: Record firmware cache manifests
+      shell: bash
+      run: |
+        python3 scripts/utils/provenance.py record-cache \
+          --kind base --device "$TARGET_DEVICE" --csc "$TARGET_CSC" \
+          --firmware-version "${VERSION:-unknown}" --image-dir "$IMGS_DIR" \
+          --partitions "product,odm,system_ext,system" \
+          --manifest "$IMGS_DIR/.base-cache.json"
+        python3 scripts/utils/provenance.py record-cache \
+          --kind vendor --device "$STOCK_DEVICE" --image-dir "$IMGS_DIR" \
+          --partitions vendor --manifest "$IMGS_DIR/.vendor-cache.json"
+
     - name: Apply vendor patches
       shell: bash
       run: |
@@ -428,6 +440,7 @@ jobs:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         HF_USER: ${{ vars.HF_USER }}
         HF_XET_HIGH_PERFORMANCE: "1"
+        INCREMENTAL_MIN_SAVINGS: ${{ vars.INCREMENTAL_MIN_SAVINGS }}
       run: |
         bash scripts/package/upload.sh "$DESTINATION"
 

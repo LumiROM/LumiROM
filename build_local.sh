@@ -211,43 +211,59 @@ download_firmware() {
     log_section "Downloading Firmware"
     source "$DEVICES_DIR/$STOCK_DEVICE/config"
 
-    local firmware_cache_key="$TARGET_DEVICE|$TARGET_CSC"
-    if [[ "$(cat "$IMGS_DIR/.base-cache-key" 2>/dev/null || true)" != "$firmware_cache_key" ]]; then
-        log_message "Base firmware cache does not match $firmware_cache_key; invalidating base partition images."
+    local PROVENANCE_TOOL="$PWD/scripts/utils/provenance.py"
+    local BASE_CACHE="$IMGS_DIR/.base-cache.json"
+
+    log_message "Checking firmware cache..."
+    if python3 "$PROVENANCE_TOOL" verify-cache \
+        --kind base --device "$TARGET_DEVICE" --csc "$TARGET_CSC" \
+        --firmware-version "${VERSION:-}" \
+        --image-dir "$IMGS_DIR" --partitions "$BASE_BUILD_PARTITIONS" \
+        --manifest "$BASE_CACHE" && \
+        CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BASE_BUILD_PARTITIONS"; then
+        log_message "✓ Firmware cache identity and image hashes verified."
+        if [ -z "${VERSION:-}" ]; then
+            VERSION=$(python3 "$PROVENANCE_TOOL" cache-version --manifest "$BASE_CACHE")
+        fi
+    else
+        log_message "✗ Firmware cache missing, mismatched, or modified; downloading firmware."
         rm -f "$IMGS_DIR/product.img" "$IMGS_DIR/odm.img" "$IMGS_DIR/system_ext.img" "$IMGS_DIR/system.img"
         rm -f "$IMGS_DIR/${TARGET_DEVICE}.zip"
-    fi
-    if [[ "$(cat "$IMGS_DIR/.vendor-cache-key" 2>/dev/null || true)" != "$STOCK_DEVICE" ]]; then
-        log_message "Vendor cache does not match $STOCK_DEVICE; invalidating vendor.img."
-        rm -f "$IMGS_DIR/vendor.img"
-    fi
-
-    # Check if firmware images are already cached
-    log_message "Checking firmware cache..."
-    if CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BASE_BUILD_PARTITIONS"; then
-        log_message "✓ Firmware cache found. Skipping download..."
-    else
-        log_message "✗ No firmware cache found. Proceeding with download..."
         run DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
-    fi
-
-    if [[ -f "IMGs/${TARGET_DEVICE}.zip" ]]; then
+        if [[ ! -f "$IMGS_DIR/${TARGET_DEVICE}.zip" ]]; then
+            log_message "Firmware download completed without producing the expected archive."
+            return 1
+        fi
         log_section "Extracting $TARGET_DEVICE images"
         run EXTRACT_FIRMWARE "$IMGS_DIR"
         run EXTRACT_SUPER_IMG "$IMGS_DIR"
-        printf '%s\n' "$firmware_cache_key" > "$IMGS_DIR/.base-cache-key"
+        python3 "$PROVENANCE_TOOL" record-cache \
+            --kind base --device "$TARGET_DEVICE" --csc "$TARGET_CSC" \
+            --firmware-version "${VERSION:-unknown}" \
+            --image-dir "$IMGS_DIR" --partitions "$BASE_BUILD_PARTITIONS" \
+            --manifest "$BASE_CACHE"
     fi
 }
 
 download_vendor() {
+    local PROVENANCE_TOOL="$PWD/scripts/utils/provenance.py"
+    local VENDOR_CACHE="$IMGS_DIR/.vendor-cache.json"
+
     log_message "Checking vendor cache..."
-    if CHECK_VENDOR_IMAGE "$IMGS_DIR"; then
-        log_message "✓ Vendor cache found. Skipping download..."
+    if python3 "$PROVENANCE_TOOL" verify-cache \
+        --kind vendor --device "$STOCK_DEVICE" \
+        --image-dir "$IMGS_DIR" --partitions vendor \
+        --manifest "$VENDOR_CACHE" && CHECK_VENDOR_IMAGE "$IMGS_DIR"; then
+        log_message "✓ Vendor cache identity and image hash verified."
         sleep 1
     else
-        log_message "✗ No vendor cache found. Proceeding with download..."
+        log_message "✗ Vendor cache missing, mismatched, or modified; downloading vendor image."
+        rm -f "$IMGS_DIR/vendor.img"
         run DOWNLOAD_VENDOR "$IMGS_DIR"
-        printf '%s\n' "$STOCK_DEVICE" > "$IMGS_DIR/.vendor-cache-key"
+        python3 "$PROVENANCE_TOOL" record-cache \
+            --kind vendor --device "$STOCK_DEVICE" \
+            --image-dir "$IMGS_DIR" --partitions vendor \
+            --manifest "$VENDOR_CACHE"
     fi
 }
 

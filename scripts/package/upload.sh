@@ -3,6 +3,7 @@
 set -e
 
 DESTINY="$1"
+INCREMENTAL_MIN_SAVINGS="${INCREMENTAL_MIN_SAVINGS:-0.20}"
 
 GOFILE_UPLOAD() {
     local FILE="$1"
@@ -74,8 +75,22 @@ if [ -z "$FOUND_ZIPS" ]; then
     exit 1
 fi
 
+if ! awk -v value="$INCREMENTAL_MIN_SAVINGS" \
+    'BEGIN { exit !(value ~ /^[0-9]+([.][0-9]+)?$/ && value >= 0 && value < 1) }'; then
+    echo "ERROR: INCREMENTAL_MIN_SAVINGS must be a number from 0 up to (but not including) 1."
+    exit 1
+fi
+
+FULL_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" -print -quit)
+
 while IFS= read -r ZIP_PATH; do
     if [[ "$(basename "$ZIP_PATH")" == *"INCREMENTAL"* ]]; then
+        if [ -z "$FULL_ZIP" ] || ! python3 "$(dirname "$0")/../utils/provenance.py" prefer-incremental \
+            --full "$FULL_ZIP" --incremental "$ZIP_PATH" \
+            --min-savings "$INCREMENTAL_MIN_SAVINGS"; then
+            echo "Skipping $(basename "$ZIP_PATH"): incremental is not at least ${INCREMENTAL_MIN_SAVINGS} smaller than the full ROM."
+            continue
+        fi
         UPLOAD_FILE "$ZIP_PATH" "DOWNLOAD_URL_INCREMENTAL"
     else
         UPLOAD_FILE "$ZIP_PATH" "DOWNLOAD_URL"
