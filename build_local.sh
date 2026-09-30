@@ -11,6 +11,9 @@ if [ -f .env ]; then
     source .env
 fi
 
+set -eo pipefail
+PAR_PIDS=()
+
 # =====================================================================
 #  Default configuration
 # =====================================================================
@@ -35,6 +38,16 @@ run() {
 # Like `run`, but in the background (for parallel jobs)
 par() {
     run "$@" &
+    PAR_PIDS+=("$!")
+}
+
+wait_for_par() {
+    local status=0 pid
+    for pid in "${PAR_PIDS[@]}"; do
+        wait "$pid" || status=1
+    done
+    PAR_PIDS=()
+    return "$status"
 }
 
 usage() {
@@ -142,6 +155,7 @@ setup_environment() {
     export APKTOOL="$PWD/bin/apktool/apktool.jar"
     export VNDKS_COLLECTION="$PWD/LumiROM/vndks"
     export BUILD_PARTITIONS="product,vendor,odm,system_ext,system"
+    export BASE_BUILD_PARTITIONS="product,odm,system_ext,system"
 
     # Android build-tools (zipalign/apksigner) needed by REBUILD_AND_SIGN_APK.
     # Ubuntu ships them under /usr/lib/android-sdk/build-tools/debian/ (not in PATH).
@@ -197,9 +211,20 @@ download_firmware() {
     log_section "Downloading Firmware"
     source "$DEVICES_DIR/$STOCK_DEVICE/config"
 
+    local firmware_cache_key="$TARGET_DEVICE|$TARGET_CSC"
+    if [[ "$(cat "$IMGS_DIR/.base-cache-key" 2>/dev/null || true)" != "$firmware_cache_key" ]]; then
+        log_message "Base firmware cache does not match $firmware_cache_key; invalidating base partition images."
+        rm -f "$IMGS_DIR/product.img" "$IMGS_DIR/odm.img" "$IMGS_DIR/system_ext.img" "$IMGS_DIR/system.img"
+        rm -f "$IMGS_DIR/${TARGET_DEVICE}.zip"
+    fi
+    if [[ "$(cat "$IMGS_DIR/.vendor-cache-key" 2>/dev/null || true)" != "$STOCK_DEVICE" ]]; then
+        log_message "Vendor cache does not match $STOCK_DEVICE; invalidating vendor.img."
+        rm -f "$IMGS_DIR/vendor.img"
+    fi
+
     # Check if firmware images are already cached
     log_message "Checking firmware cache..."
-    if CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BUILD_PARTITIONS"; then
+    if CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BASE_BUILD_PARTITIONS"; then
         log_message "✓ Firmware cache found. Skipping download..."
     else
         log_message "✗ No firmware cache found. Proceeding with download..."
@@ -210,6 +235,7 @@ download_firmware() {
         log_section "Extracting $TARGET_DEVICE images"
         run EXTRACT_FIRMWARE "$IMGS_DIR"
         run EXTRACT_SUPER_IMG "$IMGS_DIR"
+        printf '%s\n' "$firmware_cache_key" > "$IMGS_DIR/.base-cache-key"
     fi
 }
 
@@ -221,6 +247,7 @@ download_vendor() {
     else
         log_message "✗ No vendor cache found. Proceeding with download..."
         run DOWNLOAD_VENDOR "$IMGS_DIR"
+        printf '%s\n' "$STOCK_DEVICE" > "$IMGS_DIR/.vendor-cache-key"
     fi
 }
 
@@ -276,11 +303,12 @@ apply_display_id() {
 # =====================================================================
 decompile_framework() {
     log_section "Patching Knox and Framework"
+    PAR_PIDS=()
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
-    wait
+    wait_for_par
 }
 
 apply_knox_patches() {
@@ -298,11 +326,12 @@ apply_knox_patches() {
 
 recompile_framework() {
     log_section "Recompiling Knox and Framework"
+    PAR_PIDS=()
     par RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
-    wait
+    wait_for_par
 
     run cp -fv "$WORK_DIR"/*.jar "FIRMWARE/system/system/framework/"
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
@@ -339,7 +368,11 @@ package_output() {
         source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" 2>/dev/null | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
-            run SIGN_OTA_ZIP "$OTA_ZIP"
+            if HAS_ACTIVE_OTA_KEY; then
+                run SIGN_OTA_ZIP "$OTA_ZIP"
+            else
+                log_message "No OTA signing key available; leaving package unsigned."
+            fi
         else
             log_message "No flashable zip found to sign, skipping."
         fi
@@ -351,6 +384,11 @@ package_output() {
             log_section "Building incremental OTA"
             source scripts/package/build_incremental_ota.sh
             run BUILD_INCREMENTAL_OTA "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
+            local incremental_zip
+            incremental_zip=$(find "./ROM/$FOLDER_NAME" -type f -name '*INCREMENTAL*.zip' -print -quit)
+            if [ -n "$incremental_zip" ] && HAS_ACTIVE_OTA_KEY; then
+                run SIGN_OTA_ZIP "$incremental_zip"
+            fi
         fi
     fi
 }

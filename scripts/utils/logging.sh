@@ -49,7 +49,8 @@ initialize_logs() {
     local use_galaxy_ai="$7"
     local use_ui_8_tethering_apex="$8"
     local output_filesystem="$9"
-    local lumirom_maintainer="$10"
+    local lumirom_maintainer="${10}"
+    local masked_imei="${target_imei:0:3}**********${target_imei: -2}"
     
     {
         echo "${BLUE}======================================${RESET}"
@@ -60,7 +61,7 @@ initialize_logs() {
         echo "Stock Device: $stock_device"
         echo "Target Device: $target_device"
         echo "Target CSC: $target_csc"
-        echo "Target IMEI: $target_imei"
+        echo "Target IMEI: $masked_imei"
         echo "Version: $lumirom_version"
         echo "Use Mods: $use_mods"
         echo "Use Galaxy AI: $use_galaxy_ai"
@@ -70,24 +71,6 @@ initialize_logs() {
         echo
     } > "$LOG_FILE"
     
-    {
-        echo "${BLUE}======================================${RESET}"
-        echo "${HI_BLUE}LumiROM Build Log${RESET}"
-        echo "${BLUE}======================================${RESET}"
-        echo "Start Time: $(date)"
-        echo "Maintainer: $lumirom_maintainer"
-        echo "Stock Device: $stock_device"
-        echo "Target Device: $target_device"
-        echo "Target CSC: $target_csc"
-        echo "Target IMEI: $target_imei"
-        echo "Version: $lumirom_version"
-        echo "Use Mods: $use_mods"
-        echo "Use Galaxy AI: $use_galaxy_ai"
-        echo "Use UI 8 Tethering Apex: $use_ui_8_tethering_apex"
-        echo "Output Filesystem: $output_filesystem"
-        echo "${BLUE}======================================${RESET}"
-        echo
-    } > "$LOG_FILE"
 }
 
 # finalize_logs: Create final summary log with build duration and status

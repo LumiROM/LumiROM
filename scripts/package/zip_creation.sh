@@ -2,6 +2,15 @@
 
 source scripts/utils/bash_colors.sh
 
+FORMAT_ONEUI_VERSION() {
+    local version_code="$1"
+    if [[ "$version_code" =~ ^([0-9])([0-9]{2}) ]]; then
+        printf '%s.%d' "${BASH_REMATCH[1]}" "$((10#${BASH_REMATCH[2]}))"
+    else
+        printf 'Unknown'
+    fi
+}
+
 UPDATE_ZIP_SCRIPT() {
     
         local EXTRACTED_FIRM_DIR="$1"
@@ -11,8 +20,7 @@ UPDATE_ZIP_SCRIPT() {
         DEVICE="$STOCK_DEVICE"
         UPDATER_PATH="$(pwd)/makerom/META-INF/com/google/android/updater-script"
         local oneui_prop_ver=$(grep -m 1 "ro.build.version.oneui=" "$BUILD_PROP_PATH" | cut -d'=' -f2)
-        local cut_version="${oneui_prop_ver:0:3}"
-        ONEUI_VERSION="${cut_version/0/.}"
+        ONEUI_VERSION="$(FORMAT_ONEUI_VERSION "$oneui_prop_ver")"
 
         if [[ "$DEVICE" == "SM-A325F" || "$DEVICE" == "SM-A325M" ]]; then
             DEVICE_CODENAME="a32"
@@ -100,8 +108,7 @@ FLASHABLE_ZIP_CREATION() {
         fi
         if [ -z "$ONEUI_VERSION" ]; then
             ONEUI_VERSION="$(grep "^ro.build.version.oneui=" "$BUILD_PROP" | cut -d "=" -f 2)"
-            ONEUI_VERSION="${ONEUI_VERSION:0:3}"
-            ONEUI_VERSION="${ONEUI_VERSION/0/.}"
+            ONEUI_VERSION="$(FORMAT_ONEUI_VERSION "$ONEUI_VERSION")"
         fi
         ONEUI_VERSION_UNCUT="$(grep "^ro.build.version.oneui=" "$BUILD_PROP" | cut -d "=" -f 2)"
         ANDROID_VERSION="$(grep "^ro.build.version.release=" "$BUILD_PROP" | cut -d "=" -f 2)"

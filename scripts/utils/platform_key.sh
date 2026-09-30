@@ -96,3 +96,15 @@ GET_ACTIVE_OTA_CERT() {
         cat "$HOME/.lumi/keys/ota.x509.pem"
     fi
 }
+
+HAS_ACTIVE_OTA_KEY() {
+    { [ -n "$OTA_PK8" ] && [ -n "$OTA_CERT" ]; } || \
+        { [ -f "$HOME/.lumi/keys/ota.pk8" ] && [ -f "$HOME/.lumi/keys/ota.x509.pem" ]; }
+}
+
+CLEANUP_TEMP_KEY_DIR() {
+    local KEY_DIR="$1"
+    [ -n "$KEY_DIR" ] || return 0
+    [ "$KEY_DIR" = "$HOME/.lumi/keys" ] && return 0
+    rm -rf -- "$KEY_DIR"
+}

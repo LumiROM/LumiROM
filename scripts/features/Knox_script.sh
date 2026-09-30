@@ -11,8 +11,8 @@ REPLACE_SMALI_METHOD() {
     echo "  Method: $METHOD_NAME"
 
     if ! grep -Fq "$METHOD_NAME" "$FILE"; then
-        echo "${RED}- Method not found${RESET}"
-        return 0
+        echo "${RED}- Required method not found: $METHOD_NAME${RESET}" >&2
+        return 1
     fi
 
     # Extract method key

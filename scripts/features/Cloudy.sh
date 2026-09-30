@@ -27,6 +27,7 @@ SIGN_WITH_PLATFORM_KEY() {
 
     if [ ! -f "$PK8" ] || [ ! -f "$CERT" ]; then
         echo "${RED}Platform key not found in $KEY_DIR${RESET}" >&2
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
         return 1
     fi
 
@@ -36,9 +37,11 @@ SIGN_WITH_PLATFORM_KEY() {
     if ! apksigner sign --key "$PK8" --cert "$CERT" --out "$OUT" "$APK" 2>/dev/null; then
         echo "${RED} - Failed to sign $APK${RESET}" >&2
         rm -f "$OUT"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
         return 1
     fi
 
+    CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
     echo "${GREEN} - Signed with platform key${RESET}" >&2
     echo "$OUT"
 }

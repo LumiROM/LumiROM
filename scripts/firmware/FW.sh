@@ -2,6 +2,14 @@
 
 source scripts/utils/bash_colors.sh
 
+wait_for_jobs() {
+    local status=0 pid
+    for pid in "$@"; do
+        wait "$pid" || status=1
+    done
+    return "$status"
+}
+
 # Load logging functions if available
 if [ -f "scripts/utils/logging.sh" ]; then
     source scripts/utils/logging.sh
@@ -397,6 +405,7 @@ EXTRACT_FIRMWARE_IMG() {
 
     local IMG_DIR="$1"
 	local FIRM_DIR="$2"
+	local -a PIDS=()
 
 	echo "${YELLOW}Extracting images from $IMG_DIR${RESET}"
     for imgfile in "$IMG_DIR"/*.img; do
@@ -434,9 +443,13 @@ EXTRACT_FIRMWARE_IMG() {
                     ;;
             esac
         ) &
+        PIDS+=("$!")
     done
 
-    wait
+    if ! wait_for_jobs "${PIDS[@]}"; then
+        echo "${RED}One or more partition image extractions failed.${RESET}" >&2
+        return 1
+    fi
 
     # Correct owner and permissions of extracted ext4 partitions
     sudo chown -R $USER:$USER "$FIRM_DIR/vendor/"
@@ -633,22 +646,23 @@ BUILD_IMG() {
 
     local EXTRACTED_FIRM_DIR="$1"
     local FILE_SYSTEM="$2"
-	local OUT_DIR="$3"
+    local OUT_DIR="$3"
     local DEVICE_CONFIG="$(pwd)/LumiROM/Devices/${STOCK_DEVICE}/config"
     local OP_LIST="$(pwd)/makerom/dynamic_partitions_op_list"
+    local -a PIDS=()
 
     if [[ -f "$DEVICE_CONFIG" ]]; then
-        local SUPER_SIZE=$(grep "STOCK_SUPER_SIZE" "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
-        
-        # Update the super size on the list according to the device
-        if [[ -n "$SUPER_SIZE" && -f "$OP_LIST" ]]; then
-            echo "${GREEN}Updating super size on op_list: $SUPER_SIZE bytes${RESET}"
-            sed -i "s/^add_group samsung_dynamic_partitions .*/add_group samsung_dynamic_partitions $SUPER_SIZE/" "$OP_LIST"
-        else
-            echo "${RED}Warning: STOCK_SUPER_SIZE hasn't been found on $DEVICE_CONFIG${RESET}"
+        local SUPER_SIZE=$(grep -m1 '^STOCK_SUPER_SIZE=' "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
+        if [[ ! "$SUPER_SIZE" =~ ^[1-9][0-9]*$ ]]; then
+            echo "${RED}Error: STOCK_SUPER_SIZE must be set to the verified super partition size in $DEVICE_CONFIG${RESET}" >&2
+            return 1
         fi
+        [[ -f "$OP_LIST" ]] || { echo "${RED}Error: dynamic partition operation list not found: $OP_LIST${RESET}" >&2; return 1; }
+        echo "${GREEN}Updating super size on op_list: $SUPER_SIZE bytes${RESET}"
+        sed -i "s/^add_group samsung_dynamic_partitions .*/add_group samsung_dynamic_partitions $SUPER_SIZE/" "$OP_LIST"
     else
-        echo "${RED}Error: config file not found${RESET}"
+        echo "${RED}Error: config file not found: $DEVICE_CONFIG${RESET}" >&2
+        return 1
     fi
 
 
@@ -684,9 +698,13 @@ BUILD_IMG() {
                 "$SRC_DIR" "$FILE_CONTEXTS" "$FS_CONFIG"
             touch "$OUT_DIR/$PARTITION.map"
         ) &
+        PIDS+=("$!")
     done
 
-    wait
+    if ! wait_for_jobs "${PIDS[@]}"; then
+        echo "${RED}One or more filesystem image builds failed.${RESET}" >&2
+        return 1
+    fi
 
     # Updates the list sequentially to avoid race conditions
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
@@ -710,6 +728,7 @@ IMG_TO_BROTLI() {
     local IMG_DIR="$1"
     local TMP_DIR="$2"
     local IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
+    local -a PIDS=()
 
     mkdir -p "$TMP_DIR"
 
@@ -730,19 +749,24 @@ IMG_TO_BROTLI() {
 
         (
             echo "${GREEN}Converting $PARTITION.img...${RESET}"
-            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1
+            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1 || exit $?
             touch "$TMP_DIR/$PARTITION.patch.dat"
             echo "${GREEN}Created patch.dat for $PARTITION${RESET}"
         ) &
+        PIDS+=("$!")
     done
 
-    wait
+    if ! wait_for_jobs "${PIDS[@]}"; then
+        echo "${RED}One or more img2sdat conversions failed.${RESET}" >&2
+        return 1
+    fi
 
     # Compress it to .new.dat.br to make later a .zip file
     echo ""
     echo "${BLUE}=== Compressing DAT files with Brotli (Parallel) ===${RESET}"
 
     local JOBS=4 # Set to match vCPUs
+    PIDS=()
     for DAT in "$TMP_DIR"/*.new.dat; do
         [[ -f "$DAT" ]] || continue
         PARTITION="$(basename "$DAT" .new.dat)"
@@ -750,9 +774,10 @@ IMG_TO_BROTLI() {
 
         (
             echo "${YELLOW}Compressing $PARTITION.new.dat...${RESET}"
-            brotli -f -q 1 --output="$OUT_FILE" "$DAT"
+            brotli -f -q 1 --output="$OUT_FILE" "$DAT" || exit $?
             echo "${GREEN}Finished $PARTITION.new.dat.br${RESET}"
         ) &
+        PIDS+=("$!")
 
         # Limit concurrent jobs
         while [ $(jobs -r | wc -l) -ge "$JOBS" ]; do
@@ -760,7 +785,10 @@ IMG_TO_BROTLI() {
         done
     done
 
-    wait
+    if ! wait_for_jobs "${PIDS[@]}"; then
+        echo "${RED}One or more Brotli compression jobs failed.${RESET}" >&2
+        return 1
+    fi
     echo ""
     echo "${GREEN}All partitions converted and compressed successfully.${RESET}"
 }

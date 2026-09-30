@@ -16,6 +16,17 @@ VALIDATION() {
         exit 1
     fi
 
+    local device_config="LumiROM/Devices/$STOCK_DEVICE/config"
+    if [ ! -f "$device_config" ]; then
+        echo "${RED}Error:${RESET} Device config not found: $device_config"
+        exit 1
+    fi
+    source "$device_config"
+    if [[ ! "${STOCK_SUPER_SIZE:-}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "${RED}Error:${RESET} STOCK_SUPER_SIZE must be set to the verified super partition size in $device_config."
+        exit 1
+    fi
+
     # TARGET_DEVICE
     if [ -z "$TARGET_DEVICE" ]; then
         echo "${RED}Error:${RESET} TARGET_DEVICE is not set."

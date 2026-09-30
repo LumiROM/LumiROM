@@ -64,7 +64,7 @@ _BUILD_RELEASE_JSON() {
     VERSION_CODE="$(grep "^version_code=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     BUILD_DATE="$(grep "^build_date=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     ANDROID_VERSION="$(grep "^android_version=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
-    ONEUI_CODE="$(grep "^oneui_code=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
+    ONEUI_VERSION="$(grep "^oneui_version=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     SECURITY_PATCH="$(grep "^security_patch=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     FINGERPRINT="$(grep "^build_fingerprint=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     DEVICE_MODEL="$(grep "^device_model=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
@@ -81,7 +81,7 @@ _BUILD_RELEASE_JSON() {
         --arg version_code "$VERSION_CODE" \
         --arg build_date "$BUILD_DATE" \
         --arg android_version "$ANDROID_VERSION" \
-        --arg oneui_version "$ONEUI_CODE" \
+        --arg oneui_version "$ONEUI_VERSION" \
         --arg security_patch "$SECURITY_PATCH" \
         --arg fingerprint "$FINGERPRINT" \
         --arg device_model "$DEVICE_MODEL" \
@@ -97,7 +97,7 @@ _BUILD_RELEASE_JSON() {
             version_code: ($version_code | if length > 0 then tonumber else null end),
             build_date: $build_date,
             android_version: $android_version,
-            oneui_version: $oneui_code,
+            oneui_version: $oneui_version,
             security_patch: $security_patch,
             build_fingerprint: $fingerprint,
             device_model: $device_model,

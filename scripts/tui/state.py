@@ -91,7 +91,7 @@ class BuildConfig:
         return args
 
     def command(self) -> str:
-        return "bash build_local.sh " + " ".join(self.to_args())
+        return "bash build_local.sh " + shlex.join(self.to_args())
 
     def pty_command(self) -> list[str]:
         args = " ".join(shlex.quote(arg) for arg in self.to_args())
