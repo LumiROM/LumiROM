@@ -86,9 +86,20 @@ REBUILD_AND_SIGN_APK() {
     local KEY_DIR
     KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
     echo "${YELLOW}Re-signing with platform key from $KEY_DIR${RESET}"
-    apksigner sign --key "$KEY_DIR/platform.pk8" --cert "$KEY_DIR/platform.x509.pem" \
-        --out "$OUT_APK" "$ALIGNED" || return 1
+    if [ ! -f "$KEY_DIR/platform.pk8" ] || [ ! -f "$KEY_DIR/platform.x509.pem" ]; then
+        echo "${RED}Platform signing key is incomplete in $KEY_DIR${RESET}"
+        rm -f "$ALIGNED"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
+        return 1
+    fi
+    if ! apksigner sign --key "$KEY_DIR/platform.pk8" --cert "$KEY_DIR/platform.x509.pem" \
+        --out "$OUT_APK" "$ALIGNED"; then
+        rm -f "$ALIGNED"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
+        return 1
+    fi
     rm -f "$ALIGNED"
+    CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
 
     echo "${GREEN}Rebuilt and signed: $OUT_APK${RESET}"
 }

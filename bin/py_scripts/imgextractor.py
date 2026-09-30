@@ -131,8 +131,13 @@ class Extractor(object):
         if not os.path.isdir(config_dir):
             os.makedirs(config_dir)
         fs_config_file = config_dir  + self.FileName + "_fs_config"
+        spaces_file = os.path.join(config_dir, self.FileName + "_space.txt")
         try:
             os.remove(fs_config_file)
+        except:
+            pass
+        try:
+            os.remove(spaces_file)
         except:
             pass
         contexts = config_dir  + self.FileName + "_file_contexts"

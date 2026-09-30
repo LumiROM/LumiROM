@@ -87,7 +87,7 @@ check_cache() {
     echo ""
     if [ $missing -eq 0 ]; then
         echo "${GREEN}✅ All required images are cached!${RESET}"
-        echo "   ${CYAN}build_local.sh will skip firmware download${RESET}"
+        echo "   ${CYAN}build_local.sh will verify cache keys before reusing these images${RESET}"
         return 0
     else
         echo "${YELLOW}⚠️  $missing image(s) missing${RESET}"

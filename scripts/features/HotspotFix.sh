@@ -216,12 +216,6 @@ HotspotFix_REPACK_SIGN_APEX() {
         echo "${RED} - apksigner not found (needed to sign the APEX)${RESET}"
         return 1
     }
-    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
-    if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/platform.pk8" ]; then
-        echo "${RED} - no platform signing key available for the APEX${RESET}"
-        return 1
-    fi
-
     local FILES
     FILES=$(cd "$STAGE" && find . -type f ! -path './META-INF/*' -printf '%P\n' | sort)
     if ! printf '%s\n' "$FILES" | grep -qx 'apex_payload.img'; then
@@ -242,13 +236,23 @@ HotspotFix_REPACK_SIGN_APEX() {
         echo "${RED} - zipalign failed${RESET}"
         return 1
     }
-    "$APKSIGNER_BIN" sign \
+    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
+    if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/platform.pk8" ] || [ ! -f "$KEY_DIR/platform.x509.pem" ]; then
+        echo "${RED} - no platform signing key available for the APEX${RESET}"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
+        rm -f "$OUT.aligned"
+        return 1
+    fi
+    if ! "$APKSIGNER_BIN" sign \
         --key "$KEY_DIR/platform.pk8" --cert "$KEY_DIR/platform.x509.pem" \
         --alignment-preserved true \
-        --out "$OUT" "$OUT.aligned" || {
+        --out "$OUT" "$OUT.aligned"; then
         echo "${RED} - apksigner failed${RESET}"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
+        rm -f "$OUT.aligned"
         return 1
-    }
+    fi
+    CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
     rm -f "$OUT.aligned"
     return 0
 }

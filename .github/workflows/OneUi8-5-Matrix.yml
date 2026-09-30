@@ -92,20 +92,34 @@ jobs:
       shell: bash
       env:
         LUMIROM_VERSION: ${{ vars.LUMIROM_VERSION }}
+        INPUT_USE_MODS: ${{ github.event.inputs.USE_MODS }}
+        INPUT_USE_GALAXY_AI: ${{ github.event.inputs.USE_GALAXY_AI }}
+        INPUT_USE_UI_8_TETHERING_APEX: ${{ github.event.inputs.USE_UI_8_TETHERING_APEX }}
+        INPUT_ZIP_IMG: ${{ github.event.inputs.ZIP_IMG }}
+        INPUT_DESTINATION: ${{ github.event.inputs.DESTINATION }}
+        INPUT_INCREMENTAL_FROM: ${{ github.event.inputs.INCREMENTAL_FROM }}
+        BUILD_ACTOR: ${{ github.actor }}
       run: |
         VERSION="${LUMIROM_VERSION}"
 
-        echo "STOCK_DEVICE=${{ matrix.device }}" >> $GITHUB_ENV
-        echo "USE_MODS=${{ github.event.inputs.USE_MODS }}" >> $GITHUB_ENV
-        echo "USE_GALAXY_AI=${{ github.event.inputs.USE_GALAXY_AI }}" >> $GITHUB_ENV
-        echo "USE_UI_8_TETHERING_APEX=${{ github.event.inputs.USE_UI_8_TETHERING_APEX }}" >> $GITHUB_ENV
-        echo "ZIP_IMG=${{ github.event.inputs.ZIP_IMG }}" >> $GITHUB_ENV
-        echo "DESTINATION=${{ github.event.inputs.DESTINATION }}" >> $GITHUB_ENV
+        [[ "$INPUT_INCREMENTAL_FROM" == "" || "$INPUT_INCREMENTAL_FROM" =~ ^[0-9]+([.][0-9]+){1,2}$ ]] || { echo "Invalid INCREMENTAL_FROM" >&2; exit 1; }
+        for value in "$INPUT_USE_MODS" "$INPUT_USE_GALAXY_AI" "$INPUT_USE_UI_8_TETHERING_APEX" "$INPUT_ZIP_IMG"; do
+          [[ "$value" == "true" || "$value" == "false" ]] || { echo "Invalid boolean workflow input" >&2; exit 1; }
+        done
+        [[ "$INPUT_DESTINATION" == "huggingface" || "$INPUT_DESTINATION" == "gofile" ]] || { echo "Invalid DESTINATION" >&2; exit 1; }
+
+        printf 'STOCK_DEVICE=%s\n' '${{ matrix.device }}' >> "$GITHUB_ENV"
+        printf 'USE_MODS=%s\n' "$INPUT_USE_MODS" >> "$GITHUB_ENV"
+        printf 'USE_GALAXY_AI=%s\n' "$INPUT_USE_GALAXY_AI" >> "$GITHUB_ENV"
+        printf 'USE_UI_8_TETHERING_APEX=%s\n' "$INPUT_USE_UI_8_TETHERING_APEX" >> "$GITHUB_ENV"
+        printf 'ZIP_IMG=%s\n' "$INPUT_ZIP_IMG" >> "$GITHUB_ENV"
+        printf 'DESTINATION=%s\n' "$INPUT_DESTINATION" >> "$GITHUB_ENV"
+        printf 'INCREMENTAL_FROM=%s\n' "$INPUT_INCREMENTAL_FROM" >> "$GITHUB_ENV"
         echo "OUTPUT_FILESYSTEM=erofs" >> $GITHUB_ENV
 
         echo "LUMIROM_VERSION=${VERSION}" >> $GITHUB_ENV
         echo "LUMIROM_CODE=${VERSION//./0}" >> $GITHUB_ENV
-        echo "LUMIROM_MAINTAINER=${{ github.actor }}" >> $GITHUB_ENV
+        printf 'LUMIROM_MAINTAINER=%s\n' "$BUILD_ACTOR" >> "$GITHUB_ENV"
 
         echo "OUT_DIR=$PWD/OUT" >> $GITHUB_ENV
         echo "WORK_DIR=$PWD/TMP/LumiWORK" >> $GITHUB_ENV
@@ -115,6 +129,15 @@ jobs:
         echo "APKTOOL=$PWD/bin/apktool/apktool.jar" >> $GITHUB_ENV
         echo "VNDKS_COLLECTION=$PWD/LumiROM/vndks" >> $GITHUB_ENV
         echo "BUILD_PARTITIONS=product,vendor,odm,system_ext,system" >> $GITHUB_ENV
+
+    - name: Validate device super partition size
+      shell: bash
+      run: |
+        source "$DEVICES_DIR/$STOCK_DEVICE/config"
+        if [[ ! "${STOCK_SUPER_SIZE:-}" =~ ^[1-9][0-9]*$ ]]; then
+          echo "STOCK_SUPER_SIZE must be set to the verified super partition size for $STOCK_DEVICE." >&2
+          exit 1
+        fi
 
     - name: Detect official OTA capabilities
       id: ota-cap
@@ -180,6 +203,18 @@ jobs:
         source scripts/firmware/FW.sh
         PREPARE_PARTITIONS "$IMGS_DIR"
         EXTRACT_FIRMWARE_IMG "$IMGS_DIR" "$FIRM_DIR"
+
+    - name: Record firmware cache manifests
+      shell: bash
+      run: |
+        python3 scripts/utils/provenance.py record-cache \
+          --kind base --device "$TARGET_DEVICE" --csc "$TARGET_CSC" \
+          --firmware-version "${VERSION:-unknown}" --image-dir "$IMGS_DIR" \
+          --partitions "product,odm,system_ext,system" \
+          --manifest "$IMGS_DIR/.base-cache.json"
+        python3 scripts/utils/provenance.py record-cache \
+          --kind vendor --device "$STOCK_DEVICE" --image-dir "$IMGS_DIR" \
+          --partitions vendor --manifest "$IMGS_DIR/.vendor-cache.json"
 
     - name: Apply vendor patches
       shell: bash
@@ -342,7 +377,11 @@ jobs:
         source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
-          SIGN_OTA_ZIP "$OTA_ZIP"
+          if [ -n "$OTA_PK8" ] && [ -n "$OTA_CERT" ]; then
+            SIGN_OTA_ZIP "$OTA_ZIP"
+          else
+            echo "OTA signing key unavailable; skipping signature."
+          fi
         else
           echo "No flashable zip found to sign, skipping."
         fi
@@ -371,26 +410,37 @@ jobs:
 
     - name: Download previous target files
       if: ${{ github.event.inputs.INCREMENTAL_FROM != '' && steps.ota-cap.outputs.can_ota == 'true' }}
+      env:
+        HF_USER: ${{ vars.HF_USER }}
       run: |
-        URL="https://huggingface.co/buckets/${{ vars.HF_USER }}/target-files/resolve/${{ github.event.inputs.INCREMENTAL_FROM }}/${{ matrix.device }}/LumiROM_TARGET_${{ github.event.inputs.INCREMENTAL_FROM }}_${{ matrix.device }}.zip?download=true"
+        URL="https://huggingface.co/buckets/${HF_USER}/target-files/resolve/${INCREMENTAL_FROM}/${STOCK_DEVICE}/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip?download=true"
         if curl -sfL -o prev-target-files.zip "$URL"; then
           echo "Previous target files downloaded."
         else
-          echo "Previous target files not found for ${{ github.event.inputs.INCREMENTAL_FROM }}, skipping incremental OTA."
+          echo "Previous target files not found for ${INCREMENTAL_FROM}, skipping incremental OTA."
           echo "INCREMENTAL_SOURCE_AVAILABLE=false" >> $GITHUB_ENV
         fi
 
     - name: Build incremental OTA
       if: ${{ github.event.inputs.INCREMENTAL_FROM != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
+      env:
+        OTA_PK8: ${{ secrets.OTA_PK8 }}
+        OTA_CERT: ${{ secrets.OTA_CERT }}
       run: |
         source scripts/package/build_incremental_ota.sh
         BUILD_INCREMENTAL_OTA "$PWD/prev-target-files.zip" "$OUT_DIR"
+        source scripts/package/sign_ota.sh
+        INCREMENTAL_ZIP=$(find "./ROM/$FOLDER_NAME" -type f -name '*INCREMENTAL*.zip' -print -quit)
+        if [ -n "$INCREMENTAL_ZIP" ]; then
+          SIGN_OTA_ZIP "$INCREMENTAL_ZIP"
+        fi
 
     - name: Upload ROM to ${{ github.event.inputs.DESTINATION }}
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         HF_USER: ${{ vars.HF_USER }}
         HF_XET_HIGH_PERFORMANCE: "1"
+        INCREMENTAL_MIN_SAVINGS: ${{ vars.INCREMENTAL_MIN_SAVINGS }}
       run: |
         bash scripts/package/upload.sh "$DESTINATION"
 

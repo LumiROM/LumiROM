@@ -2,6 +2,15 @@
 
 source scripts/utils/bash_colors.sh
 
+FORMAT_ONEUI_VERSION() {
+    local version_code="$1"
+    if [[ "$version_code" =~ ^([0-9])([0-9]{2}) ]]; then
+        printf '%s.%d' "${BASH_REMATCH[1]}" "$((10#${BASH_REMATCH[2]}))"
+    else
+        printf 'Unknown'
+    fi
+}
+
 GET_IMAGE_SIZE() {
     local FILE="$1"
     local MAGIC BLOCK_SIZE BLOCKS
@@ -130,8 +139,7 @@ BUILD_INCREMENTAL_OTA() {
 
     local ONEUI_VERSION
     ONEUI_VERSION="$(grep "^ro.build.version.oneui=" "$FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d "=" -f 2)"
-    ONEUI_VERSION="${ONEUI_VERSION:0:3}"
-    ONEUI_VERSION="${ONEUI_VERSION/0/.}"
+    ONEUI_VERSION="$(FORMAT_ONEUI_VERSION "$ONEUI_VERSION")"
 
     local BUILD_DATE
     BUILD_DATE="$(date +'%d%m%Y')"
@@ -339,6 +347,9 @@ BUILD_INCREMENTAL_OTA() {
     fi
 
     cp "$IMG_DIR/build_info.txt" "$STAGE/build_info.txt"
+    if [ -f "$IMG_DIR/provenance.json" ]; then
+        cp "$IMG_DIR/provenance.json" "$STAGE/provenance.json"
+    fi
     {
         echo "incremental_from=$SOURCE_VERSION"
         echo "incremental_source_timestamp=$(grep "^timestamp=" <<< "$SOURCE_BUILD_INFO" | cut -d "=" -f 2-)"

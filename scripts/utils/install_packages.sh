@@ -43,6 +43,7 @@ UBUNTU_PACKAGES() {
         fontconfig
         python3-protobuf
         libprotobuf32t64
+        bc
     )
 
     echo "Searching for repository updates..."

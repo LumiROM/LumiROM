@@ -64,7 +64,7 @@ _BUILD_RELEASE_JSON() {
     VERSION_CODE="$(grep "^version_code=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     BUILD_DATE="$(grep "^build_date=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     ANDROID_VERSION="$(grep "^android_version=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
-    ONEUI_CODE="$(grep "^oneui_code=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
+    ONEUI_VERSION="$(grep "^oneui_version=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     SECURITY_PATCH="$(grep "^security_patch=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     FINGERPRINT="$(grep "^build_fingerprint=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     DEVICE_MODEL="$(grep "^device_model=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
@@ -72,16 +72,23 @@ _BUILD_RELEASE_JSON() {
     PARTITION_LAYOUT="$(grep "^partition_layout=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
 
     local FILE_NAME FILE_SIZE FILE_SHA256
+    local PROVENANCE_JSON="" PROVENANCE_SHA256="" SOURCE_COMMIT="" FIRMWARE_VERSION=""
     FILE_NAME="$(basename "$ZIP_PATH")"
     FILE_SIZE="$(stat -c "%s" "$ZIP_PATH")"
     FILE_SHA256="$(sha256sum "$ZIP_PATH" | cut -d " " -f 1)"
+    if unzip -Z1 "$ZIP_PATH" | grep -qx "provenance.json"; then
+        PROVENANCE_JSON="$(unzip -p "$ZIP_PATH" "provenance.json")" || return 1
+        PROVENANCE_SHA256="$(printf '%s\n' "$PROVENANCE_JSON" | sha256sum | cut -d " " -f 1)"
+        SOURCE_COMMIT="$(jq -r '.source_commit // empty' <<< "$PROVENANCE_JSON")"
+        FIRMWARE_VERSION="$(jq -r '.firmware_version // empty' <<< "$PROVENANCE_JSON")"
+    fi
 
     jq -n \
         --arg version "$VERSION" \
         --arg version_code "$VERSION_CODE" \
         --arg build_date "$BUILD_DATE" \
         --arg android_version "$ANDROID_VERSION" \
-        --arg oneui_version "$ONEUI_CODE" \
+        --arg oneui_version "$ONEUI_VERSION" \
         --arg security_patch "$SECURITY_PATCH" \
         --arg fingerprint "$FINGERPRINT" \
         --arg device_model "$DEVICE_MODEL" \
@@ -92,17 +99,26 @@ _BUILD_RELEASE_JSON() {
         --arg filename "$FILE_NAME" \
         --arg size "$FILE_SIZE" \
         --arg sha256 "$FILE_SHA256" \
+        --arg provenance_sha256 "$PROVENANCE_SHA256" \
+        --arg source_commit "$SOURCE_COMMIT" \
+        --arg firmware_version "$FIRMWARE_VERSION" \
         '{
             version: $version,
             version_code: ($version_code | if length > 0 then tonumber else null end),
             build_date: $build_date,
             android_version: $android_version,
-            oneui_version: $oneui_code,
+            oneui_version: $oneui_version,
             security_patch: $security_patch,
             build_fingerprint: $fingerprint,
             device_model: $device_model,
             kernel_version: $kernel_version,
             partition_layout: $partition_layout,
+            provenance: (if $provenance_sha256 == "" then null else {
+                filename: "provenance.json",
+                sha256: $provenance_sha256,
+                source_commit: $source_commit,
+                firmware_version: $firmware_version
+            } end),
             changelog: ($changelog | split(";") | map(select(length > 0))),
             download: {
                 url: $url,

@@ -30,6 +30,7 @@ SIGN_OTA_ZIP() {
     KEY_DIR="$(GET_ACTIVE_OTA_KEY_FILES)"
     if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/ota.pk8" ] || [ ! -f "$KEY_DIR/ota.x509.pem" ]; then
         echo "${RED}No OTA signing key available, skipping signature.${RESET}"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
         return 1
     fi
 
@@ -40,15 +41,21 @@ SIGN_OTA_ZIP() {
     echo "${YELLOW}Signing OTA package with signapk (-w otacert)...${RESET}"
     java -jar "$SIGNER" -w "$CERT" "$PK8" "$OTA_ZIP" "$SIGNED" || {
         echo "${RED}signapk failed.${RESET}"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
         return 1
     }
 
     if ! unzip -l "$SIGNED" 2>/dev/null | grep -q "META-INF/com/android/otacert"; then
         echo "${RED}Signed zip is missing META-INF/com/android/otacert. Aborting.${RESET}"
         rm -f "$SIGNED"
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
         return 1
     fi
 
-    mv -f "$SIGNED" "$OTA_ZIP"
+    if ! mv -f "$SIGNED" "$OTA_ZIP"; then
+        CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
+        return 1
+    fi
+    CLEANUP_TEMP_KEY_DIR "$KEY_DIR"
     echo "${GREEN}OTA package signed (otacert embedded): $OTA_ZIP${RESET}"
 }
