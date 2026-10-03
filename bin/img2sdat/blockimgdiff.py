@@ -53,11 +53,18 @@ def compute_patch(srcfile, tgtfile, imgdiff=False):
   proc = common.Run(cmd, verbose=False)
   output, _ = proc.communicate()
 
-  if proc.returncode != 0:
-    raise ValueError(output)
+  try:
+    if proc.returncode != 0:
+      raise ValueError(output)
 
-  with open(patchfile, 'rb') as f:
-    return PatchInfo(imgdiff, f.read())
+    with open(patchfile, 'rb') as f:
+      return PatchInfo(imgdiff, f.read())
+  finally:
+    # Free the patch temp file right away instead of waiting for Cleanup().
+    try:
+      os.remove(patchfile)
+    except OSError:
+      pass
 
 
 class Transfer(object):
@@ -1149,22 +1156,32 @@ class BlockImageDiff(object):
         patch_info = xf.patch_info
         if not patch_info:
           src_file = common.MakeTempFile(prefix="src-")
-          with open(src_file, "wb") as fd:
-            self.src.WriteRangeDataToFd(xf.src_ranges, fd)
-
           tgt_file = common.MakeTempFile(prefix="tgt-")
-          with open(tgt_file, "wb") as fd:
-            self.tgt.WriteRangeDataToFd(xf.tgt_ranges, fd)
-
           try:
-            patch_info = compute_patch(src_file, tgt_file, imgdiff)
-          except ValueError as e:
-            message.append(
-                "Failed to generate %s for %s: tgt=%s, src=%s:\n%s" % (
-                    "imgdiff" if imgdiff else "bsdiff",
-                    xf.tgt_name if xf.tgt_name == xf.src_name else
-                    xf.tgt_name + " (from " + xf.src_name + ")",
-                    xf.tgt_ranges, xf.src_ranges, e.message))
+            with open(src_file, "wb") as fd:
+              self.src.WriteRangeDataToFd(xf.src_ranges, fd)
+
+            with open(tgt_file, "wb") as fd:
+              self.tgt.WriteRangeDataToFd(xf.tgt_ranges, fd)
+
+            try:
+              patch_info = compute_patch(src_file, tgt_file, imgdiff)
+            except ValueError as e:
+              detail = e.args[0] if e.args else e
+              if isinstance(detail, bytes):
+                detail = detail.decode("utf-8", errors="replace")
+              message.append(
+                  "Failed to generate %s for %s: tgt=%s, src=%s:\n%s" % (
+                      "imgdiff" if imgdiff else "bsdiff",
+                      xf.tgt_name if xf.tgt_name == xf.src_name else
+                      xf.tgt_name + " (from " + xf.src_name + ")",
+                      xf.tgt_ranges, xf.src_ranges, detail))
+          finally:
+            for temp in (src_file, tgt_file):
+              try:
+                os.remove(temp)
+              except OSError:
+                pass
 
         if compress_target:
           tgt_data = self.tgt.ReadRangeSet(xf.tgt_ranges)
@@ -1177,7 +1194,7 @@ class BlockImageDiff(object):
           except zlib.error as e:
             message.append(
                 "Failed to compress the data in target range {} for {}:\n"
-                "{}".format(xf.tgt_ranges, xf.tgt_name, e.message))
+                "{}".format(xf.tgt_ranges, xf.tgt_name, e))
 
         if message:
           with lock:
@@ -1197,6 +1214,10 @@ class BlockImageDiff(object):
       logger.error('ERROR:')
       logger.error('\n'.join(error_messages))
       logger.error('\n\n\n')
+      sys.exit(1)
+
+    if any(patch is None for patch in patches):
+      logger.error('ERROR: a diff worker failed to produce a patch result.')
       sys.exit(1)
 
     return patches

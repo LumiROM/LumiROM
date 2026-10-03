@@ -76,10 +76,13 @@ BUILD_INCREMENTAL_OTA() {
 
     chmod +x "$IMG2SDAT_BIN"
 
-    local WORK_DIR_INC
+    local WORK_DIR_INC TEMP_DIR
     mkdir -p "$(pwd)/TMP"
     WORK_DIR_INC="$(mktemp -d -p "$(pwd)/TMP")"
-    trap 'rm -rf "$WORK_DIR_INC"' EXIT
+    TEMP_DIR="$(mktemp -d -p "$(pwd)/TMP")"
+    trap 'rm -rf "$WORK_DIR_INC" "$TEMP_DIR"' EXIT
+
+    export TMPDIR="$TEMP_DIR"
 
     echo "${BLUE}Extracting source target files...${RESET}"
     if ! unzip -q "$SOURCE_ZIP" -d "$WORK_DIR_INC/source"; then
