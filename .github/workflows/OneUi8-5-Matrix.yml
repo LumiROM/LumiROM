@@ -59,7 +59,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Free disk space (1/3)
       run: |
@@ -258,7 +258,15 @@ jobs:
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" &
+        DECOMPILE "$APKTOOL" \
+          "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" &
         DECOMPILE "$APKTOOL" \
           "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" &
         wait
@@ -277,8 +285,11 @@ jobs:
         PATCH_FLAG_SECURE "$WORK_DIR/services"
         PATCH_SECURE_FOLDER "$WORK_DIR/services"
         CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
+        DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
         PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
         PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
+        ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+        ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
 
     - name: Recompile framework
       shell: bash
@@ -291,16 +302,41 @@ jobs:
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
         RECOMPILE "$APKTOOL" "$WORK_DIR/services" \
           "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/framework" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
+        RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" \
+          "FIRMWARE/system/system/framework" "$WORK_DIR" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" \
           "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk" &
+        REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" \
+          "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" &
         REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" \
           "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" &
         wait
+        if [ ! -f "$WORK_DIR/SecSettings_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ] || \
+           [ ! -f "$WORK_DIR/framework.jar" ] || \
+           [ ! -f "$WORK_DIR/services.jar" ] || \
+           [ ! -f "$WORK_DIR/knoxsdk.jar" ] || \
+           [ ! -f "$WORK_DIR/samsungkeystoreutils.jar" ]; then
+          echo "ERROR: a decompiled artifact failed to recompile (see the log above). Aborting."
+          exit 1
+        fi
+        FIX_FRAMEWORK_MIME \
+          "FIRMWARE/system/system/framework/framework.jar" \
+          "$WORK_DIR/framework.jar"
         cp -fv "$WORK_DIR"/*.jar \
           "FIRMWARE/system/system/framework/"
         if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
           cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" \
             "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
+        fi
+        if [ -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ]; then
+          cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" \
+            "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
         fi
         if [ -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ]; then
           cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" \
@@ -436,7 +472,7 @@ jobs:
 
     - name: Upload OTA manifests
       if: ${{ github.event.inputs.ZIP_IMG != 'true' && steps.ota-cap.outputs.can_ota == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ota-manifests-${{ matrix.device }}
         path: OTA_MANIFESTS/
@@ -453,7 +489,7 @@ jobs:
 
     steps:
     - name: Download OTA manifests
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: ota-manifests-*
         path: OTA_MANIFESTS/

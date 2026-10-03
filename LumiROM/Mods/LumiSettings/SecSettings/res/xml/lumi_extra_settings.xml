@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen android:title="@string/lumi_extra_settings_title" settings:hierarchicalParentFragment="io.buizel.lumi.settings.LumiSettingsFragment" settings:topLevelPreferenceKey="lumi_extra_settings"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:settings="http://schemas.android.com/apk/res-auto">
+    <SecSwitchPreference android:title="@string/lumi_asks_title" android:key="lumi_asks" settings:controller="io.buizel.lumi.settings.pm.ASKSPreferenceController" />
+    <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <SecSwitchPreferenceScreen android:title="@string/lumi_hide_dev_title" android:key="lumi_hide_dev" android:fragment="io.buizel.lumi.settings.extra.HideDeveloperStatusFragment" settings:controller="io.buizel.lumi.settings.extra.HideDeveloperStatusPreferenceController" />
+</PreferenceScreen>

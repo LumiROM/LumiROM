@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">ASKS 비활성화</string>
+    <string name="lumi_device_name_title">기기 이름</string>
+    <string name="lumi_dialog_reboot_msg">변경 사항을 적용하려면 재시작해야 합니다.</string>
+    <string name="lumi_dialog_reboot_negative">나중에</string>
+    <string name="lumi_dialog_reboot_positive">재부팅</string>
+    <string name="lumi_dialog_reboot_title">재부팅 필요</string>
+    <string name="lumi_extra_settings_title">추가 설정</string>
+    <string name="lumi_hide_dev_title">개발자 상태 숨기기</string>
+    <string name="lumi_launcher_anim_type_title">런처 애니메이션 스타일</string>
+    <string name="lumi_menu_item_reboot_download_title">Download로 재부팅</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Recovery로 재부팅</string>
+    <string name="lumi_menu_item_reboot_title">재부팅</string>
+    <string name="lumi_menu_reboot_title">재부팅 메뉴</string>
+    <string name="lumi_rom_version_title">ROM 버전</string>
+    <string name="lumi_settings_title">LumiROM 설정</string>
+    <string name="lumi_ui_settings_title">UI 설정</string>
+    <string name="lumi_updates_title">ROM 업데이트</string>
+    <string name="keywords_lumi_settings">LumiROM 설정</string>
+</resources>

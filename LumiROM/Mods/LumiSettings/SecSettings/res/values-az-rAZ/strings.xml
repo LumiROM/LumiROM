@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">ASKS-i deaktiv et</string>
+    <string name="lumi_device_name_title">Cihaz adı</string>
+    <string name="lumi_dialog_reboot_msg">Dəyişiklikləri tətbiq etmək üçün yenidən başlatma tələb olunur.</string>
+    <string name="lumi_dialog_reboot_negative">İndi yox</string>
+    <string name="lumi_dialog_reboot_positive">Yenidən başlat</string>
+    <string name="lumi_dialog_reboot_title">Yenidən başlatma tələb olunur</string>
+    <string name="lumi_extra_settings_title">Əlavə parametrlər</string>
+    <string name="lumi_hide_dev_title">Developer seçimlərini gizlət</string>
+    <string name="lumi_launcher_anim_type_title">Launcher animasiyasının tipi</string>
+    <string name="lumi_menu_item_reboot_download_title">Download rejimində yenidən başladın</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Bərpa rejimində yenidən başladın</string>
+    <string name="lumi_menu_item_reboot_title">Yenidən başlat</string>
+    <string name="lumi_menu_reboot_title">Yenidən başlatma seçimləri</string>
+    <string name="lumi_rom_version_title">ROM versiyası</string>
+    <string name="lumi_settings_title">LumiROM Parametrləri</string>
+    <string name="lumi_ui_settings_title">İstifadəçi interfeysi parametrləri</string>
+    <string name="lumi_updates_title">ROM-u yenilə</string>
+    <string name="keywords_lumi_settings">LumiROM Parametrləri</string>
+</resources>

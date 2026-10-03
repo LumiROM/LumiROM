@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Çaktivizo ASKS</string>
+    <string name="lumi_device_name_title">Emri i pajisjes</string>
+    <string name="lumi_dialog_reboot_msg">Për të aplikuar ndryshimet, kërkohet një rinisje.</string>
+    <string name="lumi_dialog_reboot_negative">Jo tani</string>
+    <string name="lumi_dialog_reboot_positive">Rinisje</string>
+    <string name="lumi_dialog_reboot_title">Kërkohet rinisje</string>
+    <string name="lumi_extra_settings_title">Cilësimet ekstra</string>
+    <string name="lumi_hide_dev_title">Fshih statusin e zhvilluesit</string>
+    <string name="lumi_launcher_anim_type_title">Lloji i animacionit të launcher-it</string>
+    <string name="lumi_menu_item_reboot_download_title">Rinis në Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Rinis në Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Rinis</string>
+    <string name="lumi_menu_reboot_title">Opsionet e rinisjes</string>
+    <string name="lumi_rom_version_title">Versioni i ROM</string>
+    <string name="lumi_settings_title">Cilësimet e LumiROM</string>
+    <string name="lumi_ui_settings_title">Cilësimet e UI</string>
+    <string name="lumi_updates_title">Përditëso ROM</string>
+    <string name="keywords_lumi_settings">Cilësimet e LumiROM</string>
+</resources>

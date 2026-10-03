@@ -31,6 +31,9 @@ ADD_MODS() {
         echo "${YELLOW} - Adding custom wallpapers${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/wallpaper/system/system/priv-app/wallpaper-res/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/wallpaper-res/"
 
+        echo "${YELLOW} - Adding modded SamsungCamera${RESET}"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/SamsungCameraFix/system/system/priv-app/SamsungCamera/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungCamera/"
+
         echo "${GREEN} - Mods added${RESET}"
     else
         echo "${RED}The use of mods for this build have been disabled by the user${RESET}"

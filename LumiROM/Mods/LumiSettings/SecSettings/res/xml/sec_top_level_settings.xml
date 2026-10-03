@@ -1,0 +1,2 @@
+/TopLevelAdvancedFeatures/a
+    <com.android.settings.widget.HomepagePreference android:icon="@drawable/sec_ic_settings_lumi" android:title="@string/lumi_settings_title" android:key="top_level_lumi" android:summary="@string/summary_placeholder" android:order="-39999" android:fragment="io.buizel.lumi.settings.LumiSettingsFragment" settings:controller="io.buizel.lumi.settings.TopLevelLumiSettingsPreferenceController" settings:highlightableMenuKey="@string/menu_key_lumi_top_settings" settings:keywords="@string/keywords_lumi_settings" />

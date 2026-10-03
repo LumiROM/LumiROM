@@ -42,6 +42,9 @@ class ParamsPanel(VerticalScroll):
         with Horizontal(classes="switch-row"):
             yield Switch(value=False, id="imgzip")
             yield Label("Deliver partition images (.img ZIP)", classes="switch-label")
+        with Horizontal(classes="switch-row"):
+            yield Switch(value=False, id="no-target-files")
+            yield Label("Skip target files (test builds)", classes="switch-label")
 
         yield Label("Incremental from (optional)", classes="field-label")
         yield Input(placeholder="e.g. 8.6.4", id="incremental")
@@ -62,6 +65,7 @@ class ParamsPanel(VerticalScroll):
             use_ai=self.query_one("#use-ai", Switch).value,
             bpf_legacy=self.query_one("#bpf", Switch).value,
             img_zip=self.query_one("#imgzip", Switch).value,
+            skip_target_files=self.query_one("#no-target-files", Switch).value,
             incremental_from=self.query_one("#incremental", Input).value.strip(),
         )
 
@@ -75,6 +79,7 @@ class ParamsPanel(VerticalScroll):
         self.query_one("#use-ai", Switch).value = cfg.use_ai
         self.query_one("#bpf", Switch).value = cfg.bpf_legacy
         self.query_one("#imgzip", Switch).value = cfg.img_zip
+        self.query_one("#no-target-files", Switch).value = cfg.skip_target_files
         self.query_one("#incremental", Input).value = cfg.incremental_from
 
     def update_imei_tip(self, stock: str) -> None:

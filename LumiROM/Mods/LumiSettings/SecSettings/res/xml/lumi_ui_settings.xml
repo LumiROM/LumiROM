@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen android:title="@string/lumi_ui_settings_title" settings:hierarchicalParentFragment="io.buizel.lumi.settings.LumiSettingsFragment" settings:topLevelPreferenceKey="lumi_ui_settings"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:settings="http://schemas.android.com/apk/res-auto">
+    <SecDropDownPreference android:title="@string/lumi_launcher_anim_type_title" android:key="lumi_launcher_anim_type" android:summary="%s" settings:controller="io.buizel.lumi.settings.ui.LauncherAnimationTypePreferenceController" />
+</PreferenceScreen>

@@ -20,6 +20,7 @@ set_defaults() {
     USE_UI_8_TETHERING_APEX="false"
     ZIP_IMG="false"
     INCREMENTAL_FROM=""
+    SKIP_TARGET_FILES="false"
     LUMIROM_MAINTAINER="$(git config user.name 2>/dev/null)"
 }
 
@@ -54,6 +55,7 @@ usage() {
     echo "      --no-ai                Exclude Galaxy AI features"
     echo "      --bpf-legacy           Enable if your kernel BPF version is lower than 5.10"
     echo "      --img-zip              Deliver the partition images (.img) in a ZIP instead of a flashable ROM"
+    echo "      --no-target-files      Skip generating the TARGET_FILES zip (useful for test builds)"
     echo "      --incremental-from <ver>"
     echo "                             Build an incremental OTA from a previous version saved in TARGET_FILES"
     echo "  -h, --help                 Show this help"
@@ -81,6 +83,7 @@ parse_args() {
             --no-ai)      USE_GALAXY_AI="false"; shift ;;
             --bpf-legacy) USE_UI_8_TETHERING_APEX="true"; shift ;;
             --img-zip)    ZIP_IMG="true"; shift ;;
+            --no-target-files) SKIP_TARGET_FILES="true"; shift ;;
             --incremental-from) INCREMENTAL_FROM="${2:?Option $1 requires a value}"; shift 2 ;;
             -h|--help)    usage; exit 0 ;;
             *) echo "Unknown option: $1"; echo ""; usage; exit 1 ;;
@@ -142,6 +145,7 @@ setup_environment() {
     export APKTOOL="$PWD/bin/apktool/apktool.jar"
     export VNDKS_COLLECTION="$PWD/LumiROM/vndks"
     export BUILD_PARTITIONS="product,vendor,odm,system_ext,system"
+    export SKIP_TARGET_FILES
 
     # Android build-tools (zipalign/apksigner) needed by REBUILD_AND_SIGN_APK.
     # Ubuntu ships them under /usr/lib/android-sdk/build-tools/debian/ (not in PATH).
@@ -278,7 +282,11 @@ decompile_framework() {
     log_section "Patching Knox and Framework"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
+    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
     wait
 }
@@ -292,21 +300,44 @@ apply_knox_patches() {
     run PATCH_FLAG_SECURE "$WORK_DIR/services"
     run PATCH_SECURE_FOLDER "$WORK_DIR/services"
     run CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
+    run DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
     run PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
     run PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
+    run ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+    run ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
 }
 
 recompile_framework() {
     log_section "Recompiling Knox and Framework"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
+    par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
     wait
+
+    if [ ! -f "$WORK_DIR/SecSettings_rebuilt.apk" ] || \
+            [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
+            [ ! -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ] || \
+            [ ! -f "$WORK_DIR/framework.jar" ] || \
+            [ ! -f "$WORK_DIR/services.jar" ] || \
+            [ ! -f "$WORK_DIR/knoxsdk.jar" ] || \
+            [ ! -f "$WORK_DIR/samsungkeystoreutils.jar" ]; then
+        echo "${RED}ERROR: a decompiled artifact failed to recompile (see the log above). Aborting.${RESET}"
+        exit 1
+    fi
+
+    run FIX_FRAMEWORK_MIME "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
 
     run cp -fv "$WORK_DIR"/*.jar "FIRMWARE/system/system/framework/"
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
         run cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
+    fi
+    if [ -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ]; then
+        run cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
     fi
     if [ -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ]; then
         run cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
@@ -345,9 +376,16 @@ package_output() {
         fi
 
         log_section "Saving target files"
-        run CREATE_TARGET_FILES "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
+        if [ "$SKIP_TARGET_FILES" != "true" ]; then
+            run CREATE_TARGET_FILES "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
+        else
+            log_message "Skipping target files (--no-target-files)"
+        fi
 
         if [ -n "$INCREMENTAL_FROM" ]; then
+            if [ "$SKIP_TARGET_FILES" = "true" ]; then
+                log_message "[!] Target files skipped: this version won't be available as a base for a future incremental OTA."
+            fi
             log_section "Building incremental OTA"
             source scripts/package/build_incremental_ota.sh
             run BUILD_INCREMENTAL_OTA "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"

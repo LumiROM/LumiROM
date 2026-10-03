@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Dezactivare ASKS</string>
+    <string name="lumi_device_name_title">Nume dispozitiv</string>
+    <string name="lumi_dialog_reboot_msg">Pentru aplicarea modificărilor, este necesară o repornire.</string>
+    <string name="lumi_dialog_reboot_negative">Nu acum</string>
+    <string name="lumi_dialog_reboot_positive">Reporniți</string>
+    <string name="lumi_dialog_reboot_title">O repornire este necesară</string>
+    <string name="lumi_extra_settings_title">Setări suplimentare</string>
+    <string name="lumi_hide_dev_title">Ascundeți status-ul de dezvoltator</string>
+    <string name="lumi_launcher_anim_type_title">Tipul de animație a lansatorului</string>
+    <string name="lumi_menu_item_reboot_download_title">Reporniți în modul Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Reporniți în modul Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Reporniți</string>
+    <string name="lumi_menu_reboot_title">Opțiuni de repornire</string>
+    <string name="lumi_rom_version_title">Versiune ROM</string>
+    <string name="lumi_settings_title">Setări LumiROM</string>
+    <string name="lumi_ui_settings_title">Setări IU</string>
+    <string name="lumi_updates_title">Actualizează ROM</string>
+    <string name="keywords_lumi_settings">Setări LumiROM</string>
+</resources>

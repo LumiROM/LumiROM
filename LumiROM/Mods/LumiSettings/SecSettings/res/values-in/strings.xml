@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Nonaktifkan ASKS</string>
+    <string name="lumi_device_name_title">Nama perangkat</string>
+    <string name="lumi_dialog_reboot_msg">Untuk menerapkan perubahan, diperlukan memulai ulang.</string>
+    <string name="lumi_dialog_reboot_negative">Tidak sekarang</string>
+    <string name="lumi_dialog_reboot_positive">Mulai ulang</string>
+    <string name="lumi_dialog_reboot_title">Mulai ulang diperlukan</string>
+    <string name="lumi_extra_settings_title">Pengaturan ekstra</string>
+    <string name="lumi_hide_dev_title">Sembunyikan status pengembang</string>
+    <string name="lumi_launcher_anim_type_title">Jenis animasi peluncur</string>
+    <string name="lumi_menu_item_reboot_download_title">Mulai ulang ke Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Mulai ulang ke Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Mulai ulang</string>
+    <string name="lumi_menu_reboot_title">Opsi mulai ulang</string>
+    <string name="lumi_rom_version_title">Versi ROM</string>
+    <string name="lumi_settings_title">Pengaturan LumiROM</string>
+    <string name="lumi_ui_settings_title">Pengaturan UI</string>
+    <string name="lumi_updates_title">Perbarui ROM</string>
+    <string name="keywords_lumi_settings">Pengaturan LumiROM</string>
+</resources>

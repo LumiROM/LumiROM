@@ -323,3 +323,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **[samloader](https://github.com/samloader/samloader)** - Licensed under GPL-3.0
 - **[Textual](https://github.com/Textualize/textual)** - Licensed under the MIT License (TUI only)
 - **[textual-tty](https://github.com/bitplane/textual-tty)** - WTFPL with one additional clause (TUI only)
+- **[UN1CA](https://github.com/salvogiangri/UN1CA)** - Licensed under GPL-3.0 (LumiSettings and KnoxPatch are based on it)

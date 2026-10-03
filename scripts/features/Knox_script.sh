@@ -134,28 +134,6 @@ PATCH_SECURE_FOLDER() {
 }
 
 
-PATCH_PRIVATE_SHARE() {
-    echo ""
-	if [ "$#" -ne 1 ]; then
-        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
-        return 1
-    fi
-
-    echo "${YELLOW}Patching private share.${RESET}"
-	
-    local FILE="${1}/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali"
-    local METHOD_NAME=".method public isVerifiableIntegrity()Z"
-    local REPLACE_BODY='
-    .locals 1
- 
-    const/4 v0, 0x1
- 
-    return v0
-    '
-	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
-}
-
-
 CUSTOM_PLATFORM_SIGNATURE() {
     echo ""
 	if [ "$#" -ne 2 ]; then
@@ -202,7 +180,7 @@ CUSTOM_PLATFORM_SIGNATURE() {
 DISABLE_SIGNATURE_VERIFICATION() {
     echo ""
 	if [ "$#" -ne 1 ]; then
-        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+        echo "Usage: ${FUNCNAME[0]} <DECOMPILED_FRAMEWORK_DIRECTORY>"
         return 1
     fi
 

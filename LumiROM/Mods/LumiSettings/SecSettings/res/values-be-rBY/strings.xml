@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Адключыць ASKS</string>
+    <string name="lumi_device_name_title">Імя прылады</string>
+    <string name="lumi_dialog_reboot_msg">Для прымянення змяненняў неабходная перазагрузка.</string>
+    <string name="lumi_dialog_reboot_negative">Не зараз</string>
+    <string name="lumi_dialog_reboot_positive">Перазагрузіць</string>
+    <string name="lumi_dialog_reboot_title">Патрабуецца перазагрузка</string>
+    <string name="lumi_extra_settings_title">Дадатковыя налады</string>
+    <string name="lumi_hide_dev_title">Схаваць статус распрацоўніка</string>
+    <string name="lumi_launcher_anim_type_title">Тып анімацыі лаўнчера</string>
+    <string name="lumi_menu_item_reboot_download_title">Перазагрузка ў Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Перазагрузка ў Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Перазагрузка</string>
+    <string name="lumi_menu_reboot_title">Опцыі перазагрузкі</string>
+    <string name="lumi_rom_version_title">Версія прашыўкі</string>
+    <string name="lumi_settings_title">Налады LumiROM</string>
+    <string name="lumi_ui_settings_title">Налады інтэрфейсу карыстальніка</string>
+    <string name="lumi_updates_title">Абнавіць ROM</string>
+    <string name="keywords_lumi_settings">Налады LumiROM</string>
+</resources>
