@@ -22,6 +22,8 @@
 - Fixed the media picker crash loop caused by missing `res/*.mime.types` resources in the rebuilt `framework.jar`.
 - Fixed apps that require knox patching, things like work profile should now work.
 - Fixed notification round style, now if you apply an effect, it will correctly render on the phone.
+- Fixed Samsung Camera, now 0.5x displays properly and fully works.
+- [a32] Fixed portrait mode that generated a green picture instead of the normal photo.
 
 ## More
 - [Repo] New `LumiSettings` mod with its own build pipeline: `framework.jar` and `SecSettingsIntelligence` are now decompiled, patched and rebuilt.
