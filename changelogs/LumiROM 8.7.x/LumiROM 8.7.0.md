@@ -30,6 +30,7 @@
 - [Repo] New `KnoxPatch` mod: static hooks in `framework.jar`, `knoxsdk.jar` and `samsungkeystoreutils.jar`.
 - [Repo] `DISABLE_SIGNATURE_VERIFICATION` now patches `framework.jar`, and the dead `PATCH_PRIVATE_SHARE` was removed.
 - [Repo] Added a WSM debloat step so samsung watches won't be forgotten after a reboot.
+- [Repo] Removed SM-A226B (Samsung Galaxy A22 5G) support.
 
 # Screenshots
 
