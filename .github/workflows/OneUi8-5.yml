@@ -374,7 +374,23 @@ jobs:
       run: |
         source scripts/package/zip_creation.sh
         UPDATE_ZIP_SCRIPT "$FIRM_DIR"
-        
+
+    - name: Inject SamsungCamera cleanup (full OTA)
+      if: ${{ github.event.inputs.ZIP_IMG != 'true' }}
+      shell: bash
+      run: |
+        SCRIPT="$(pwd)/makerom/META-INF/com/google/android/updater-script"
+        if [ -f "$SCRIPT" ] && ! grep -q "LumiROM SamsungCamera dirty-flash cleanup" "$SCRIPT"; then
+          BLOCK="$(mktemp)"
+          printf '%s\n' '# --- LumiROM SamsungCamera dirty-flash cleanup ---' \
+            'ui_print("Cleaning stale SamsungCamera state...");' \
+            'run_program("/sbin/sh", "-c", "grep -q \" /data \" /proc/mounts || mount -o rw /data 2>/dev/null; rm -rf /data/system/package_cache/* /data/dalvik-cache/*SamsungCamera* /data/app/*com.sec.android.app.camera* /data/app/~~*/com.sec.android.app.camera* /data/data/com.sec.android.app.camera /data/user/0/com.sec.android.app.camera /data/user_de/0/com.sec.android.app.camera 2>/dev/null");' \
+            > "$BLOCK"
+          sed -i "/^# --- End patching dynamic partitions ---$/r $BLOCK" "$SCRIPT"
+          rm -f "$BLOCK"
+          echo "Injected SamsungCamera cleanup into full OTA updater-script."
+        fi
+
     - name: Prepare flashable zip
       if: ${{ github.event.inputs.ZIP_IMG != 'true' }}
       shell: bash
@@ -435,6 +451,32 @@ jobs:
       run: |
         source scripts/package/build_incremental_ota.sh
         BUILD_INCREMENTAL_OTA "$PWD/prev-target-files.zip" "$OUT_DIR"
+
+    - name: Inject SamsungCamera cleanup (incremental OTA)
+      if: ${{ github.event.inputs.INCREMENTAL_FROM != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
+      shell: bash
+      run: |
+        INC_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" | head -n 1)
+        if [ -z "$INC_ZIP" ]; then
+          echo "No incremental zip found, skipping."
+          exit 0
+        fi
+        INC_ABS="$(readlink -f "$INC_ZIP")"
+        TMP="$(mktemp -d)"
+        mkdir -p "$TMP/META-INF/com/google/android"
+        unzip -p "$INC_ABS" META-INF/com/google/android/updater-script > "$TMP/META-INF/com/google/android/updater-script"
+        if ! grep -q "LumiROM SamsungCamera dirty-flash cleanup" "$TMP/META-INF/com/google/android/updater-script"; then
+          BLOCK="$(mktemp)"
+          printf '%s\n' '# --- LumiROM SamsungCamera dirty-flash cleanup ---' \
+            'ui_print("Cleaning stale SamsungCamera state...");' \
+            'run_program("/sbin/sh", "-c", "grep -q \" /data \" /proc/mounts || mount -o rw /data 2>/dev/null; rm -rf /data/system/package_cache/* /data/dalvik-cache/*SamsungCamera* /data/app/*com.sec.android.app.camera* /data/app/~~*/com.sec.android.app.camera* /data/data/com.sec.android.app.camera /data/user/0/com.sec.android.app.camera /data/user_de/0/com.sec.android.app.camera 2>/dev/null");' \
+            > "$BLOCK"
+          sed -i "/^# --- End patching dynamic partitions ---$/r $BLOCK" "$TMP/META-INF/com/google/android/updater-script"
+          rm -f "$BLOCK"
+        fi
+        ( cd "$TMP" && zip -q "$INC_ABS" META-INF/com/google/android/updater-script )
+        rm -rf "$TMP"
+        echo "Injected SamsungCamera cleanup into incremental OTA."
 
     - name: Upload ROM to ${{ github.event.inputs.DESTINATION }}
       env:

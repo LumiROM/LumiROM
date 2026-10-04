@@ -353,6 +353,45 @@ build_rom() {
     run BUILD_IMG "$FIRM_DIR" "$OUTPUT_FILESYSTEM" "$OUT_DIR"
 }
 
+# =====================================================================
+#  SamsungCamera dirty-flash cleanup (injected into updater-script)
+#  Fixes the ported 16.0 camera not opening after a dirty flash:
+#  removes stale package_cache / dalvik / Galaxy Store update so the
+#  system APK (different signature) is picked up cleanly.
+# =====================================================================
+LUMI_CAMERA_CLEANUP_BLOCK() {
+    cat <<'EOF'
+# --- LumiROM SamsungCamera dirty-flash cleanup ---
+ui_print("Cleaning stale SamsungCamera state...");
+run_program("/sbin/sh", "-c", "grep -q \" /data \" /proc/mounts || mount -o rw /data 2>/dev/null; rm -rf /data/system/package_cache/* /data/dalvik-cache/*SamsungCamera* /data/app/*com.sec.android.app.camera* /data/app/~~*/com.sec.android.app.camera* /data/data/com.sec.android.app.camera /data/user/0/com.sec.android.app.camera /data/user_de/0/com.sec.android.app.camera 2>/dev/null");
+EOF
+}
+
+INJECT_CAMERA_CLEANUP_FILE() {
+    local SCRIPT="$1"
+    [ -f "$SCRIPT" ] || return 0
+    grep -q "LumiROM SamsungCamera dirty-flash cleanup" "$SCRIPT" && return 0
+    local BLOCK_FILE
+    BLOCK_FILE="$(mktemp)"
+    LUMI_CAMERA_CLEANUP_BLOCK > "$BLOCK_FILE"
+    sed -i "/^# --- End patching dynamic partitions ---\$/r $BLOCK_FILE" "$SCRIPT"
+    rm -f "$BLOCK_FILE"
+}
+
+INJECT_CAMERA_CLEANUP_ZIP() {
+    local ZIP_FILE="$1"
+    [ -f "$ZIP_FILE" ] || return 0
+    local ZIP_ABS TMP_DIR
+    ZIP_ABS="$(readlink -f "$ZIP_FILE")"
+    TMP_DIR="$(mktemp -d)"
+    mkdir -p "$TMP_DIR/META-INF/com/google/android"
+    if unzip -p "$ZIP_ABS" META-INF/com/google/android/updater-script > "$TMP_DIR/META-INF/com/google/android/updater-script" 2>/dev/null; then
+        INJECT_CAMERA_CLEANUP_FILE "$TMP_DIR/META-INF/com/google/android/updater-script"
+        ( cd "$TMP_DIR" && zip -q "$ZIP_ABS" META-INF/com/google/android/updater-script )
+    fi
+    rm -rf "$TMP_DIR"
+}
+
 package_output() {
     source scripts/package/zip_creation.sh
 
@@ -364,6 +403,7 @@ package_output() {
 
         log_section "Creating flashable ZIP"
         run UPDATE_ZIP_SCRIPT "$FIRM_DIR"
+        INJECT_CAMERA_CLEANUP_FILE "$(pwd)/makerom/META-INF/com/google/android/updater-script"
         run FLASHABLE_ZIP_CREATION
 
         log_section "Signing OTA package"
@@ -389,6 +429,10 @@ package_output() {
             log_section "Building incremental OTA"
             source scripts/package/build_incremental_ota.sh
             run BUILD_INCREMENTAL_OTA "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
+            INCREMENTAL_ZIP="$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" 2>/dev/null | head -n 1)"
+            if [ -n "$INCREMENTAL_ZIP" ]; then
+                INJECT_CAMERA_CLEANUP_ZIP "$INCREMENTAL_ZIP"
+            fi
         fi
     fi
 }
