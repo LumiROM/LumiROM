@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false 
       matrix:
-        device: [SM-A325F, SM-A325M, SM-M325F, SM-A225F, SM-E225F, SM-A226B]
+        device: [SM-A325F, SM-A325M, SM-M325F, SM-A225F, SM-E225F]
 
     outputs:
       can_ota: ${{ steps.ota-cap.outputs.can_ota }}
@@ -150,7 +150,7 @@ jobs:
             TARGET_DEVICE="SM-A346B"
             TARGET_CSC="EUX"
             TARGET_IMEI="353117555323497"
-        elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-E225F" || "$STOCK_DEVICE" == "SM-A226B" ]]; then
+        elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-E225F" ]]; then
               TARGET_DEVICE="SM-A245F"
               TARGET_CSC="XID"
               TARGET_IMEI="358212589089183"

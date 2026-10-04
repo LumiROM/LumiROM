@@ -19,7 +19,6 @@ BASE_DEVICE_MAP = {
     "SM-A225M": "SM-A245F",
     "SM-E225F": "SM-A245F",
     "SM-M225F": "SM-A245F",
-    "SM-A226B": "SM-A245F",
 }
 
 BASE_DEVICE_IMEI = {

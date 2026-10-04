@@ -41,7 +41,6 @@ Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/OneUI8.5/c
 | Device | Model | Fingerprint | Base |
 | :--- | :--- | :--- | :--- |
 | Samsung Galaxy A22 | SM-A225F | Side-FP | SM-A245F (A24) |
-| Samsung Galaxy A22 5G | SM-A226B | Side-FP | SM-A245F (A24) |
 | Samsung Galaxy A32 | SM-A325F | FOD | SM-A346B (A34) |
 | Samsung Galaxy A32 | SM-A325M | FOD | SM-A346B (A34) |
 | Samsung Galaxy F22 | SM-E225F | Side-FP | SM-A245F (A24) |
