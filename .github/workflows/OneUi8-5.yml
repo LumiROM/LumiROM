@@ -581,7 +581,7 @@ jobs:
         cd /tmp/cloudy
         git config user.name "LumiROM Bot"
         git config user.email "noreply@github.com"
-        git add "updater/${DEVICE_CODENAME}.json" "updater/ota/${DEVICE_CODENAME}.json"
+        git add updater
         git diff --cached --quiet && echo "Manifest unchanged, nothing to push." && exit 0
         git commit -m "OTA: ${LUMIROM_VERSION} for ${DEVICE_CODENAME}"
         git push
