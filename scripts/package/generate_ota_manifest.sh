@@ -96,7 +96,7 @@ _BUILD_RELEASE_JSON() {
             version_code: ($version_code | if length > 0 then tonumber else null end),
             build_date: $build_date,
             android_version: $android_version,
-            oneui_version: $oneui_code,
+            oneui_version: $oneui_version,
             security_patch: $security_patch,
             build_fingerprint: $fingerprint,
             device_model: $device_model,
