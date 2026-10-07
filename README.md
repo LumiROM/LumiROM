@@ -41,7 +41,6 @@ Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/OneUI8.5/c
 | Device | Model | Fingerprint | Base |
 | :--- | :--- | :--- | :--- |
 | Samsung Galaxy A22 | SM-A225F | Side-FP | SM-A245F (A24) |
-| Samsung Galaxy A22 5G | SM-A226B | Side-FP | SM-A245F (A24) |
 | Samsung Galaxy A32 | SM-A325F | FOD | SM-A346B (A34) |
 | Samsung Galaxy A32 | SM-A325M | FOD | SM-A346B (A34) |
 | Samsung Galaxy F22 | SM-E225F | Side-FP | SM-A245F (A24) |
@@ -323,3 +322,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **[samloader](https://github.com/samloader/samloader)** - Licensed under GPL-3.0
 - **[Textual](https://github.com/Textualize/textual)** - Licensed under the MIT License (TUI only)
 - **[textual-tty](https://github.com/bitplane/textual-tty)** - WTFPL with one additional clause (TUI only)
+- **[UN1CA](https://github.com/salvogiangri/UN1CA)** - Licensed under GPL-3.0 (LumiSettings and KnoxPatch are based on it)

@@ -17,7 +17,7 @@ GET_BASE_DEVICE() {
         SM-A325F|SM-A325M|SM-M325F)
             echo "SM-A346B"
             ;;
-        SM-A225F|SM-A225M|SM-E225F|SM-M225F|SM-A226B)
+        SM-A225F|SM-A225M|SM-E225F|SM-M225F)
             echo "SM-A245F"
             ;;
         *)
@@ -167,7 +167,7 @@ DOWNLOAD_FIRMWARE_LUMI() {
         export TARGET_DEVICE="SM-A346B"
         echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
         aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/FW/SM-A346B/SM-A346B.zip?download=true" || return 1
-    elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-A225M" || "$STOCK_DEVICE" == "SM-E225F" || "$STOCK_DEVICE" == "SM-M225F" || "$STOCK_DEVICE" == "SM-A226B" ]]; then
+    elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-A225M" || "$STOCK_DEVICE" == "SM-E225F" || "$STOCK_DEVICE" == "SM-M225F" ]]; then
         export TARGET_DEVICE="SM-A245F"
         echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
         aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/FW/SM-A245F_4_20260220151250_g2yvot48sr_fac_A245FXXSBEZB5_A245FOXMBEZB5_A245FXXSBEZB5_A245FXXSBEZB5_SEK.zip?download=true" || return 1

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Wyłącz ASKS</string>
+    <string name="lumi_device_name_title">Nazwa urządzenia</string>
+    <string name="lumi_dialog_reboot_msg">Aby zastosować zmiany, wymagane jest ponowne uruchomienie.</string>
+    <string name="lumi_dialog_reboot_negative">Nie teraz</string>
+    <string name="lumi_dialog_reboot_positive">Uruchom ponownie</string>
+    <string name="lumi_dialog_reboot_title">Wymagane ponowne uruchomienie</string>
+    <string name="lumi_extra_settings_title">Dodatkowe ustawienia</string>
+    <string name="lumi_hide_dev_title">Ukryj status dewelopera</string>
+    <string name="lumi_launcher_anim_type_title">Typ animacji ekranu głównego</string>
+    <string name="lumi_menu_item_reboot_download_title">Uruchom ponownie do trybu Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Uruchom ponownie do trybu Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Uruchom ponownie</string>
+    <string name="lumi_menu_reboot_title">Opcje ponownego uruchamiania</string>
+    <string name="lumi_rom_version_title">Wersja ROM-u</string>
+    <string name="lumi_settings_title">Ustawienia LumiROM</string>
+    <string name="lumi_ui_settings_title">Ustawienia interfejsu</string>
+    <string name="lumi_updates_title">Zaktualizuj ROM</string>
+    <string name="keywords_lumi_settings">Ustawienia LumiROM</string>
+</resources>

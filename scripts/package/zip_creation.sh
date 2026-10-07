@@ -20,9 +20,6 @@ UPDATE_ZIP_SCRIPT() {
         elif [[ "$DEVICE" == "SM-A225F" ]]; then
             DEVICE_CODENAME="a22"
             DISPLAY_NAME="Galaxy A22 4G"
-        elif [[ "$DEVICE" == "SM-A226B" ]]; then
-            DEVICE_CODENAME="a22x"
-            DISPLAY_NAME="Galaxy A22 5G"
         elif [[ "$DEVICE" == "SM-M325F" ]]; then
             DEVICE_CODENAME="m32"
             DISPLAY_NAME="Galaxy M32 4G"
@@ -77,8 +74,6 @@ FLASHABLE_ZIP_CREATION() {
             DEVICE_CODENAME="a32m"
         elif [[ "$DEVICE" == "SM-A225F" ]]; then
             DEVICE_CODENAME="a22"
-        elif [[ "$DEVICE" == "SM-A226B" ]]; then
-            DEVICE_CODENAME="a22x"
         elif [[ "$DEVICE" == "SM-M325F" ]]; then
             DEVICE_CODENAME="m32"
         elif [[ "$DEVICE" == "SM-E225F" ]]; then
@@ -215,8 +210,6 @@ IMG_ZIP_CREATION() {
         DEVICE_CODENAME="a32m"
     elif [[ "$DEVICE" == "SM-A225F" ]]; then
         DEVICE_CODENAME="a22"
-    elif [[ "$DEVICE" == "SM-A226B" ]]; then
-        DEVICE_CODENAME="a22x"
     elif [[ "$DEVICE" == "SM-M325F" ]]; then
         DEVICE_CODENAME="m32"
     elif [[ "$DEVICE" == "SM-E225F" ]]; then

@@ -19,7 +19,6 @@ BASE_DEVICE_MAP = {
     "SM-A225M": "SM-A245F",
     "SM-E225F": "SM-A245F",
     "SM-M225F": "SM-A245F",
-    "SM-A226B": "SM-A245F",
 }
 
 BASE_DEVICE_IMEI = {
@@ -72,6 +71,7 @@ class BuildConfig:
     use_ai: bool = True
     bpf_legacy: bool = False
     img_zip: bool = False
+    skip_target_files: bool = False
     incremental_from: str = ""
 
     def to_args(self) -> list[str]:
@@ -86,6 +86,8 @@ class BuildConfig:
             args.append("--bpf-legacy")
         if self.img_zip:
             args.append("--img-zip")
+        if self.skip_target_files:
+            args.append("--no-target-files")
         if self.incremental_from:
             args += ["--incremental-from", self.incremental_from]
         return args

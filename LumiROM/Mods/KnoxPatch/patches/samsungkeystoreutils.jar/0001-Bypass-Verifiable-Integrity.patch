@@ -1,0 +1,12 @@
+--- a/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali
++++ b/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali
+@@ -272,8 +272,7 @@
+ .method public isVerifiableIntegrity()Z
+     .locals 1
+ 
+-    .line 125
+-    iget-boolean v0, p0, Lcom/samsung/android/security/keystore/AttestParameterSpec;->mVerifiableIntegrity:Z
++    const/4 v0, 0x1
+ 
+     return v0
+ .end method

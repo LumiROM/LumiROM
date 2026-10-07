@@ -20,7 +20,6 @@ GET_INCREMENTAL_DISPLAY_NAME() {
         a32) echo "Galaxy A32 4G" ;;
         a32m) echo "Galaxy A32 4G" ;;
         a22) echo "Galaxy A22 4G" ;;
-        a22x) echo "Galaxy A22 5G" ;;
         m32) echo "Galaxy M32 4G" ;;
         f22) echo "Galaxy F22 4G" ;;
         *) echo "Galaxy Device" ;;
@@ -32,7 +31,6 @@ GET_INCREMENTAL_CODENAME() {
         SM-A325F) echo "a32" ;;
         SM-A325M) echo "a32m" ;;
         SM-A225F) echo "a22" ;;
-        SM-A226B) echo "a22x" ;;
         SM-M325F) echo "m32" ;;
         SM-E225F) echo "f22" ;;
         *) echo "unknown" ;;
@@ -76,10 +74,13 @@ BUILD_INCREMENTAL_OTA() {
 
     chmod +x "$IMG2SDAT_BIN"
 
-    local WORK_DIR_INC
+    local WORK_DIR_INC TEMP_DIR
     mkdir -p "$(pwd)/TMP"
     WORK_DIR_INC="$(mktemp -d -p "$(pwd)/TMP")"
-    trap 'rm -rf "$WORK_DIR_INC"' EXIT
+    TEMP_DIR="$(mktemp -d -p "$(pwd)/TMP")"
+    trap 'rm -rf "$WORK_DIR_INC" "$TEMP_DIR"' EXIT
+
+    export TMPDIR="$TEMP_DIR"
 
     echo "${BLUE}Extracting source target files...${RESET}"
     if ! unzip -q "$SOURCE_ZIP" -d "$WORK_DIR_INC/source"; then

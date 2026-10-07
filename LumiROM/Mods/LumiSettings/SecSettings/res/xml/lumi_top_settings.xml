@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen android:title="@string/lumi_settings_title" settings:hierarchicalParentFragment="com.android.settings.homepage.TopLevelSettings" settings:keywords="@string/keywords_lumi_settings" settings:topLevelPreferenceKey="top_level_lumi"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:settings="http://schemas.android.com/apk/res-auto">
+    <com.android.settingslib.widget.LayoutPreference android:layout="@layout/lumi_settings_logo_layout" android:selectable="false" android:key="lumi_logo" />
+    <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <Preference android:title="@string/lumi_rom_version_title" android:key="lumi_rom_version" android:summary="@string/summary_placeholder" settings:controller="io.buizel.lumi.settings.ROMVersionPreferenceController" />
+    <Preference android:title="@string/lumi_device_name_title" android:key="lumi_device_name" android:summary="@string/summary_placeholder" settings:controller="io.buizel.lumi.settings.DeviceNamePreferenceController" />
+    <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <io.buizel.lumi.settings.preference.IconPreference android:icon="@drawable/ic_lumi_settings_ui" android:title="@string/lumi_ui_settings_title" android:key="lumi_ui_settings" android:fragment="io.buizel.lumi.settings.ui.UISettingsFragment" settings:controller="io.buizel.lumi.settings.ui.UISettingsPreferenceController" />
+    <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <io.buizel.lumi.settings.preference.IconPreference android:icon="@drawable/ic_lumi_settings_extra" android:title="@string/lumi_extra_settings_title" android:key="lumi_extra_settings" android:fragment="io.buizel.lumi.settings.extra.ExtraSettingsFragment" settings:controller="io.buizel.lumi.settings.extra.ExtraSettingsPreferenceController" />
+</PreferenceScreen>

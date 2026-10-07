@@ -66,6 +66,7 @@ initialize_logs() {
         echo "Use Galaxy AI: $use_galaxy_ai"
         echo "Use UI 8 Tethering Apex: $use_ui_8_tethering_apex"
         echo "Output Filesystem: $output_filesystem"
+        echo "Skip Target Files: ${SKIP_TARGET_FILES:-false}"
         echo "${BLUE}======================================${RESET}"
         echo
     } > "$LOG_FILE"
@@ -85,6 +86,7 @@ initialize_logs() {
         echo "Use Galaxy AI: $use_galaxy_ai"
         echo "Use UI 8 Tethering Apex: $use_ui_8_tethering_apex"
         echo "Output Filesystem: $output_filesystem"
+        echo "Skip Target Files: ${SKIP_TARGET_FILES:-false}"
         echo "${BLUE}======================================${RESET}"
         echo
     } > "$LOG_FILE"

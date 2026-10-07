@@ -1,0 +1,46 @@
+--- a/smali_classes3/android/os/SystemProperties.smali
++++ b/smali_classes3/android/os/SystemProperties.smali
+@@ -405,11 +405,20 @@
+ .end method
+ 
+ .method public static whitelist get(Ljava/lang/String;)Ljava/lang/String;
+-    .locals 0
++    .locals 1
+     .annotation runtime Landroid/annotation/SystemApi;
+     .end annotation
+ 
+     .line 151
++    invoke-static {p0}, Lio/buizel/lumi/KnoxPatchHooks;->onSystemPropertiesGet(Ljava/lang/String;)Ljava/lang/String;
++
++    move-result-object v0
++
++    if-eqz v0, :cond_0
++
++    return-object v0
++
++    :cond_0
+     invoke-static {p0}, Landroid/os/SystemProperties;->native_get(Ljava/lang/String;)Ljava/lang/String;
+ 
+     move-result-object p0
+@@ -418,11 +427,20 @@
+ .end method
+ 
+ .method public static whitelist get(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+-    .locals 0
++    .locals 1
+     .annotation runtime Landroid/annotation/SystemApi;
+     .end annotation
+ 
+     .line 167
++    invoke-static {p0}, Lio/buizel/lumi/KnoxPatchHooks;->onSystemPropertiesGet(Ljava/lang/String;)Ljava/lang/String;
++
++    move-result-object v0
++
++    if-eqz v0, :cond_0
++
++    return-object v0
++
++    :cond_0
+     invoke-static {p0, p1}, Landroid/os/SystemProperties;->native_get(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ 
+     move-result-object p0

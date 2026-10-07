@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">ASKS बंद करें</string>
+    <string name="lumi_device_name_title">डिवाइस का नाम</string>
+    <string name="lumi_dialog_reboot_msg">बदलाव लागू करने के लिए रीस्टार्ट करना ज़रूरी है।</string>
+    <string name="lumi_dialog_reboot_negative">अभी नहीं</string>
+    <string name="lumi_dialog_reboot_positive">रीस्टार्ट</string>
+    <string name="lumi_dialog_reboot_title">रीस्टार्ट करना पड़ेगा</string>
+    <string name="lumi_extra_settings_title">अतिरिक्त सेटिंग्स</string>
+    <string name="lumi_hide_dev_title">डेवलपर स्टेटस छिपाएँ</string>
+    <string name="lumi_launcher_anim_type_title">लॉन्चर एनीमेशन टाइप</string>
+    <string name="lumi_menu_item_reboot_download_title">डाउनलोड में रीस्टार्ट करें</string>
+    <string name="lumi_menu_item_reboot_recovery_title">रिकवरी में रीस्टार्ट करें</string>
+    <string name="lumi_menu_item_reboot_title">रीस्टार्ट</string>
+    <string name="lumi_menu_reboot_title">रीस्टार्ट करने के विकल्प</string>
+    <string name="lumi_rom_version_title">ROM संस्करण</string>
+    <string name="lumi_settings_title">LumiROM सेटिंग</string>
+    <string name="lumi_ui_settings_title">यूआई सेटिंग</string>
+    <string name="lumi_updates_title">ROM अपडेट करें</string>
+    <string name="keywords_lumi_settings">LumiROM सेटिंग</string>
+</resources>

@@ -13,7 +13,6 @@ GET_DEVICE_DISPLAY_NAME() {
     case "$1" in
         a32|a32m) echo "Samsung Galaxy A32 4G" ;;
         a22) echo "Samsung Galaxy A22 4G" ;;
-        a22x) echo "Samsung Galaxy A22 5G" ;;
         m32) echo "Samsung Galaxy M32 4G" ;;
         f22) echo "Samsung Galaxy F22 4G" ;;
         *) echo "Samsung Galaxy Device" ;;
@@ -97,7 +96,7 @@ _BUILD_RELEASE_JSON() {
             version_code: ($version_code | if length > 0 then tonumber else null end),
             build_date: $build_date,
             android_version: $android_version,
-            oneui_version: $oneui_code,
+            oneui_version: $oneui_version,
             security_patch: $security_patch,
             build_fingerprint: $fingerprint,
             device_model: $device_model,

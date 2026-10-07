@@ -1,0 +1,52 @@
+--- a/smali/com/samsung/android/knox/EnterpriseDeviceManager.smali
++++ b/smali/com/samsung/android/knox/EnterpriseDeviceManager.smali
+@@ -634,47 +634,12 @@
+ .end method
+ 
+ .method public static greylist getAPILevel()I
+-    .locals 2
++    .locals 1
+ 
+-    .line 1
+-    :try_start_0
+-    invoke-static {}, Lcom/samsung/android/knox/EdmUtils;->getAPILevelForInternal()I
++    invoke-static {}, Lio/buizel/lumi/KnoxPatchHooks;->onEDMGetAPILevel()I
+ 
+-    .line 2
+-    .line 3
+-    .line 4
+     move-result v0
+-    :try_end_0
+-    .catch Ljava/lang/UnsupportedOperationException; {:try_start_0 .. :try_end_0} :catch_0
+ 
+-    .line 5
+-    return v0
+-
+-    .line 6
+-    :catch_0
+-    move-exception v0
+-
+-    .line 7
+-    sget-object v1, Lcom/samsung/android/knox/EnterpriseDeviceManager;->TAG:Ljava/lang/String;
+-
+-    .line 8
+-    .line 9
+-    invoke-virtual {v0}, Ljava/lang/UnsupportedOperationException;->getMessage()Ljava/lang/String;
+-
+-    .line 10
+-    .line 11
+-    .line 12
+-    move-result-object v0
+-
+-    .line 13
+-    invoke-static {v1, v0}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;)I
+-
+-    .line 14
+-    .line 15
+-    .line 16
+-    const/4 v0, 0x0
+-
+-    .line 17
+     return v0
+ .end method
+ 

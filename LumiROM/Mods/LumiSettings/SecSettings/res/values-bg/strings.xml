@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lumi_asks_title">Изключване на ASKS</string>
+    <string name="lumi_device_name_title">Име на устройството</string>
+    <string name="lumi_dialog_reboot_msg">За да се приложат промените, е необходим рестарт.</string>
+    <string name="lumi_dialog_reboot_negative">Не сега</string>
+    <string name="lumi_dialog_reboot_positive">Рестартиране</string>
+    <string name="lumi_dialog_reboot_title">Нужен е рестарт</string>
+    <string name="lumi_extra_settings_title">Допълнителни настройки</string>
+    <string name="lumi_hide_dev_title">Скриване на статуса на разработчика</string>
+    <string name="lumi_launcher_anim_type_title">Тип анимация на лаунчера</string>
+    <string name="lumi_menu_item_reboot_download_title">Рестартиране в режим Download</string>
+    <string name="lumi_menu_item_reboot_recovery_title">Рестартиране в режим Recovery</string>
+    <string name="lumi_menu_item_reboot_title">Рестартиране</string>
+    <string name="lumi_menu_reboot_title">Опции за рестартиране</string>
+    <string name="lumi_rom_version_title">ROM версия</string>
+    <string name="lumi_settings_title">LumiROM Настройки</string>
+    <string name="lumi_ui_settings_title">UI настройки</string>
+    <string name="lumi_updates_title">Актуализиране на ROM</string>
+    <string name="keywords_lumi_settings">LumiROM Настройки</string>
+</resources>
