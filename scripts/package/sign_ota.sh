@@ -52,3 +52,22 @@ SIGN_OTA_ZIP() {
     mv -f "$SIGNED" "$OTA_ZIP"
     echo "${GREEN}OTA package signed (otacert embedded): $OTA_ZIP${RESET}"
 }
+
+# Signs the incremental OTA zip found under a directory (defaults to
+# ./ROM/$FOLDER_NAME). Must run AFTER any post-processing that re-zips the
+# package (e.g. the SamsungCamera cleanup injection), because re-zipping
+# rewrites the EOCD and strips the whole-file signature footer, otherwise
+# RecoverySystem/Cloudy fails with "no signature in file (no footer)".
+# Usage: SIGN_INCREMENTAL_OTA [DIR]
+SIGN_INCREMENTAL_OTA() {
+    local DIR="${1:-./ROM/$FOLDER_NAME}"
+    local INC_ZIP
+
+    INC_ZIP=$(find "$DIR" -type f -name "*INCREMENTAL*.zip" 2>/dev/null | head -n 1)
+    if [ -z "$INC_ZIP" ] || [ ! -f "$INC_ZIP" ]; then
+        echo "${RED}No incremental OTA zip found in $DIR, nothing to sign.${RESET}"
+        return 1
+    fi
+
+    SIGN_OTA_ZIP "$INC_ZIP"
+}

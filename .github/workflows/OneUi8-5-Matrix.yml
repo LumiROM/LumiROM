@@ -464,6 +464,16 @@ jobs:
         rm -rf "$TMP"
         echo "Injected SamsungCamera cleanup into incremental OTA."
 
+    - name: Sign incremental OTA
+      if: ${{ github.event.inputs.INCREMENTAL_FROM != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
+      shell: bash
+      env:
+        OTA_PK8: ${{ secrets.OTA_PK8 }}
+        OTA_CERT: ${{ secrets.OTA_CERT }}
+      run: |
+        source scripts/package/sign_ota.sh
+        SIGN_INCREMENTAL_OTA
+
     - name: Upload ROM to ${{ github.event.inputs.DESTINATION }}
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}

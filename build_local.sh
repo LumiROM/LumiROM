@@ -432,6 +432,9 @@ package_output() {
             INCREMENTAL_ZIP="$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" 2>/dev/null | head -n 1)"
             if [ -n "$INCREMENTAL_ZIP" ]; then
                 INJECT_CAMERA_CLEANUP_ZIP "$INCREMENTAL_ZIP"
+
+                log_section "Signing incremental OTA"
+                run SIGN_OTA_ZIP "$INCREMENTAL_ZIP"
             fi
         fi
     fi

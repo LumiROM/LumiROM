@@ -311,6 +311,30 @@ If you don't have the Cloudy app:
 adb sideload <rom>.zip
 ```
 
+## OTA Signing
+
+Every flashable package - both the full ROM and the incremental OTA - must be signed with `signapk -w`. The signature is appended as a ZIP comment (the *footer*) that Cloudy and Android's `RecoverySystem` read before installing. Without it the device rejects the package with:
+
+```text
+Package verification failed: no signature in file (no footer)
+```
+
+Signing is fully automatic:
+- The **full ROM** is signed by `SIGN_OTA_ZIP` (`scripts/package/sign_ota.sh`).
+- The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `SIGN_INCREMENTAL_OTA` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
+- Both workflows (`OneUi8-5.yml` and `OneUi8-5-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing, the build fails on purpose so a broken OTA is never published. This step requires `signapk` (`/usr/share/signapk/signapk.jar`).
+
+### Re-signing already published OTAs
+
+OTAs published before the incremental signing step was added lack the footer and must be re-signed and re-uploaded:
+
+```bash
+HF_USER=<hf-user> HF_TOKEN=<token> \
+  scripts/package/resign_published_ota.sh [--dry-run] [device ...]
+```
+
+It defaults to `a32 a22 m32 f22`. For each device it downloads the incremental from its OTA manifest, re-signs it, regenerates the manifest at `OTA_MANIFESTS/{device}_ota.json`, and (unless `--dry-run`) re-uploads it to the `<HF_USER>/OTAs` bucket. Remember to commit the regenerated manifests to the [cloudy](https://github.com/Luminous418/cloudy) repository (`updater/ota/{device}.json`).
+
 ## Licensing
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 - **[android-tools](https://github.com/nmeum/android-tools)** - Licensed under Apache License 2.0
