@@ -70,26 +70,6 @@ initialize_logs() {
         echo "${BLUE}======================================${RESET}"
         echo
     } > "$LOG_FILE"
-    
-    {
-        echo "${BLUE}======================================${RESET}"
-        echo "${HI_BLUE}LumiROM Build Log${RESET}"
-        echo "${BLUE}======================================${RESET}"
-        echo "Start Time: $(date)"
-        echo "Maintainer: $lumirom_maintainer"
-        echo "Stock Device: $stock_device"
-        echo "Target Device: $target_device"
-        echo "Target CSC: $target_csc"
-        echo "Target IMEI: $target_imei"
-        echo "Version: $lumirom_version"
-        echo "Use Mods: $use_mods"
-        echo "Use Galaxy AI: $use_galaxy_ai"
-        echo "Use UI 8 Tethering Apex: $use_ui_8_tethering_apex"
-        echo "Output Filesystem: $output_filesystem"
-        echo "Skip Target Files: ${SKIP_TARGET_FILES:-false}"
-        echo "${BLUE}======================================${RESET}"
-        echo
-    } > "$LOG_FILE"
 }
 
 # finalize_logs: Create final summary log with build duration and status

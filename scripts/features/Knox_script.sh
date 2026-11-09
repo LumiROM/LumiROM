@@ -159,10 +159,11 @@ CUSTOM_PLATFORM_SIGNATURE() {
         return 1
     fi
 
-    if ! patch -p1 -d "$SERVICES_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
+    if ! patch -p1 --no-backup-if-mismatch -d "$SERVICES_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
         echo "${RED}Failed to apply custom platform signature patch.${RESET}"
         return 1
     fi
+    find "$SERVICES_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
 
     local TARGET_FILE="$SERVICES_DIR/smali_classes2/com/android/server/pm/InstallPackageHelper.smali"
 
@@ -228,7 +229,9 @@ PATCH_KNOX_GUARD() {
     throw p0
     '
     REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-	rm -rf "$FIRM_DIR/$TARGET_DEVICE/system/system/priv-app/KnoxGuard"
+    rm -rf "$FIRM_DIR/system/system/priv-app/KnoxGuard"
+    rm -rf "$FIRM_DIR/system/system_ext/priv-app/KnoxGuard"
+    rm -rf "$FIRM_DIR/system_ext/priv-app/KnoxGuard"
 }
 
 PATCH_SSRM() {

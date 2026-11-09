@@ -1,6 +1,6 @@
 --- a/smali_classes2/com/android/server/pm/InstallPackageHelper.smali
 +++ b/smali_classes2/com/android/server/pm/InstallPackageHelper.smali
-@@ -12,6 +12,8 @@
+@@ -16,6 +16,8 @@
  
  .field public final mContext:Landroid/content/Context;
  
@@ -9,8 +9,8 @@
  .field public final mDeletePackageHelper:Lcom/android/server/pm/DeletePackageHelper;
  
  .field public final mIncrementalManager:Landroid/os/incremental/IncrementalManager;
-@@ -249,6 +251,18 @@
-     .line 106
+@@ -173,6 +175,18 @@
+ 
      iput-object p1, p0, Lcom/android/server/pm/InstallPackageHelper;->mUpdateOwnershipHelper:Lcom/android/server/pm/UpdateOwnershipHelper;
  
 +    const-string p1, "CONFIG_CUSTOM_PLATFORM_SIGNATURE"
@@ -25,13 +25,15 @@
 +
 +    iput-object p1, p0, Lcom/android/server/pm/InstallPackageHelper;->mCustomPlatformSignatures:[Landroid/content/pm/Signature;
 +
-     .line 107
-     .line 108
      new-instance p1, Landroid/util/ArraySet;
-@@ -288,6 +302,23 @@
-     return-void
- .end method
  
+     invoke-direct {p1}, Landroid/util/ArraySet;-><init>()V
+@@ -191,6 +205,23 @@
+ 
+     :cond_0
+     return-void
++.end method
++
 +.method public static createSignatures([Ljava/lang/String;)[Landroid/content/pm/Signature;
 +    .locals 5
 +    array-length v0, p0
@@ -47,68 +49,34 @@
 +    goto :goto_0
 +    :cond_0
 +    return-object v1
-+.end method
-+
+ .end method
+ 
  .method public static hasLauncherEntry(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;)Z
-     .locals 6
+@@ -23179,7 +23210,9 @@
  
-@@ -29993,10 +30024,11 @@
-     :goto_18
-     invoke-interface {v3, v4}, Lcom/android/internal/pm/parsing/pkg/ParsedPackage;->setSigningDetails(Landroid/content/pm/SigningDetails;)Lcom/android/internal/pm/parsing/pkg/ParsedPackage;
- 
--    .line 595
--    .line 596
--    .line 597
--    goto :goto_19
-+
-+
-+
-+
-+
- 
-     .line 598
-     :cond_25
-@@ -30042,10 +30074,11 @@
-     .line 618
-     invoke-interface {v3, v0}, Lcom/android/internal/pm/parsing/pkg/ParsedPackage;->setSigningDetails(Landroid/content/pm/SigningDetails;)Lcom/android/internal/pm/parsing/pkg/ParsedPackage;
- 
--    .line 619
--    .line 620
--    .line 621
--    :goto_19
-+
-+
-+
-+
-+
-     const-string/jumbo v0, "PackageManager"
- 
-     .line 622
-@@ -42427,7 +42460,9 @@
      const/4 v9, 0x1
  
-     .line 268
 -    invoke-static {v1, v10, v2, v9}, Lcom/android/server/pm/ScanPackageUtils;->applyPolicy(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;ILcom/android/server/pm/pkg/AndroidPackage;Z)V
 +    iget-object v3, v15, Lcom/android/server/pm/InstallPackageHelper;->mCustomPlatformSignatures:[Landroid/content/pm/Signature;
 +
 +    invoke-static {v1, v10, v2, v9, v3}, Lcom/android/server/pm/ScanPackageUtils;->applyPolicy(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;ILcom/android/server/pm/pkg/AndroidPackage;Z[Landroid/content/pm/Signature;)V
  
-     .line 269
-     .line 270
-@@ -45179,7 +45214,9 @@
+     iget-object v2, v15, Lcom/android/server/pm/InstallPackageHelper;->mPm:Lcom/android/server/pm/PackageManagerService;
  
-     .line 254
-     .line 255
+@@ -24746,7 +24779,9 @@
+ 
+     iget-object v2, v2, Lcom/android/server/pm/PackageManagerService;->mPlatformPackage:Lcom/android/server/pm/pkg/AndroidPackage;
+ 
 -    invoke-static {v1, v10, v2, v5}, Lcom/android/server/pm/ScanPackageUtils;->applyPolicy(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;ILcom/android/server/pm/pkg/AndroidPackage;Z)V
 +    iget-object v9, v15, Lcom/android/server/pm/InstallPackageHelper;->mCustomPlatformSignatures:[Landroid/content/pm/Signature;
 +
 +    invoke-static {v1, v10, v2, v5, v9}, Lcom/android/server/pm/ScanPackageUtils;->applyPolicy(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;ILcom/android/server/pm/pkg/AndroidPackage;Z[Landroid/content/pm/Signature;)V
  
-     .line 256
-     .line 257
+     iget-object v2, v15, Lcom/android/server/pm/InstallPackageHelper;->mPm:Lcom/android/server/pm/PackageManagerService;
+ 
 --- a/smali_classes2/com/android/server/pm/ScanPackageUtils.smali
 +++ b/smali_classes2/com/android/server/pm/ScanPackageUtils.smali
-@@ -263,9 +263,11 @@
+@@ -159,8 +159,10 @@
      return-void
  .end method
  
@@ -116,17 +84,15 @@
 -    .locals 5
 +.method public static applyPolicy(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;ILcom/android/server/pm/pkg/AndroidPackage;Z[Landroid/content/pm/Signature;)V
 +    .locals 7
- 
 +
 +    move-object v6, p2
-     .line 1
+ 
      const/high16 v0, 0x10000
  
-@@ -672,8 +674,30 @@
+@@ -389,7 +391,30 @@
+     move v1, v2
  
-     .line 179
      :cond_c
-+
 +    invoke-interface {p0}, Lcom/android/internal/pm/parsing/pkg/ParsedPackage;->getSigningDetails()Landroid/content/pm/SigningDetails;
 +
 +    move-result-object v3
@@ -142,18 +108,19 @@
 +    move-result v3
 +
 +    or-int/2addr v1, v3
++
      invoke-interface {p0, v1}, Lcom/android/internal/pm/parsing/pkg/ParsedPackage;->setSignedWithPlatformKey(Z)Lcom/android/internal/pm/parsing/pkg/ParsedPackage;
- 
++
 +    if-eqz v3, :cond_custom_sig
 +
 +    invoke-static {p0, v6, p4, v5}, Lcom/android/server/pm/ScanPackageUtils;->setCustomSignatures(Lcom/android/internal/pm/parsing/pkg/ParsedPackage;Lcom/android/server/pm/pkg/AndroidPackage;[Landroid/content/pm/Signature;[Landroid/content/pm/Signature;)V
 +
 +    :cond_custom_sig
 +
-     .line 180
-     .line 181
-     .line 182
-@@ -6645,3 +6669,41 @@
+ 
+     if-nez v0, :cond_d
+ 
+@@ -4968,3 +4993,41 @@
      :goto_2
      return-void
  .end method
@@ -197,7 +164,7 @@
 +.end method
 --- a/smali_classes2/com/android/server/pm/PackageManagerServiceUtils.smali
 +++ b/smali_classes2/com/android/server/pm/PackageManagerServiceUtils.smali
-@@ -7101,3 +7101,10 @@
+@@ -3848,3 +3848,10 @@
      :cond_13
      return p2
  .end method

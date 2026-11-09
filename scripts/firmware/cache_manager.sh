@@ -70,11 +70,18 @@ check_cache() {
 
     IFS=',' read -r -a PARTITIONS <<< "$BUILD_PARTITIONS_DEFAULT"
     local missing=0
+    local require_system_ext="${STOCK_HAS_SEPARATE_SYSTEM_EXT:-FALSE}"
 
     for partition in "${PARTITIONS[@]}"; do
         partition=$(echo "$partition" | xargs)
         local img_file="$CACHE_DIR/${partition}.img"
-        
+
+        if [ "$partition" = "system_ext" ] && [ "$require_system_ext" = "FALSE" ] \
+                && [ -f "$CACHE_DIR/system.img" ]; then
+            echo "  ${YELLOW}~${RESET} ${CYAN}$partition.img${RESET} (${YELLOW}optional, may be inside system.img${RESET})"
+            continue
+        fi
+
         if [ -f "$img_file" ]; then
             local size=$(du -h "$img_file" | cut -f1)
             echo "  ${GREEN}✓${RESET} ${CYAN}$partition.img${RESET} (${GREEN}$size${RESET})"

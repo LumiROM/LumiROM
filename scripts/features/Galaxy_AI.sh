@@ -2,6 +2,22 @@
 
 source scripts/utils/bash_colors.sh
 
+GET_APK_VERSION_CODE() {
+    local APK="$1"
+    local VC=""
+
+    if command -v aapt2 >/dev/null 2>&1; then
+        VC=$(aapt2 dump badging "$APK" 2>/dev/null \
+            | sed -n "s/^package:.*versionCode='\([0-9]*\)'.*/\1/p" | head -n1)
+    fi
+    if [ -z "$VC" ] && command -v aapt >/dev/null 2>&1; then
+        VC=$(aapt dump badging "$APK" 2>/dev/null \
+            | sed -n "s/^package:.*versionCode='\([0-9]*\)'.*/\1/p" | head -n1)
+    fi
+
+    echo "$VC"
+}
+
 GALAXY_AI() {
     echo ""
     if [ "$#" -ne 1 ]; then
@@ -21,9 +37,11 @@ GALAXY_AI() {
 
         sed -i '/SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI/d' "$TARGET_FLOATING_FEATURE"
         # Adding the Galaxy AI versioning
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SIP_CONFIG_ONEUI_VERSION" "80500"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_PHASE" "20260201"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_VERSION" "20261"
+        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SIP_CONFIG_ONEUI_VERSION" "90000"
+        # One UI 9 (S23 S918BXXUAGZIF) does not define AI_PHASE; keep the
+        # 8.5-only value commented so it is not injected on Android 17.
+        #UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_PHASE" "20260201"
+        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_VERSION" "20253"
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_SUPPORT_AI_AGENT" "TRUE"
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_SUPPORT_GENERATIVE_AI" "TRUE"
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_CONFIG_FOUNDATION_MODEL" "3B"
@@ -70,7 +88,39 @@ GALAXY_AI() {
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_MMFW_SUPPORT_TARGET_TRACKING" "TRUE"
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MUSIC_ALBUMART_3DAUDIO" "TRUE"
 
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/Galaxy_AI/system/system/"* "$EXTRACTED_FIRM_DIR/system/system/"
+        local AI_SYS="$AI_DIR/system/system"
+        local AI_ENTRY AI_APP_NAME
+
+        for AI_ENTRY in "$AI_SYS/app/"*; do
+            [ -e "$AI_ENTRY" ] || continue
+            AI_APP_NAME="$(basename "$AI_ENTRY")"
+            if [ -d "$EXTRACTED_FIRM_DIR/system/system/app/$AI_APP_NAME" ]; then
+                echo "${GREEN}Keeping stock app/$AI_APP_NAME${RESET}"
+            else
+                sudo cp -rfa "$AI_ENTRY" "$EXTRACTED_FIRM_DIR/system/system/app/"
+            fi
+        done
+
+        for AI_ENTRY in "$AI_SYS/priv-app/"*; do
+            [ -e "$AI_ENTRY" ] || continue
+            AI_APP_NAME="$(basename "$AI_ENTRY")"
+            # Now Brief is handled separately below (version check).
+            [ "$AI_APP_NAME" = "SamsungSmartSuggestions" ] && continue
+            if [ -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/$AI_APP_NAME" ]; then
+                echo "${GREEN}Keeping stock priv-app/$AI_APP_NAME${RESET}"
+            else
+                sudo cp -rfa "$AI_ENTRY" "$EXTRACTED_FIRM_DIR/system/system/priv-app/"
+            fi
+        done
+
+        for AI_ENTRY in "$AI_SYS"/*; do
+            [ -e "$AI_ENTRY" ] || continue
+            case "$(basename "$AI_ENTRY")" in
+                app|priv-app) continue ;;
+            esac
+            # -n: keep existing files, copy only missing ones.
+            sudo cp -rfan "$AI_ENTRY" "$EXTRACTED_FIRM_DIR/system/system/"
+        done
         sudo cp -rfa "$(pwd)/LumiROM/Mods/Galaxy_AI/vendor/"* "$EXTRACTED_FIRM_DIR/vendor/"
 
 
@@ -84,27 +134,30 @@ GALAXY_AI() {
             UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_WALLPAPER_STYLE" "VIDEO,GENWEATHER,FLIPSUIT_LOCK"
         fi
 
-        # Adding Photo Editor AI Full
-        if [ ! -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull" ]; then
-        	echo "${YELLOW}Adding Photo Editor AI Full${RESET}"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app"/PhotoEditor_*
-            cp -rfa "$(pwd)/LumiROM/Mods/Apps/PhotoEditor_AIFull/"* "$EXTRACTED_FIRM_DIR/system/system/"
-            unzip -o "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip" -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/" >/dev/null 2>&1
-            rm -f "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip"
-        fi
-
         # Adding Now Brief
         echo "${YELLOW}Adding Now Brief${RESET}"
         mkdir -p "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/"
         mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/"
 
-        if [ ! -f "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk" ]; then
-            aria2c -x 1 -d "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -o "SamsungSmartSuggestions.apk" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/SamsungSmartSuggestions.apk?download=true" || return 1
+        local SS_MOD_APK="$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk"
+        local SS_TARGET_APK="$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk"
+        local SS_STOCK_VC=""
+        local SS_MOD_VC=""
+        [ -f "$SS_TARGET_APK" ] && SS_STOCK_VC="$(GET_APK_VERSION_CODE "$SS_TARGET_APK")"
+        [ -f "$SS_MOD_APK" ] && SS_MOD_VC="$(GET_APK_VERSION_CODE "$SS_MOD_APK")"
+
+        if [ -n "$SS_STOCK_VC" ] && [ -n "$SS_MOD_VC" ] && [ "$SS_STOCK_VC" -ge "$SS_MOD_VC" ]; then
+            echo "${GREEN}Keeping stock SamsungSmartSuggestions ($SS_STOCK_VC >= $SS_MOD_VC)${RESET}"
+        elif [ -n "$SS_STOCK_VC" ] && [ ! -f "$SS_MOD_APK" ]; then
+            echo "${GREEN}Keeping stock SamsungSmartSuggestions (no newer mod available)${RESET}"
+        else
+            if [ ! -f "$SS_MOD_APK" ]; then
+                aria2c -x 1 -d "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -o "SamsungSmartSuggestions.apk" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/SamsungSmartSuggestions.apk?download=true" || return 1
+            fi
+            rm -f "$SS_TARGET_APK"
+            cp -rfa "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/"
         fi
 
-        rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk"
-        cp -rfa "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/"
-        
         # Cleanup any leftover .aria2 control files
         wait
         find "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -name "*.aria2" -exec rm -f {} +

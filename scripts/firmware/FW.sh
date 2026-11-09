@@ -47,7 +47,14 @@ CHECK_FIRMWARE_IMAGES() {
     done
 
     local all_exist=1
+    local REQUIRE_SYSTEM_EXT=1
+    if [ "${STOCK_HAS_SEPARATE_SYSTEM_EXT:-FALSE}" = "FALSE" ] && [ -f "$FIRM_DIR/system.img" ]; then
+        REQUIRE_SYSTEM_EXT=0
+    fi
     for partition in "${PARTITIONS[@]}"; do
+        if [ "$partition" = "system_ext" ] && [ "$REQUIRE_SYSTEM_EXT" -eq 0 ]; then
+            continue
+        fi
         if [ ! -f "$FIRM_DIR/${partition}.img" ]; then
             all_exist=0
             break
@@ -168,11 +175,11 @@ DOWNLOAD_FIRMWARE_LUMI() {
     if [[ "$STOCK_DEVICE" == "SM-A325F" || "$STOCK_DEVICE" == "SM-A325M" || "$STOCK_DEVICE" == "SM-M325F" ]]; then
         export TARGET_DEVICE="SM-A346B"
         echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
-        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/FW/SM-A346B/SM-A346B.zip?download=true" || return 1
+        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/FW/SM-A346B/SM-A346B.zip?download=true" || return 1
     elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-A225M" || "$STOCK_DEVICE" == "SM-E225F" || "$STOCK_DEVICE" == "SM-M225F" ]]; then
         export TARGET_DEVICE="SM-A245F"
         echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
-        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/FW/SM-A245F_4_20260220151250_g2yvot48sr_fac_A245FXXSBEZB5_A245FOXMBEZB5_A245FXXSBEZB5_A245FXXSBEZB5_SEK.zip?download=true" || return 1
+        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/FW/SM-A245F_4_20260220151250_g2yvot48sr_fac_A245FXXSBEZB5_A245FOXMBEZB5_A245FXXSBEZB5_A245FXXSBEZB5_SEK.zip?download=true" || return 1
     fi
 
     # Cleanup any leftover .aria2 control files
@@ -192,9 +199,9 @@ DOWNLOAD_OTA() {
 
     echo "${YELLOW}Downloading OTA${RESET}"
     if [ -d "FIRMWARE/SM-A346B" ]; then
-        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A346B.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/OTA/SM-A346BOMB.zip?download=true" || return 1
+        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A346B.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/OTA/SM-A346BOMB.zip?download=true" || return 1
     elif [ -d "FIRMWARE/SM-A245F" ]; then
-        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A245F.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUI8.5/OTA/SM-A245F_BOMB.zip?download=true" || return 1
+        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A245F.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/OTA/SM-A245F_BOMB.zip?download=true" || return 1
     fi
     # Cleanup any leftover .aria2 control files
     wait

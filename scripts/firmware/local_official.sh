@@ -10,10 +10,6 @@ source scripts/utils/platform_key.sh
 
 IS_LOCAL_OFFICIAL() {
 
-    if [ -z "$LUMIROM_BUILD" ] || [ -z "$OFFICIAL_HASH" ]; then
-        echo "${BLUE}[!] Missing environment variables. Using default values.${RESET}"
-    fi
-
     export BUILD_STATUS="UNOFFICIAL"
     export ROM_TAG="🛠️ LumiROM Unofficial Build"
 
@@ -24,5 +20,5 @@ IS_LOCAL_OFFICIAL() {
         export ROM_TAG="✨ LumiROM Official Build"
     fi
 
-    echo "${BLUE}--- $ROM_TAG detected ---${RESET}"
+    echo "${BLUE}--- $ROM_TAG detected (key: $(GET_ACTIVE_PLATFORM_KEY_SOURCE)) ---${RESET}"
 }

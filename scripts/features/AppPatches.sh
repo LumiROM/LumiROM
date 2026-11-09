@@ -33,11 +33,12 @@ PATCH_SECSETTINGS() {
             return 1
         fi
         echo "${YELLOW}Applying SecSettings patch: $PATCH${RESET}"
-        if ! patch -p1 -d "$SECSETTINGS_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
+        if ! patch -p1 --no-backup-if-mismatch -d "$SECSETTINGS_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
             echo "${RED}Failed to apply $PATCH${RESET}"
             return 1
         fi
     done
+    find "$SECSETTINGS_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
 
     # Copy the ROM logo into the decompiled SecSettings tree.
     local LOGO_SRC="$(pwd)/LumiROM/Mods/SecSettings/res/drawable/logo.png"
@@ -132,11 +133,12 @@ PATCH_SETUPWIZARD() {
             return 1
         fi
         echo "${YELLOW}Applying SetupWizard patch: $PATCH${RESET}"
-        if ! patch -p1 -d "$SW_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
+        if ! patch -p1 --no-backup-if-mismatch -d "$SW_DIR" < "$PATCH_FILE" >/dev/null 2>&1; then
             echo "${RED}Failed to apply $PATCH${RESET}"
             return 1
         fi
     done
+    find "$SW_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
 
     echo "${GREEN}SetupWizard patched.${RESET}"
 }

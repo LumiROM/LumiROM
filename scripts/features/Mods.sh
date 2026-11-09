@@ -16,8 +16,8 @@ ADD_MODS() {
         echo "${BLUE}============ Mods Installation ============${RESET}"
         
         echo "${YELLOW} - Adding misc system files${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/Files/system/system/bin/"* "$EXTRACTED_FIRM_DIR/system/system/bin/"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/Files/system/system/etc/"* "$EXTRACTED_FIRM_DIR/system/system/etc/"
+        sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/bin/"* "$EXTRACTED_FIRM_DIR/system/system/bin/"
+        sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/etc/"* "$EXTRACTED_FIRM_DIR/system/system/etc/"
 
         echo "${YELLOW} - Adding vulkan fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/vulkan_fix/system/system/lib64/"* "$EXTRACTED_FIRM_DIR/system/system/lib64/"

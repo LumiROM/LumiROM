@@ -69,10 +69,10 @@ ADD_CLOUDY() {
 
     echo "${YELLOW} - Baking Cloudy SELinux rules (system_ext_sepolicy.cil)${RESET}"
     local SELINUX_CIL="$EXTRACTED_FIRM_DIR/system/system_ext/etc/selinux/system_ext_sepolicy.cil"
+    if [ ! -f "$SELINUX_CIL" ]; then
+        SELINUX_CIL="$EXTRACTED_FIRM_DIR/system_ext/etc/selinux/system_ext_sepolicy.cil"
+    fi
     if [ -f "$SELINUX_CIL" ]; then
-        # Mirrors magisk-module/sepolicy.rule so no Magisk module is required on LumiROM builds.
-        # init recompiles the policy from these CILs when they differ from precompiled_sepolicy,
-        # so appending here is all that's needed for the baked rules to be enforced.
         cat >> "$SELINUX_CIL" <<'CLOUDY_EOF'
 (allow untrusted_app cache_file (dir (search write add_name)))
 (allow untrusted_app cache_file (file (create open write getattr setattr)))

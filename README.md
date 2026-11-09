@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LumiROM/LumiROM/actions/workflows/OneUi8-5.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/LumiROM/LumiROM/OneUi8-5.yml?branch=OneUI8.5&label=Specific%20Device&logo=github" alt="Specific Device Workflow">
+  <a href="https://github.com/LumiROM/LumiROM/actions/workflows/OneUi9.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/LumiROM/LumiROM/OneUi9.yml?branch=main&label=Specific%20Device&logo=github" alt="Specific Device Workflow">
   </a>
-  <a href="https://github.com/LumiROM/LumiROM/actions/workflows/OneUi8-5-Matrix.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/LumiROM/LumiROM/OneUi8-5-Matrix.yml?branch=OneUI8.5&label=All%20Devices&logo=github" alt="All Devices Workflow">
+  <a href="https://github.com/LumiROM/LumiROM/actions/workflows/OneUi9-Matrix.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/LumiROM/LumiROM/OneUi9-Matrix.yml?branch=main&label=All%20Devices&logo=github" alt="All Devices Workflow">
   </a>
   <a href="https://github.com/LumiROM/LumiROM/stargazers">
     <img src="https://img.shields.io/github/stars/LumiROM/LumiROM?style=flat&logo=github&label=Stars" alt="Stars">
@@ -34,7 +34,7 @@ It downloads the firmware from Samsung servers using [samloader](https://github.
 The whole process can run either on **GitHub Actions** or **locally** on your machine (requires Ubuntu/Debian distro or WSL) - either with the CLI script or with the **LumiROM Builder** terminal UI.
 
 ## Changelogs
-Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/OneUI8.5/changelogs/README.md) to learn more about each release and useful information.
+Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/main/changelogs/README.md) to learn more about each release and useful information.
 
 ## Supported Devices
 
@@ -322,7 +322,7 @@ Package verification failed: no signature in file (no footer)
 Signing is fully automatic:
 - The **full ROM** is signed by `SIGN_OTA_ZIP` (`scripts/package/sign_ota.sh`).
 - The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `SIGN_INCREMENTAL_OTA` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
-- Both workflows (`OneUi8-5.yml` and `OneUi8-5-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing, the build fails on purpose so a broken OTA is never published. Signing uses the bundled `bin/apktool/signapk.jar` (self-contained, works with any Java >= 9), falling back to a system `signapk` (`/usr/share/signapk/signapk.jar`) if the bundled jar is absent. See `bin/apktool/signapk-NOTICE.txt` for the bundled jar's third-party licenses.
+- Both workflows (`OneUi9.yml` and `OneUi9-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing, the build fails on purpose so a broken OTA is never published. Signing uses the bundled `bin/apktool/signapk.jar` (self-contained, works with any Java >= 9), falling back to a system `signapk` (`/usr/share/signapk/signapk.jar`) if the bundled jar is absent. See `bin/apktool/signapk-NOTICE.txt` for the bundled jar's third-party licenses.
 
 ### Re-signing already published OTAs
 

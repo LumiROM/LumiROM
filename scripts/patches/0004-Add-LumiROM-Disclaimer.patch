@@ -9,51 +9,25 @@
  </LinearLayout>
 --- a/res/values/ids.xml
 +++ b/res/values/ids.xml
-@@ -940,4 +940,5 @@
-     <id name="withinBounds" />
-     <id name="wrap" />
-     <id name="wrap_content" />
+@@ -273,6 +273,7 @@
+     <id name="disableScroll" />
+     <id name="disabled" />
+     <id name="disclaimer_description" />
 +    <id name="lumirom_disclaimer_logo" />
- </resources>
+     <id name="disjoint" />
+     <id name="divider_line" />
+     <id name="dmeula_detail_image_button" />
 --- a/res/values/public.xml
 +++ b/res/values/public.xml
-@@ -8191,6 +8191,7 @@
-     <public type="string" name="wizard_script_user_uri" id="0x7f1202bc" />
-     <public type="string" name="yes_agree_baidu" id="0x7f1202bd" />
-     <public type="string" name="your_choice" id="0x7f1202be" />
-+    <public type="string" name="lumirom_disclaimer_description" id="0x7f1202bf" />
-     <public type="style" name="AlertDialog.AppCompat" id="0x7f130000" />
-     <public type="style" name="AlertDialog.AppCompat.Light" id="0x7f130001" />
-     <public type="style" name="Animation.AppCompat.Dialog" id="0x7f130002" />
+@@ -10577,4 +10577,5 @@
+     <public type="style" name="tnc_detailview_content_area_layout" id="0x7f13073d" />
+     <public type="xml" name="m3_button_group_child_size_change" id="0x7f150000" />
+     <public type="xml" name="m3_split_button_inner_corner_size_state_list" id="0x7f150001" />
++    <public type="string" name="lumirom_disclaimer_description" id="0x7f1202cf" />
+ </resources>
 --- a/smali/com/sec/android/app/SecSetupWizard/UI/DisclaimerActivity.smali
 +++ b/smali/com/sec/android/app/SecSetupWizard/UI/DisclaimerActivity.smali
-@@ -141,16 +141,19 @@
-     .line 35
-     .line 36
-     invoke-virtual {p0, p1}, LP2/b;->setContentView(I)V
-+    const p1, 0x7f0a0323
-+
-+    invoke-virtual {p0, p1}, Lg/h;->findViewById(I)Landroid/view/View;
-+
-+    move-result-object p1
-+
-+    const/16 v0, 0x8
-+
-+    invoke-virtual {p1, v0}, Landroid/view/View;->setVisibility(I)V
- 
-     .line 37
-     .line 38
-     .line 39
--    const p1, 0x7f120279
--
--    .line 40
--    .line 41
--    .line 42
--    invoke-virtual {p0, p1}, LP2/b;->z(I)V
- 
-     .line 43
-     .line 44
-@@ -193,577 +196,18 @@
+@@ -193,577 +193,13 @@
      .line 65
      check-cast p1, Landroid/widget/TextView;
  
@@ -63,7 +37,7 @@
 -
 -    .line 68
 -    .line 69
--    invoke-static {v1}, LI2/p;->l(Ljava/lang/String;)Z
+-    invoke-static {v1}, Le7/q;->n(Ljava/lang/String;)Z
 -
 -    .line 70
 -    .line 71
@@ -79,7 +53,7 @@
 -
 -    .line 76
 -    .line 77
--    invoke-static {v0}, LI2/k;->a(Ljava/lang/String;)Ljava/lang/String;
+-    invoke-static {v0}, Le7/l;->a(Ljava/lang/String;)Ljava/lang/String;
 -
 -    .line 78
 -    .line 79
@@ -103,17 +77,17 @@
 -
 -    .line 88
 -    .line 89
--    const v0, 0x7f1200d2
+-    const v0, 0x7f1200d0
 -
 -    .line 90
 -    .line 91
 -    .line 92
--    const v1, 0x7f1200d1
+-    const v1, 0x7f1200cf
 -
 -    .line 93
 -    .line 94
 -    .line 95
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 96
 -    .line 97
@@ -141,17 +115,17 @@
 -
 -    .line 107
 -    .line 108
--    const v0, 0x7f1200c7
+-    const v0, 0x7f1200c5
 -
 -    .line 109
 -    .line 110
 -    .line 111
--    const v1, 0x7f1200c6
+-    const v1, 0x7f1200c4
 -
 -    .line 112
 -    .line 113
 -    .line 114
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 115
 -    .line 116
@@ -179,17 +153,17 @@
 -
 -    .line 126
 -    .line 127
--    const v0, 0x7f1200d0
+-    const v0, 0x7f1200ce
 -
 -    .line 128
 -    .line 129
 -    .line 130
--    const v1, 0x7f1200cf
+-    const v1, 0x7f1200cd
 -
 -    .line 131
 -    .line 132
 -    .line 133
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 134
 -    .line 135
@@ -201,17 +175,17 @@
 -
 -    .line 138
 -    :cond_3
--    const v0, 0x7f1200d5
+-    const v0, 0x7f1200d3
 -
 -    .line 139
 -    .line 140
 -    .line 141
--    const v1, 0x7f1200d3
+-    const v1, 0x7f1200d1
 -
 -    .line 142
 -    .line 143
 -    .line 144
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 145
 -    .line 146
@@ -220,18 +194,22 @@
 -
 -    .line 148
 -    :goto_0
--    invoke-virtual {p1, p0}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
--
++    const v0, 0x7f1202cf
++
++    invoke-virtual {p0, v0}, Landroid/content/Context;->getString(I)Ljava/lang/String;
++
++    move-result-object p0
++
+     invoke-virtual {p1, p0}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
+ 
 -    .line 149
 -    .line 150
 -    .line 151
 -    return-void
-+    # [LumiROM] Always show the LumiROM disclaimer text.
-+    const/4 v0, 0x0
- 
+-
 -    .line 152
 -    :cond_4
--    invoke-static {}, LI2/f;->c()Z
+-    invoke-static {}, Le7/f;->c()Z
 -
 -    .line 153
 -    .line 154
@@ -247,18 +225,16 @@
 -
 -    .line 159
 -    .line 160
--    invoke-static {v0}, LI2/k;->a(Ljava/lang/String;)Ljava/lang/String;
+-    invoke-static {v0}, Le7/l;->a(Ljava/lang/String;)Ljava/lang/String;
 -
 -    .line 161
 -    .line 162
 -    .line 163
 -    move-result-object v0
-+    invoke-virtual {p1, v0}, Landroid/view/View;->setVisibility(I)V
- 
+-
 -    .line 164
 -    const-string v1, "QOL"
-+    const v0, 0x7f1202bf
- 
+-
 -    .line 165
 -    .line 166
 -    invoke-virtual {v0, v1}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
@@ -273,17 +249,17 @@
 -
 -    .line 171
 -    .line 172
--    const v0, 0x7f1200c1
+-    const v0, 0x7f1200bf
 -
 -    .line 173
 -    .line 174
 -    .line 175
--    const v1, 0x7f1200c0
+-    const v1, 0x7f1200be
 -
 -    .line 176
 -    .line 177
 -    .line 178
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 179
 -    .line 180
@@ -311,17 +287,17 @@
 -
 -    .line 190
 -    .line 191
--    const v0, 0x7f1200bf
+-    const v0, 0x7f1200bd
 -
 -    .line 192
 -    .line 193
 -    .line 194
--    const v1, 0x7f1200be
+-    const v1, 0x7f1200bc
 -
 -    .line 195
 -    .line 196
 -    .line 197
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 198
 -    .line 199
@@ -333,20 +309,20 @@
 -
 -    .line 202
 -    :cond_6
--    const v0, 0x7f1200c8
+-    const v0, 0x7f1200c6
 -
 -    .line 203
 -    .line 204
 -    .line 205
-     invoke-virtual {p0, v0}, Landroid/content/Context;->getString(I)Ljava/lang/String;
- 
+-    invoke-virtual {p0, v0}, Landroid/content/Context;->getString(I)Ljava/lang/String;
+-
 -    .line 206
 -    .line 207
 -    .line 208
-     move-result-object v0
- 
+-    move-result-object v0
+-
 -    .line 209
--    const v1, 0x7f1200c9
+-    const v1, 0x7f1200c7
 -
 -    .line 210
 -    .line 211
@@ -393,7 +369,7 @@
 -
 -    .line 232
 -    :cond_7
--    invoke-static {}, LI2/f;->a()I
+-    invoke-static {}, Le7/f;->a()I
 -
 -    .line 233
 -    .line 234
@@ -405,7 +381,7 @@
 -
 -    .line 237
 -    .line 238
--    const v2, 0x7f1200c3
+-    const v2, 0x7f1200c1
 -
 -    .line 239
 -    .line 240
@@ -436,12 +412,12 @@
 -
 -    .line 252
 -    :cond_8
--    const v0, 0x7f1200c5
+-    const v0, 0x7f1200c3
 -
 -    .line 253
 -    .line 254
 -    .line 255
--    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 256
 -    .line 257
@@ -453,12 +429,12 @@
 -
 -    .line 260
 -    :cond_9
--    const v0, 0x7f1200c2
+-    const v0, 0x7f1200c0
 -
 -    .line 261
 -    .line 262
 -    .line 263
--    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 264
 -    .line 265
@@ -470,12 +446,12 @@
 -
 -    .line 268
 -    :cond_a
--    const v0, 0x7f1200c4
+-    const v0, 0x7f1200c2
 -
 -    .line 269
 -    .line 270
 -    .line 271
--    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v2}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 272
 -    .line 273
@@ -497,7 +473,7 @@
 -
 -    .line 280
 -    .line 281
--    invoke-static {v0}, LI2/p;->l(Ljava/lang/String;)Z
+-    invoke-static {v0}, Le7/q;->n(Ljava/lang/String;)Z
 -
 -    .line 282
 -    .line 283
@@ -509,7 +485,7 @@
 -
 -    .line 286
 -    .line 287
--    const v0, 0x7f1200cb
+-    const v0, 0x7f1200c9
 -
 -    .line 288
 -    .line 289
@@ -522,7 +498,7 @@
 -    move-result-object v0
 -
 -    .line 294
--    const v1, 0x7f1200cc
+-    const v1, 0x7f1200ca
 -
 -    .line 295
 -    .line 296
@@ -543,7 +519,7 @@
 -    move-result-object v1
 -
 -    .line 305
--    const v3, 0x7f1200ca
+-    const v3, 0x7f1200c8
 -
 -    .line 306
 -    .line 307
@@ -585,7 +561,7 @@
 -
 -    .line 325
 -    .line 326
--    invoke-static {v0}, LI2/p;->l(Ljava/lang/String;)Z
+-    invoke-static {v0}, Le7/q;->n(Ljava/lang/String;)Z
 -
 -    .line 327
 -    .line 328
@@ -597,17 +573,17 @@
 -
 -    .line 331
 -    .line 332
--    const v0, 0x7f1200ce
+-    const v0, 0x7f1200cc
 -
 -    .line 333
 -    .line 334
 -    .line 335
--    const v1, 0x7f1200cd
+-    const v1, 0x7f1200cb
 -
 -    .line 336
 -    .line 337
 -    .line 338
--    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->F(II)Ljava/lang/String;
+-    invoke-virtual {p0, v0, v1}, Lcom/sec/android/app/SecSetupWizard/UI/DisclaimerActivity;->G(II)Ljava/lang/String;
 -
 -    .line 339
 -    .line 340
@@ -621,8 +597,7 @@
 -    .line 344
 -    .line 345
 -    return-void
-+    invoke-virtual {p1, v0}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
- 
+-
 -    .line 346
 -    :cond_d
 -    const/16 p0, 0x8

@@ -24,7 +24,7 @@ IS_OFFICIAL() {
         echo "ROM_TAG=$ROM_TAG" >> "$GITHUB_ENV"
     fi
 
-    echo "${BLUE}--- $ROM_TAG detected ---${RESET}"
+    echo "${BLUE}--- $ROM_TAG detected (key: $(GET_ACTIVE_PLATFORM_KEY_SOURCE)) ---${RESET}"
 }
 
 CHECK_FILE() {
@@ -446,7 +446,11 @@ FIX_SYSTEM_EXT() {
     local EXTRACTED_FIRM_DIR="$1"
 
 	if [[ ! -d "$EXTRACTED_FIRM_DIR/system_ext" ]]; then
-        export TARGET_ROM_SYSTEM_EXT_DIR="$EXTRACTED_FIRM_DIR/system/system/system_ext"
+        if [[ -d "$EXTRACTED_FIRM_DIR/system/system_ext" ]]; then
+            export TARGET_ROM_SYSTEM_EXT_DIR="$EXTRACTED_FIRM_DIR/system/system_ext"
+        else
+            export TARGET_ROM_SYSTEM_EXT_DIR="$EXTRACTED_FIRM_DIR/system/system/system_ext"
+        fi
 	fi
 
     # Make system_ext merged with system
@@ -499,6 +503,8 @@ FIX_SYSTEM_EXT() {
 	    rm -rf "$EXTRACTED_FIRM_DIR/system_ext"
 		rm -rf "$EXTRACTED_FIRM_DIR/config/system_ext_fs_config"
 		rm -rf "$EXTRACTED_FIRM_DIR/config/system_ext_file_contexts"
+    elif [[ -d "$EXTRACTED_FIRM_DIR/system_ext" ]]; then
+        export TARGET_ROM_SYSTEM_EXT_DIR="$EXTRACTED_FIRM_DIR/system_ext"
     fi
 }
 
@@ -841,6 +847,8 @@ REMOVE_ESIM_FILES() {
 	rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/permissions/privapp-permissions-com.samsung.euicc.xml"
 	rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/sysconfig/preinstalled-packages-com.samsung.euicc.xml"
 	rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/privapp-permissions-com.samsung.android.app.telephonyui.esimclient.xml"
+	rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/permissions/privapp-permissions-com.samsung.android.app.telephonyui.esimclient.xml"
+	rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/sysconfig/preinstalled-packages-com.samsung.android.app.telephonyui.esimclient.xml"
     rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/permissions/privapp-permissions-com.samsung.android.app.esimkeystring.xml"
     rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/sysconfig/preinstalled-packages-com.samsung.android.app.esimkeystring.xml"
 }
@@ -959,6 +967,10 @@ KICK() {
     local APP_DIRS=(
         "$EXTRACTED_FIRM_DIR/system/system/app"
         "$EXTRACTED_FIRM_DIR/system/system/priv-app"
+        "$EXTRACTED_FIRM_DIR/system/system_ext/app"
+        "$EXTRACTED_FIRM_DIR/system/system_ext/priv-app"
+        "$EXTRACTED_FIRM_DIR/system_ext/app"
+        "$EXTRACTED_FIRM_DIR/system_ext/priv-app"
         "$EXTRACTED_FIRM_DIR/product/app"
         "$EXTRACTED_FIRM_DIR/product/priv-app"
     )
@@ -1016,8 +1028,12 @@ DEODEX() {
     local SEARCH_DIRS=(
         "$EXTRACTED_FIRM_DIR/system/system_ext/priv-app"
         "$EXTRACTED_FIRM_DIR/system/system_ext/app"
+        "$EXTRACTED_FIRM_DIR/system_ext/priv-app"
+        "$EXTRACTED_FIRM_DIR/system_ext/app"
         "$EXTRACTED_FIRM_DIR/system/system/priv-app"
         "$EXTRACTED_FIRM_DIR/system/system/app"
+        "$EXTRACTED_FIRM_DIR/product/priv-app"
+        "$EXTRACTED_FIRM_DIR/product/app"
     )
 
     for dir in "${SEARCH_DIRS[@]}"; do

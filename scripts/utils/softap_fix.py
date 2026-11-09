@@ -4,8 +4,9 @@
 Mode 1 (default): patch decompiled smali
     softap_fix.py <WifiNative.smali>
 
-Neutralises the blocking WifiVendorHal.stopVendorHal() call inside
-WifiNative.stopHalAndWificondIfNecessary().
+Neutralises the blocking WifiVendorHal.stopVendorHal() call inside the
+WifiNative teardown method (stopHalAndWificondIfNecessary on older bases,
+stopHalAndNl80211NativeIfNecessary on newer ones).
 
 Why: on MediaTek devices ported to a newer base (A34/A24), whenever the
 last wifi interface is torn down the framework stops the legacy wifi HAL
@@ -54,20 +55,31 @@ def patch_smali(path: str) -> int:
     with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    start = end = None
+    candidates = []
+    start = None
     for i, line in enumerate(lines):
         if start is None:
-            if line.startswith(".method") and "stopHalAndWificondIfNecessary" in line:
+            if line.startswith(".method"):
                 start = i
         elif line.startswith(".end method"):
-            end = i
-            break
+            body = lines[start + 1:i]
+            if any("WifiVendorHal;->stopVendorHal()V" in l for l in body):
+                candidates.append((start, i, body))
+            start = None
 
-    if start is None or end is None:
-        print("softap_fix: stopHalAndWificondIfNecessary method not found")
+    if not candidates:
+        print("softap_fix: stopVendorHal teardown method not found")
         return 1
 
-    body = lines[start + 1:end]
+    preferred = [c for c in candidates if "stopHalAnd" in lines[c[0]]]
+    if preferred:
+        start, end, body = preferred[0]
+    elif len(candidates) == 1:
+        start, end, body = candidates[0]
+    else:
+        print(f"softap_fix: found {len(candidates)} methods with stopVendorHal; aborting")
+        return 1
+
     invoke = [j for j, line in enumerate(body)
               if "WifiVendorHal;->stopVendorHal()V" in line and "invoke-virtual" in line]
     if not invoke:
@@ -83,7 +95,7 @@ def patch_smali(path: str) -> int:
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.writelines(lines[:start + 1] + body + lines[end:])
     shutil.move(tmp, path)
-    print("softap_fix: neutralised stopVendorHal in stopHalAndWificondIfNecessary")
+    print(f"softap_fix: neutralised stopVendorHal in {lines[start].strip()}")
     return 0
 
 
