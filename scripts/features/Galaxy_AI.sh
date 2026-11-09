@@ -104,7 +104,6 @@ GALAXY_AI() {
         for AI_ENTRY in "$AI_SYS/priv-app/"*; do
             [ -e "$AI_ENTRY" ] || continue
             AI_APP_NAME="$(basename "$AI_ENTRY")"
-            # Now Brief is handled separately below (version check).
             [ "$AI_APP_NAME" = "SamsungSmartSuggestions" ] && continue
             if [ -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/$AI_APP_NAME" ]; then
                 echo "${GREEN}Keeping stock priv-app/$AI_APP_NAME${RESET}"
@@ -144,18 +143,18 @@ GALAXY_AI() {
         local SS_STOCK_VC=""
         local SS_MOD_VC=""
         [ -f "$SS_TARGET_APK" ] && SS_STOCK_VC="$(GET_APK_VERSION_CODE "$SS_TARGET_APK")"
-        [ -f "$SS_MOD_APK" ] && SS_MOD_VC="$(GET_APK_VERSION_CODE "$SS_MOD_APK")"
 
-        if [ -n "$SS_STOCK_VC" ] && [ -n "$SS_MOD_VC" ] && [ "$SS_STOCK_VC" -ge "$SS_MOD_VC" ]; then
-            echo "${GREEN}Keeping stock SamsungSmartSuggestions ($SS_STOCK_VC >= $SS_MOD_VC)${RESET}"
-        elif [ -n "$SS_STOCK_VC" ] && [ ! -f "$SS_MOD_APK" ]; then
-            echo "${GREEN}Keeping stock SamsungSmartSuggestions (no newer mod available)${RESET}"
-        else
-            if [ ! -f "$SS_MOD_APK" ]; then
-                aria2c -x 1 -d "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -o "SamsungSmartSuggestions.apk" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/SamsungSmartSuggestions.apk?download=true" || return 1
-            fi
+        if [ ! -f "$SS_MOD_APK" ]; then
+            aria2c -x 1 -d "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -o "SamsungSmartSuggestions.apk" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/SamsungSmartSuggestions.apk?download=true" || return 1
+        fi
+
+        if [ -f "$SS_MOD_APK" ]; then
+            SS_MOD_VC="$(GET_APK_VERSION_CODE "$SS_MOD_APK")"
+            echo "${YELLOW}Replacing SamsungSmartSuggestions (stock ${SS_STOCK_VC:-none} -> mod ${SS_MOD_VC:-unknown})${RESET}"
             rm -f "$SS_TARGET_APK"
             cp -rfa "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/"
+        else
+            echo "${RED}No SamsungSmartSuggestions APK available; keeping stock${RESET}"
         fi
 
         # Cleanup any leftover .aria2 control files
