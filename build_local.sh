@@ -21,6 +21,7 @@ set_defaults() {
     ZIP_IMG="false"
     INCREMENTAL_FROM=""
     SKIP_TARGET_FILES="false"
+    KEEP_STOCK_FRAMEWORK="false"
     LUMIROM_MAINTAINER="$(git config user.name 2>/dev/null)"
 }
 
@@ -56,6 +57,7 @@ usage() {
     echo "      --bpf-legacy           Enable if your kernel BPF version is lower than 5.10"
     echo "      --img-zip              Deliver the partition images (.img) in a ZIP instead of a flashable ROM"
     echo "      --no-target-files      Skip generating the TARGET_FILES zip (useful for test builds)"
+    echo "      --stock-framework      Diagnostic build: keep the stock framework.jar (no LumiSettings/KnoxPatch framework changes)"
     echo "      --incremental-from <ver>"
     echo "                             Build an incremental OTA from a previous version saved in TARGET_FILES"
     echo "  -h, --help                 Show this help"
@@ -84,6 +86,7 @@ parse_args() {
             --bpf-legacy) USE_UI_8_TETHERING_APEX="true"; shift ;;
             --img-zip)    ZIP_IMG="true"; shift ;;
             --no-target-files) SKIP_TARGET_FILES="true"; shift ;;
+            --stock-framework) KEEP_STOCK_FRAMEWORK="true"; shift ;;
             --incremental-from) INCREMENTAL_FROM="${2:?Option $1 requires a value}"; shift 2 ;;
             -h|--help)    usage; exit 0 ;;
             *) echo "Unknown option: $1"; echo ""; usage; exit 1 ;;
@@ -146,6 +149,7 @@ setup_environment() {
     export VNDKS_COLLECTION="$PWD/LumiROM/vndks"
     export BUILD_PARTITIONS="product,vendor,odm,system_ext,system"
     export SKIP_TARGET_FILES
+    export KEEP_STOCK_FRAMEWORK
 
     # Mirror the workflows' $GITHUB_ENV: a file where functions invoked through
     # run() (which pipes them into a subshell) can persist globals such as
@@ -254,8 +258,8 @@ apply_rom_features() {
     run APPLY_STOCK_CONFIG "$FIRM_DIR"
     run DEBLOAT "$FIRM_DIR"
     run APPLY_PROP_FEATURES "$FIRM_DIR"
-    source scripts/features/HotspotFix.sh
-    run ADD_SOFTAP_FIX "$FIRM_DIR"
+    run ENABLE_ZYGOTE_STDIO_KMSG "$FIRM_DIR"
+    run ENABLE_LOGCAT_PERSIST "$FIRM_DIR"
 }
 
 add_mods() {
@@ -305,20 +309,35 @@ apply_knox_patches() {
     run PATCH_FLAG_SECURE "$WORK_DIR/services"
     run PATCH_SECURE_FOLDER "$WORK_DIR/services"
     run CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
-    run DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
+    if [ "$KEEP_STOCK_FRAMEWORK" != "true" ]; then
+        run DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
+    else
+        log_message "Diagnostic build: skipping DISABLE_SIGNATURE_VERIFICATION (stock framework.jar)"
+    fi
     run PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
     run PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
     run ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
-    run ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+    if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
+        log_message "Diagnostic build: skipping ADD_KNOXPATCH (stock framework.jar)"
+    else
+        run ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+    fi
 }
 
 recompile_framework() {
     log_section "Recompiling Knox and Framework"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
     par RECOMPILE "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
-    par RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
-    par RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
-    par RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
+        log_message "Diagnostic build: using stock framework.jar, knoxsdk.jar and samsungkeystoreutils.jar"
+        cp -f "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
+        cp -f "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR/knoxsdk.jar"
+        cp -f "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR/samsungkeystoreutils.jar"
+    else
+        par RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    fi
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
@@ -338,6 +357,16 @@ recompile_framework() {
     run FIX_FRAMEWORK_MIME "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
 
     run cp -fv "$WORK_DIR"/*.jar "FIRMWARE/system/system/framework/"
+    if [ "$KEEP_STOCK_FRAMEWORK" != "true" ]; then
+        log_message "Removing stale boot-framework artifacts (framework.jar changed)"
+        rm -f "FIRMWARE/system/system/framework/boot-framework.vdex"
+        local ARCH
+        for ARCH in arm arm64; do
+            rm -f "FIRMWARE/system/system/framework/$ARCH/boot-framework.art" \
+                  "FIRMWARE/system/system/framework/$ARCH/boot-framework.oat" \
+                  "FIRMWARE/system/system/framework/$ARCH/boot-framework.vdex"
+        done
+    fi
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
         run cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
     fi
@@ -358,12 +387,6 @@ build_rom() {
     run BUILD_IMG "$FIRM_DIR" "$OUTPUT_FILESYSTEM" "$OUT_DIR"
 }
 
-# =====================================================================
-#  SamsungCamera dirty-flash cleanup (injected into updater-script)
-#  Fixes the ported 16.0 camera not opening after a dirty flash:
-#  removes stale package_cache / dalvik / Galaxy Store update so the
-#  system APK (different signature) is picked up cleanly.
-# =====================================================================
 LUMI_CAMERA_CLEANUP_BLOCK() {
     cat <<'EOF'
 # --- LumiROM SamsungCamera dirty-flash cleanup ---
@@ -411,10 +434,6 @@ package_output() {
         INJECT_CAMERA_CLEANUP_FILE "$(pwd)/makerom/META-INF/com/google/android/updater-script"
         run FLASHABLE_ZIP_CREATION
 
-        # run() pipes the function into a subshell, so the FOLDER_NAME it
-        # exports is lost when it returns. Reload it from $LUMIROM_ENV_FILE
-        # (the local equivalent of the workflows' $GITHUB_ENV); without it the
-        # path below falls back to "find ./ROM/" and signs a stale zip.
         if [ -s "$LUMIROM_ENV_FILE" ]; then
             . "$LUMIROM_ENV_FILE"
             export FOLDER_NAME

@@ -19,9 +19,6 @@ ADD_MODS() {
         sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/bin/"* "$EXTRACTED_FIRM_DIR/system/system/bin/"
         sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/etc/"* "$EXTRACTED_FIRM_DIR/system/system/etc/"
 
-        echo "${YELLOW} - Adding vulkan fix${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/vulkan_fix/system/system/lib64/"* "$EXTRACTED_FIRM_DIR/system/system/lib64/"
-
         echo "${YELLOW} - Adding volte fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
 

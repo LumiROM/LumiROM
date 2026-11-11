@@ -122,6 +122,9 @@ FLASHABLE_ZIP_CREATION() {
             echo "partition_layout=a-only"
             echo "timestamp=$TIMESTAMP"
             echo "status=$BUILD_STATUS"
+            if [ "${KEEP_STOCK_FRAMEWORK:-false}" = "true" ]; then
+                echo "build_mode=stock-framework-diagnostic"
+            fi
         } > "$MAKEROM_DIR/build_info.txt"
 
         cp "$MAKEROM_DIR/build_info.txt" "$OUT_DIR/build_info.txt" 2>/dev/null || true

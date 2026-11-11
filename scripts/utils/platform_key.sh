@@ -3,8 +3,8 @@
 source "$(pwd)/scripts/utils/bash_colors.sh"
 
 GET_ACTIVE_PLATFORM_CERT() {
-    if [ -n "$PLATFORM_CERT" ]; then
-        printf '%s' "$PLATFORM_CERT"
+    if [ -n "${PLATFORM_CERT:-}" ]; then
+        printf '%s' "${PLATFORM_CERT:-}"
     elif [ -f "$HOME/.lumi/keys/platform.x509.pem" ]; then
         cat "$HOME/.lumi/keys/platform.x509.pem"
     else
@@ -13,7 +13,7 @@ GET_ACTIVE_PLATFORM_CERT() {
 }
 
 GET_ACTIVE_PLATFORM_KEY_SOURCE() {
-    if [ -n "$PLATFORM_CERT" ]; then
+    if [ -n "${PLATFORM_CERT:-}" ]; then
         echo "PLATFORM_CERT (env/secret)"
     elif [ -f "$HOME/.lumi/keys/platform.x509.pem" ]; then
         echo "$HOME/.lumi/keys"
@@ -46,10 +46,10 @@ GET_ACTIVE_CERT_HEX() {
 GET_ACTIVE_KEY_FILES() {
     local KEY_DIR
 
-    if [ -n "$PLATFORM_PK8" ] && [ -n "$PLATFORM_CERT" ]; then
+    if [ -n "${PLATFORM_PK8:-}" ] && [ -n "${PLATFORM_CERT:-}" ]; then
         KEY_DIR="$(mktemp -d)"
-        printf '%s' "$PLATFORM_PK8" | base64 -d > "$KEY_DIR/platform.pk8"
-        printf '%s' "$PLATFORM_CERT" > "$KEY_DIR/platform.x509.pem"
+        printf '%s' "${PLATFORM_PK8:-}" | base64 -d > "$KEY_DIR/platform.pk8"
+        printf '%s' "${PLATFORM_CERT:-}" > "$KEY_DIR/platform.x509.pem"
     elif [ -f "$HOME/.lumi/keys/platform.pk8" ] && [ -f "$HOME/.lumi/keys/platform.x509.pem" ]; then
         KEY_DIR="$HOME/.lumi/keys"
     else
@@ -64,10 +64,10 @@ GET_ACTIVE_KEY_FILES() {
 GET_ACTIVE_OTA_KEY_FILES() {
     local KEY_DIR=""
 
-    if [ -n "$OTA_PK8" ] && [ -n "$OTA_CERT" ]; then
+    if [ -n "${OTA_PK8:-}" ] && [ -n "${OTA_CERT:-}" ]; then
         KEY_DIR="$(mktemp -d)"
-        printf '%s' "$OTA_PK8" | base64 -d > "$KEY_DIR/ota.pk8"
-        printf '%s' "$OTA_CERT" > "$KEY_DIR/ota.x509.pem"
+        printf '%s' "${OTA_PK8:-}" | base64 -d > "$KEY_DIR/ota.pk8"
+        printf '%s' "${OTA_CERT:-}" > "$KEY_DIR/ota.x509.pem"
     elif [ -f "$HOME/.lumi/keys/ota.pk8" ] && [ -f "$HOME/.lumi/keys/ota.x509.pem" ]; then
         KEY_DIR="$HOME/.lumi/keys"
     else
@@ -78,8 +78,8 @@ GET_ACTIVE_OTA_KEY_FILES() {
 }
 
 GET_ACTIVE_OTA_CERT() {
-    if [ -n "$OTA_CERT" ]; then
-        printf '%s' "$OTA_CERT"
+    if [ -n "${OTA_CERT:-}" ]; then
+        printf '%s' "${OTA_CERT:-}"
     elif [ -f "$HOME/.lumi/keys/ota.x509.pem" ]; then
         cat "$HOME/.lumi/keys/ota.x509.pem"
     fi

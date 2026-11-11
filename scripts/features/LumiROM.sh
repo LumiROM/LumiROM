@@ -37,12 +37,42 @@ CHECK_FILE() {
 }
 
 
+STRIP_DATA_ENCRYPTION_FSTAB() {
+    local EXTRACTED_FIRM_DIR="$1"
+    local fstab
+
+    for fstab in "$EXTRACTED_FIRM_DIR"/vendor/etc/fstab.mt*; do
+        [ -f "$fstab" ] || continue
+
+        echo "${YELLOW}Removing /data encryption flags from $(basename "$fstab")...${RESET}"
+        sudo sed -i -E '/^[^#].*[[:space:]]\/data[[:space:]]/ {
+            s/,?inlinecrypt//g
+            s/,?(fileencryption|keydirectory|forceencrypt|encryptable)=[^,[:space:]]*//g
+            s/,,+/,/g
+        }' "$fstab"
+
+        grep -n '[[:space:]]/data[[:space:]]' "$fstab" | sed 's/^/    /'
+    done
+}
+
+
 DISABLE_FBE() {
     local EXTRACTED_FIRM_DIR="$1"
  	
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIRECTORY>"
         return 1
+    fi
+
+    # Android 17 removed FDE support, and this vendor's keymaster 4.0 cannot
+    # provide the keys for FBE v2 (KM_TAG_ROLLBACK_RESISTANCE is missing).
+    # Keep /data unencrypted on A17+.
+    local ANDROID_RELEASE
+    ANDROID_RELEASE="$(grep -m1 '^ro.build.version.release=' "$EXTRACTED_FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')"
+    if [ -n "$ANDROID_RELEASE" ] && [ "$ANDROID_RELEASE" -ge 17 ] 2>/dev/null; then
+        echo "${YELLOW}Android $ANDROID_RELEASE: removing all /data encryption (FBE/FDE/metadata).${RESET}"
+        STRIP_DATA_ENCRYPTION_FSTAB "$EXTRACTED_FIRM_DIR"
+        return 0
     fi
 
     local i
@@ -65,6 +95,16 @@ DISABLE_FDE() {
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIRECTORY>"
         return 1
+    fi
+
+    # Android 17 has no FDE; DISABLE_FBE already removed all /data
+    # encryption flags (including forceencrypt/encryptable). Keep this
+    # function idempotent for CI callers.
+    local ANDROID_RELEASE
+    ANDROID_RELEASE="$(grep -m1 '^ro.build.version.release=' "$EXTRACTED_FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')"
+    if [ -n "$ANDROID_RELEASE" ] && [ "$ANDROID_RELEASE" -ge 17 ] 2>/dev/null; then
+        echo "${YELLOW}Android $ANDROID_RELEASE: /data encryption already stripped by DISABLE_FBE.${RESET}"
+        return 0
     fi
 
     local i
@@ -1080,6 +1120,91 @@ BUILD_PROP() {
 }
 
 
+DISABLE_ENCRYPTION_PROPS() {
+    local EXTRACTED_FIRM_DIR="$1"
+    local PROP
+
+    for PROP in "$EXTRACTED_FIRM_DIR/system/system/build.prop" "$EXTRACTED_FIRM_DIR/vendor/build.prop"; do
+        [ -f "$PROP" ] || continue
+        sudo sed -i '/^ro.crypto.state=/d; /^ro.crypto.type=/d' "$PROP"
+        printf 'ro.crypto.state=unencrypted\nro.crypto.type=none\n' | sudo tee -a "$PROP" >/dev/null
+        echo "${GREEN}Set ro.crypto.state=unencrypted / ro.crypto.type=none in ${PROP#$EXTRACTED_FIRM_DIR/}${RESET}"
+    done
+}
+
+
+ENABLE_ZYGOTE_STDIO_KMSG() {
+    local EXTRACTED_FIRM_DIR="$1"
+    [ "${ZYGOTE_STDIO_KMSG:-false}" = "true" ] || return 0
+
+    local RC
+    for RC in \
+        "$EXTRACTED_FIRM_DIR/system/system/etc/init/hw/init.zygote64.rc" \
+        "$EXTRACTED_FIRM_DIR/system/system/etc/init/hw/init.zygote64_32.rc" \
+        "$EXTRACTED_FIRM_DIR/system/system/etc/init/hw/init.zygote32.rc"; do
+        [ -f "$RC" ] || continue
+        if ! grep -q '^[[:space:]]*stdio_to_kmsg' "$RC"; then
+            awk '
+                /^service zygote( |_secondary )/ { in_svc=1 }
+                in_svc && /^[[:space:]]*user / { print; print "    stdio_to_kmsg"; next }
+                /^$/ { in_svc=0 }
+                { print }
+            ' "$RC" > "$RC.tmp" && mv "$RC.tmp" "$RC"
+            echo "${GREEN}Enabled zygote stdio_to_kmsg in $(basename "$RC")${RESET}"
+        fi
+    done
+}
+
+
+ENABLE_LOGCAT_PERSIST() {
+    local EXTRACTED_FIRM_DIR="$1"
+    [ "${LOGCAT_PERSIST:-false}" = "true" ] || return 0
+
+    local RC="$EXTRACTED_FIRM_DIR/system/system/etc/init/lumi_logcat.rc"
+    local WRAP="$EXTRACTED_FIRM_DIR/system/system/bin/lumi_logcat.sh"
+    local WRAP_INIT="$EXTRACTED_FIRM_DIR/system/system/bin/lumi_logcat_init.sh"
+
+    cat > "$WRAP" <<'EOF'
+#!/system/bin/sh
+exec /system/bin/logcat -b main,system,crash,events -v threadtime -f /data/local/tmp/lumi_boot.log 2>/data/local/tmp/lumi_logcat_err.txt
+EOF
+    cat > "$WRAP_INIT" <<'EOF'
+#!/system/bin/sh
+exec /system/bin/logcat -b main,system,crash,events -v threadtime -f /data/lumi_boot_init.log 2>/data/local/tmp/lumi_logcat_init_err.txt
+EOF
+    chmod 0755 "$WRAP" "$WRAP_INIT"
+
+    {
+        cat <<'EOF'
+service lumi_logcat /system/bin/sh /system/bin/lumi_logcat.sh
+    class late_start
+    user root
+    group root log
+    seclabel u:r:shell:s0
+    oneshot
+
+service lumi_logcat_init /system/bin/sh /system/bin/lumi_logcat_init.sh
+    class late_start
+    user root
+    group root log
+    oneshot
+
+on post-fs-data
+EOF
+        if [ "${SELINUX_PERMISSIVE:-false}" = "true" ]; then
+            echo "    write /sys/fs/selinux/enforce 0"
+        fi
+        cat <<'EOF'
+    mkdir /data/local/tmp 0771 shell shell
+    symlink /data/local/tmp/lumi_boot.log /data/lumi_boot.log
+    start lumi_logcat
+    start lumi_logcat_init
+EOF
+    } > "$RC"
+    echo "${GREEN}Enabled persistent logcat via sh wrapper (/data/lumi_boot.log)${RESET}"
+}
+
+
 APPLY_PROP_FEATURES() {
     echo ""
     if [ "$#" -ne 1 ]; then
@@ -1132,6 +1257,8 @@ APPLY_PROP_FEATURES() {
         sudo sed -i 's|^debug.renderengine.backend=.*|debug.renderengine.backend=skiaglthreaded|' "$VENDOR_BUILD_PROP"
         echo "${GREEN}Patched ${RESET}vendor/build.prop debug.renderengine.backend => skiaglthreaded${RESET}"
     fi
+
+    DISABLE_ENCRYPTION_PROPS "$EXTRACTED_FIRM_DIR"
 }
 
 APPEND_DISPLAY_ID() {

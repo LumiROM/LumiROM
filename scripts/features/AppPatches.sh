@@ -236,17 +236,21 @@ ADD_LUMISETTINGS() {
         fi
     done < <(find "$MOD_DIR/SecSettings" -type f)
 
-    echo "${YELLOW} - Patching framework.jar${RESET}"
-    local PATCH
-    while IFS= read -r PATCH; do
-        echo "   - $(basename "$PATCH")"
-        if ! patch -p1 --no-backup-if-mismatch -d "$FRAMEWORK_DIR" < "$PATCH" >/dev/null 2>&1; then
-            echo "${RED}LumiSettings: failed to apply $(basename "$PATCH")${RESET}"
-            return 1
-        fi
-    done < <(find "$MOD_DIR/patches/framework.jar" -name '*.patch' | sort -n)
-    # Overlay the trimmed FloatingFeatureHooks (launcher animation only).
-    cp -rfa "$MOD_DIR/framework/." "$FRAMEWORK_DIR/"
+    if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
+        echo "${YELLOW} - Skipping framework.jar patches (diagnostic stock framework build)${RESET}"
+    else
+        echo "${YELLOW} - Patching framework.jar${RESET}"
+        local PATCH
+        while IFS= read -r PATCH; do
+            echo "   - $(basename "$PATCH")"
+            if ! patch -p1 --no-backup-if-mismatch -d "$FRAMEWORK_DIR" < "$PATCH" >/dev/null 2>&1; then
+                echo "${RED}LumiSettings: failed to apply $(basename "$PATCH")${RESET}"
+                return 1
+            fi
+        done < <(find "$MOD_DIR/patches/framework.jar" -name '*.patch' | sort -n)
+        # Overlay the trimmed FloatingFeatureHooks (launcher animation only).
+        cp -rfa "$MOD_DIR/framework/." "$FRAMEWORK_DIR/"
+    fi
 
     echo "${YELLOW} - Patching services.jar${RESET}"
     while IFS= read -r PATCH; do
@@ -275,6 +279,11 @@ ADD_KNOXPATCH() {
     local KNOXSDK_DIR="$2"
     local SKSU_DIR="$3"
     local MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
+
+    if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
+        echo "${YELLOW} - Skipping KnoxPatch (diagnostic stock framework build)${RESET}"
+        return 0
+    fi
 
     local DIR
     for DIR in "$FRAMEWORK_DIR" "$KNOXSDK_DIR" "$SKSU_DIR"; do
