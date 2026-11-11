@@ -207,12 +207,6 @@ jobs:
         source scripts/features/LumiROM.sh
         APPLY_PROP_FEATURES "$FIRM_DIR"
 
-    - name: Apply hotspot fix
-      shell: bash
-      run: |
-        source scripts/features/HotspotFix.sh
-        ADD_SOFTAP_FIX "$FIRM_DIR"
-
     - name: Adding mods
       shell: bash
       run: |
@@ -333,6 +327,13 @@ jobs:
           "$WORK_DIR/framework.jar"
         cp -fv "$WORK_DIR"/*.jar \
           "FIRMWARE/system/system/framework/"
+        echo "Removing stale boot-framework artifacts (framework.jar changed)"
+        rm -f "FIRMWARE/system/system/framework/boot-framework.vdex"
+        for ARCH in arm arm64; do
+          rm -f "FIRMWARE/system/system/framework/$ARCH/boot-framework.art" \
+                "FIRMWARE/system/system/framework/$ARCH/boot-framework.oat" \
+                "FIRMWARE/system/system/framework/$ARCH/boot-framework.vdex"
+        done
         if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
           cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" \
             "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
