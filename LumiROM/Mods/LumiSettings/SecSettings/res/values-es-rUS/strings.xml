@@ -18,4 +18,6 @@
     <string name="lumi_ui_settings_title">Ajustes de la interfaz de usuario</string>
     <string name="lumi_updates_title">Actualizar ROM</string>
     <string name="keywords_lumi_settings">Ajustes de LumiROM</string>
+    <string name="lumi_fluidmotion_title">Fluid Motion</string>
+    <string name="lumi_fluidmotion_summary">Animaciones de desbloqueo, apps y panel de notificaciones</string>
 </resources>

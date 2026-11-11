@@ -23,6 +23,10 @@ ADD_MODS() {
         sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/SDHMSFix/system/system/priv-app/SamsungDeviceHealthManagerService/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService/"
 
+        echo "${YELLOW} - Adding FluidMotion settings app${RESET}"
+        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/FluidMotion/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion/"
+
         echo "${YELLOW} - Adding volte fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
 

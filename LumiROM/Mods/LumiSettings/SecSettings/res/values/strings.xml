@@ -19,4 +19,6 @@
     <string name="lumi_settings_title">LumiROM Settings</string>
     <string name="lumi_ui_settings_title">UI settings</string>
     <string name="lumi_updates_title">Update ROM</string>
+    <string name="lumi_fluidmotion_title">Fluid Motion</string>
+    <string name="lumi_fluidmotion_summary">Unlock, app and notification shade animations</string>
 </resources>
