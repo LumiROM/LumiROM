@@ -19,6 +19,10 @@ ADD_MODS() {
         sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/bin/"* "$EXTRACTED_FIRM_DIR/system/system/bin/"
         sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/etc/"* "$EXTRACTED_FIRM_DIR/system/system/etc/"
 
+        echo "${YELLOW} - Adding SDHMS SIOP warning fix${RESET}"
+        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/SDHMSFix/system/system/priv-app/SamsungDeviceHealthManagerService/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService/"
+
         echo "${YELLOW} - Adding volte fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
 
