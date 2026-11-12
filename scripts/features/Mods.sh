@@ -39,6 +39,10 @@ ADD_MODS() {
         sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/TouchWizHome_2017/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017/"
 
+        echo "${YELLOW} - Adding ION backport${RESET}"
+        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/lib64"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/CodecFix/system/system/lib64/"* "$EXTRACTED_FIRM_DIR/system/system/lib64/"
+
         echo "${YELLOW} - Adding volte fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
 
