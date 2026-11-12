@@ -5,6 +5,14 @@ Here are the ROM versions and their respective changelog documents.
 <table>
 <tr>
 <td valign="top">
+<b>One UI 9</b>
+<table>
+<tr><th>Version</th><th>Link</th></tr>
+<tr><td><img src="https://img.shields.io/badge/LumiROM-9.0.0-AD46FF?logo=Android" alt="LumiROM 9.0.0"></td><td><a href="https://github.com/LumiROM/LumiROM/blob/main/changelogs/LumiROM%209.0.x/LumiROM%209.0.0.md">Changelog</a></td></tr></table>
+</td>
+<table>
+<tr>
+<td valign="top">
 <b>One UI 8.5</b>
 <table>
 <tr><th>Version</th><th>Link</th></tr>
@@ -58,6 +66,6 @@ Here are the ROM versions and their respective changelog documents.
 | ![LumiVENDOR](https://img.shields.io/badge/Lumi-VENDOR-green?logo=Android) | [Download](https://huggingface.co/buckets/LuminousJD418/LumiROM/tree/ROMs/Vendor) |
 
 ## Note
-**LumiVENDOR** is only needed for **A325FXXS7DWL1** and **A325FXXSCDXL2**, to make them able to install and use my ROMs.
+**LumiVENDOR** is only needed for **A325FXXS7DWL1** and **A325FXXSCDXL2**, to make them able to install and use my ROMs (not supported on LumiROM 9 and upwards).
 
 A325FXXSCDYB2 and A325MUBSBDYC2 (which are the latest A325X updates) can install the ROM normally without flashing LumiVENDOR.
