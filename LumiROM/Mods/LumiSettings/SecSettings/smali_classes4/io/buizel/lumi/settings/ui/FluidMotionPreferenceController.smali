@@ -153,6 +153,16 @@
 .method public handlePreferenceTreeClick(Landroidx/preference/Preference;)Z
     .locals 3
 
+    invoke-virtual {p1}, Landroidx/preference/Preference;->getKey()Ljava/lang/String;
+    move-result-object v0
+    const-string v1, "lumi_fluidmotion"
+    invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+    move-result v0
+    if-nez v0, :cond_lumi
+    const/4 v0, 0x0
+    return v0
+
+    :cond_lumi
     new-instance v0, Landroid/content/Intent;
 
     invoke-direct {v0}, Landroid/content/Intent;-><init>()V

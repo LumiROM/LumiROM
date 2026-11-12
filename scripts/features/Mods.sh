@@ -27,6 +27,18 @@ ADD_MODS() {
         sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/FluidMotion/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion/"
 
+        echo "${YELLOW} - Adding FluidMotion SystemUI${RESET}"
+        local SYSTEMUI_DST="$EXTRACTED_FIRM_DIR/system_ext/priv-app/SystemUI"
+        if [ -d "$EXTRACTED_FIRM_DIR/system/system_ext/priv-app/SystemUI" ]; then
+            SYSTEMUI_DST="$EXTRACTED_FIRM_DIR/system/system_ext/priv-app/SystemUI"
+        fi
+        sudo mkdir -p "$SYSTEMUI_DST"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system_ext/priv-app/SystemUI/"* "$SYSTEMUI_DST/"
+
+        echo "${YELLOW} - Adding FluidMotion Launcher${RESET}"
+        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017"
+        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/TouchWizHome_2017/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017/"
+
         echo "${YELLOW} - Adding volte fix${RESET}"
         sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
 
