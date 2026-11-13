@@ -1,0 +1,7 @@
+id=tweaks
+name=Init tweaks
+version=1.0
+versionCode=1
+author=Luminous418
+description=Additional init rules.
+order=80

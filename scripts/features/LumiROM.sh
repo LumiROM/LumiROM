@@ -1239,6 +1239,10 @@ APPLY_PROP_FEATURES() {
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.show_multiuserui" "1"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.max_users" "5"
 
+    # Build identity
+    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.build.user" "Luminous418"
+    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.build.host" "Luminous418"
+
     # Related to LumiSettings
     BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.version" "$LUMIROM_VERSION"
     

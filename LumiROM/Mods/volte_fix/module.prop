@@ -1,0 +1,7 @@
+id=voltefix
+name=VoLTE fix
+version=1.0
+versionCode=1
+author=Luminous418
+description=Carrier VoLTE blobs and configuration.
+order=70

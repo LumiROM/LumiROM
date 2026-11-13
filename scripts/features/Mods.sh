@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source scripts/utils/bash_colors.sh
+source scripts/utils/mod_utils.sh
 
 ADD_MODS() {
     echo ""
@@ -9,55 +10,26 @@ ADD_MODS() {
         return 1
     fi
 
-	local EXTRACTED_FIRM_DIR="$1"
+    EXTRACTED_FIRM_DIR="$1"
+    export EXTRACTED_FIRM_DIR
 
-    if [ "$USE_MODS" = "true" ]; then
-        # For every new mod, add it with all route, until I remake the script
-        echo "${BLUE}============ Mods Installation ============${RESET}"
-        
-        echo "${YELLOW} - Adding misc system files${RESET}"
-        sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/bin/"* "$EXTRACTED_FIRM_DIR/system/system/bin/"
-        sudo cp -rfan "$(pwd)/LumiROM/Mods/Files/system/system/etc/"* "$EXTRACTED_FIRM_DIR/system/system/etc/"
-
-        echo "${YELLOW} - Adding SDHMS SIOP warning fix${RESET}"
-        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/SDHMSFix/system/system/priv-app/SamsungDeviceHealthManagerService/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungDeviceHealthManagerService/"
-
-        echo "${YELLOW} - Adding FluidMotion settings app${RESET}"
-        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/FluidMotion/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/FluidMotion/"
-
-        echo "${YELLOW} - Adding FluidMotion SystemUI${RESET}"
-        local SYSTEMUI_DST="$EXTRACTED_FIRM_DIR/system_ext/priv-app/SystemUI"
-        if [ -d "$EXTRACTED_FIRM_DIR/system/system_ext/priv-app/SystemUI" ]; then
-            SYSTEMUI_DST="$EXTRACTED_FIRM_DIR/system/system_ext/priv-app/SystemUI"
-        fi
-        sudo mkdir -p "$SYSTEMUI_DST"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system_ext/priv-app/SystemUI/"* "$SYSTEMUI_DST/"
-
-        echo "${YELLOW} - Adding FluidMotion Launcher${RESET}"
-        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/FluidMotion/system/system/priv-app/TouchWizHome_2017/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/TouchWizHome_2017/"
-
-        echo "${YELLOW} - Adding ION backport${RESET}"
-        sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/lib64"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/CodecFix/system/system/lib64/"* "$EXTRACTED_FIRM_DIR/system/system/lib64/"
-
-        echo "${YELLOW} - Adding volte fix${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/volte_fix/vendor/lib64/"* "$EXTRACTED_FIRM_DIR/vendor/lib64/"
-
-        echo "${YELLOW} - Adding init tweaks${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/tweaks/system/system/etc/init/"* "$EXTRACTED_FIRM_DIR/system/system/etc/init/"
-
-        echo "${YELLOW} - Adding custom wallpapers${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/wallpaper/system/system/priv-app/wallpaper-res/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/wallpaper-res/"
-
-        echo "${YELLOW} - Adding modded SamsungCamera${RESET}"
-        sudo cp -rfa "$(pwd)/LumiROM/Mods/SamsungCameraFix/system/system/priv-app/SamsungCamera/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungCamera/"
-
-        echo "${GREEN} - Mods added${RESET}"
-    else
+    if [ "$USE_MODS" != "true" ]; then
         echo "${RED}The use of mods for this build have been disabled by the user${RESET}"
+        return 0
     fi
 
+    echo "${BLUE}============ Mods Installation ============${RESET}"
+
+    local MODS_DIR="$(pwd)/LumiROM/Mods"
+    local MOD_ORDER
+    local MOD_DIR
+    local MOD_COUNT=0
+
+    while IFS=$'\t' read -r MOD_ORDER MOD_DIR; do
+        [ -z "$MOD_DIR" ] && continue
+        MOD_APPLY "$MOD_DIR" || return 1
+        MOD_COUNT=$((MOD_COUNT + 1))
+    done < <(MOD_LIST "$MODS_DIR")
+
+    echo "${GREEN} - ${MOD_COUNT} mods added${RESET}"
 }

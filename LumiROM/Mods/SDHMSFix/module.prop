@@ -1,0 +1,7 @@
+id=sdhmsfix
+name=SDHMS SIOP warning fix
+version=1.0
+versionCode=1
+author=Luminous418
+description=Fixes the SamsungDeviceHealthManagerService SIOP warning.
+order=20

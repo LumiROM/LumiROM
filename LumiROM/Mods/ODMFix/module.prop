@@ -1,0 +1,7 @@
+id=odmfix
+name=ODM JPEG/BBR fix
+version=1.0
+versionCode=1
+author=Luminous418
+description=ODM init rules for JPEG decoding and BBR, selected per device.
+order=60

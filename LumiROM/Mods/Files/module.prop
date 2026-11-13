@@ -1,0 +1,7 @@
+id=files
+name=Misc system files
+version=1.0
+versionCode=1
+author=Luminous418
+description=Additional binaries and permission files.
+order=10

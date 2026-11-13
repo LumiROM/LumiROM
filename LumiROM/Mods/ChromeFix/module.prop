@@ -1,0 +1,7 @@
+id=chromefix
+name=Chrome zygote_next fix
+version=1.0
+versionCode=1
+author=Luminous418
+description=Limits the zygote_next capability scan to 0..37 on kernel 4.14.
+order=50

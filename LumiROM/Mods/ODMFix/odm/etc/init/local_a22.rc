@@ -1,0 +1,16 @@
+# Arreglos locales para One UI 9 sobre kernel 4.14 (A32/A22).
+#
+# 1) Fotos JPEG en blanco: el vendor activa ro.vendor.jpeg_decode_sw_opt=1 y el
+#    libhwui de One UI 9 pide entonces memoria en el heap dma-buf "mtk_mm", que
+#    no existe en el kernel 4.14. Este interruptor desactiva ese camino.
+on early-init
+    setprop debug.jpegfull.opt.switch 0
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr
+
+# 2) BBR: networksetting.rc del vendor pone bic; el odm se procesa despues.
+on boot
+    setprop debug.jpegfull.opt.switch 0
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr
+
+on property:sys.boot_completed=1
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr

@@ -1,0 +1,7 @@
+id=codecfix
+name=ION/Codec fix
+version=1.0
+versionCode=1
+author=Luminous418
+description=One UI 8.5 libion backport for codec and video playback.
+order=40

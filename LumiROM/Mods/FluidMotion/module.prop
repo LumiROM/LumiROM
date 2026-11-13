@@ -1,0 +1,7 @@
+id=fluidmotion
+name=FluidMotion animations
+version=1.0
+versionCode=1
+author=Luminous418
+description=Static FluidMotion ports for SystemUI and the launcher.
+order=30
