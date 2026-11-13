@@ -363,6 +363,9 @@ jobs:
 
     - name: Build ROM
       shell: bash
+      env:
+        OTA_PK8: ${{ secrets.OTA_PK8 }}
+        OTA_CERT: ${{ secrets.OTA_CERT }}
       run: |
         source scripts/firmware/FW.sh
         source scripts/features/LumiROM.sh
