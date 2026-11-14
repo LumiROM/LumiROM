@@ -8,6 +8,7 @@ Here are the ROM versions and their respective changelog documents.
 <b>One UI 9</b>
 <table>
 <tr><th>Version</th><th>Link</th></tr>
+<tr><td><img src="https://img.shields.io/badge/LumiROM-9.0.2-AD46FF?logo=Android" alt="LumiROM 9.0.2"></td><td><a href="https://github.com/LumiROM/LumiROM/blob/main/changelogs/LumiROM%209.0.x/LumiROM%209.0.2.md">Changelog</a></td></tr>
 <tr><td><img src="https://img.shields.io/badge/LumiROM-9.0.1-AD46FF?logo=Android" alt="LumiROM 9.0.1"></td><td><a href="https://github.com/LumiROM/LumiROM/blob/main/changelogs/LumiROM%209.0.x/LumiROM%209.0.1.md">Changelog</a></td></tr>
 <tr><td><img src="https://img.shields.io/badge/LumiROM-9.0.0-AD46FF?logo=Android" alt="LumiROM 9.0.0"></td><td><a href="https://github.com/LumiROM/LumiROM/blob/main/changelogs/LumiROM%209.0.x/LumiROM%209.0.0.md">Changelog</a></td></tr></table>
 </td>
