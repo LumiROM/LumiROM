@@ -5,7 +5,7 @@
      <com.samsung.android.settings.widget.SecInsetCategoryPreference android:order="300000" />
      <com.android.settings.widget.HomepagePreference android:icon="@drawable/sec_ic_settings_software_update" android:layout="@layout/sec_homepage_software_update_preference" android:title="@string/sec_software_update_title" android:key="top_level_software_update" android:summary="@string/summary_placeholder" android:order="320000" settings:controller="com.samsung.android.settings.homepage.TopLevelSoftwareUpdatePreferenceController" settings:highlightableMenuKey="@string/menu_key_software_update" settings:keywords="@string/keywords_software_update_settings">
 -        <intent android:targetPackage="com.wssyncmldm" android:targetClass="com.idm.fotaagent.enabler.ui.userinit.UserInitEntryActivity">
-+        <intent android:targetPackage="dev.cloudy.ota" android:targetClass="dev.cloudy.ota.ui.MainActivity">
++        <intent android:targetPackage="de.lumi.fota" android:targetClass="de.lumi.fota.ui.MainActivity">
              <extra android:name="from_settings" android:value="true" />
          </intent>
      </com.android.settings.widget.HomepagePreference>

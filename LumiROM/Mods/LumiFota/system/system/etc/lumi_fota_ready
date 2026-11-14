@@ -1,0 +1,1 @@
+LumiROM bakes LumiFota's SELinux rules and OTA staging dirs. See /system/etc/init/lumi_fota.rc.

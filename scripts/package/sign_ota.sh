@@ -70,7 +70,7 @@ SIGN_OTA_ZIP() {
 # ./ROM/$FOLDER_NAME). Must run AFTER any post-processing that re-zips the
 # package (e.g. the SamsungCamera cleanup injection), because re-zipping
 # rewrites the EOCD and strips the whole-file signature footer, otherwise
-# RecoverySystem/Cloudy fails with "no signature in file (no footer)".
+# RecoverySystem/LumiFota fails with "no signature in file (no footer)".
 # Usage: SIGN_INCREMENTAL_OTA [DIR]
 SIGN_INCREMENTAL_OTA() {
     local DIR="${1:-./ROM/$FOLDER_NAME}"

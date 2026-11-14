@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-grant the notification permission so OTA progress and "ready" notices
+     are visible without opening the app first (it has no launcher icon). -->
+<exceptions>
+    <exception package="de.lumi.fota">
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false"/>
+    </exception>
+</exceptions>

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Re-signs the incremental OTAs that were published WITHOUT a signature (they
-# lack the signapk -w whole-file footer, so Cloudy/RecoverySystem fails with
+# lack the signapk -w whole-file footer, so LumiFota/RecoverySystem fails with
 # "no signature in file (no footer)") and re-uploads them to the same Hugging
 # Face OTAs bucket. Also regenerates the OTA-only manifest JSON for each
-# device (updater/ota/{device}.json in the cloudy repo) with the new size /
+# device (ota/{device}.json in the LumiROM/updater repo) with the new size /
 # sha256 of the signed file.
 #
 # Requirements:
@@ -32,7 +32,7 @@ source scripts/utils/bash_colors.sh
 source scripts/package/sign_ota.sh
 source scripts/package/generate_ota_manifest.sh
 
-MANIFEST_BASE="${OTA_MANIFEST_BASE:-https://raw.githubusercontent.com/Luminous418/cloudy/main/updater/ota}"
+MANIFEST_BASE="${OTA_MANIFEST_BASE:-https://raw.githubusercontent.com/LumiROM/updater/main/ota}"
 WORK_DIR="${OTA_WORK_DIR:-/tmp/lumi-resign-ota}"
 OUT_DIR="$ROOT/OTA_MANIFESTS"
 UPLOAD="true"
@@ -139,5 +139,5 @@ else
 fi
 
 if [ "$UPLOAD" = "true" ]; then
-    echo "${YELLOW}Remember to commit the regenerated manifests from ${OUT_DIR} to the cloudy repo (updater/ota/{device}.json).${RESET}"
+    echo "${YELLOW}Remember to commit the regenerated manifests from ${OUT_DIR} to the LumiROM/updater repo (ota/{device}.json).${RESET}"
 fi

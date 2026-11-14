@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Privileged-permission whitelist for the LumiFota OTA app (de.lumi.fota).
+
+    Required since Android 9: a priv-app that requests a signature|privileged
+    permission is silently NOT installed unless the permission appears here.
+
+    Place this file in the ROM at:
+      /system/etc/permissions/privapp-permissions-lumifota.xml
+-->
+<permissions>
+    <privapp-permissions package="de.lumi.fota">
+        <!-- Reboot into recovery after staging the OTA. -->
+        <permission name="android.permission.REBOOT"/>
+        <!-- RecoverySystem: uncrypt + BCB setup. -->
+        <permission name="android.permission.RECOVERY"/>
+        <!-- Grants gid "cache", needed for DAC access to /data/ota_package
+             (system:cache 0770) and /cache/recovery (system:cache 0770). -->
+        <permission name="android.permission.ACCESS_CACHE_FILESYSTEM"/>
+    </privapp-permissions>
+</permissions>

@@ -121,9 +121,9 @@ jobs:
       env:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
-        CLOUDY_TOKEN: ${{ secrets.CLOUDY_TOKEN }}
+        UPDATER_TOKEN: ${{ secrets.UPDATER_TOKEN }}
       run: |
-        if [ -n "$OTA_PK8" ] && [ -n "$OTA_CERT" ] && [ -n "$CLOUDY_TOKEN" ]; then
+        if [ -n "$OTA_PK8" ] && [ -n "$OTA_CERT" ] && [ -n "$UPDATER_TOKEN" ]; then
           echo "can_ota=true" >> "$GITHUB_OUTPUT"
         else
           echo "can_ota=false" >> "$GITHUB_OUTPUT"
@@ -204,18 +204,18 @@ jobs:
         source scripts/features/Mods.sh
         ADD_MODS "$FIRM_DIR"
 
-    - name: Adding Cloudy OTA Helper
+    - name: Adding LumiFota OTA Updater
       shell: bash
       env:
         BUILD_STATUS: ${{ env.BUILD_STATUS }}
         PLATFORM_PK8: ${{ secrets.PLATFORM_PK8 }}
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
       run: |
-        source scripts/features/Cloudy.sh
+        source scripts/features/LumiFota.sh
         if [ "$USE_MODS" = "true" ]; then
-            ADD_CLOUDY "$FIRM_DIR"
+            ADD_LUMIFOTA "$FIRM_DIR"
         else
-            echo "Mods are disabled, skipping Cloudy OTA Helper"
+            echo "Mods are disabled, skipping LumiFota OTA Updater"
         fi
 
     - name: Adding Galaxy AI
@@ -497,12 +497,20 @@ jobs:
           exit 0
         fi
 
+        # The codename lives in build_info.txt inside the zip; it is not an env var.
+        DEVICE_CODENAME="$(unzip -p "$ZIP_PATH" build_info.txt | sed -n 's/^device=//p' | head -n 1)"
+        if [ -z "$DEVICE_CODENAME" ]; then
+          echo "No device codename in build_info, skipping OTA manifest generation."
+          mkdir -p OTA_MANIFESTS
+          exit 0
+        fi
+
         source scripts/package/generate_ota_manifest.sh
         mkdir -p OTA_MANIFESTS
 
         # Full-ROM manifest (updater/{device}.json) - keeps release history.
         CURRENT_JSON="/tmp/ota_current.json"
-        curl -sf -o "$CURRENT_JSON" "https://raw.githubusercontent.com/Luminous418/cloudy/main/updater/${DEVICE_CODENAME}.json" || CURRENT_JSON=""
+        curl -sf -o "$CURRENT_JSON" "https://raw.githubusercontent.com/LumiROM/updater/main/${DEVICE_CODENAME}.json" || CURRENT_JSON=""
         GENERATE_OTA_MANIFEST "$ZIP_PATH" "$DOWNLOAD_URL" "$OTA_CHANGELOG" "$CURRENT_JSON" > "OTA_MANIFESTS/${DEVICE_CODENAME}.json"
         echo "Full-ROM manifest generated for ${DEVICE_CODENAME}."
 
@@ -545,12 +553,12 @@ jobs:
         path: OTA_MANIFESTS/
         merge-multiple: true
 
-    - name: Update OTA manifests in cloudy repo
+    - name: Update OTA manifests in LumiROM/updater
       env:
-        CLOUDY_TOKEN: ${{ secrets.CLOUDY_TOKEN }}
+        UPDATER_TOKEN: ${{ secrets.UPDATER_TOKEN }}
       run: |
-        if [ -z "$CLOUDY_TOKEN" ]; then
-          echo "CLOUDY_TOKEN not set, skipping OTA manifest update."
+        if [ -z "$UPDATER_TOKEN" ]; then
+          echo "UPDATER_TOKEN not set, skipping OTA manifest update."
           exit 0
         fi
         # ARTIFACTS/OTA_MANIFESTS/<codename>.json and <codename>_ota.json
@@ -560,26 +568,26 @@ jobs:
           exit 0
         fi
 
-        git clone --depth 1 "https://x-access-token:${CLOUDY_TOKEN}@github.com/Luminous418/cloudy.git" /tmp/cloudy
-        mkdir -p /tmp/cloudy/updater/ota
+        git clone --depth 1 "https://x-access-token:${UPDATER_TOKEN}@github.com/LumiROM/updater.git" /tmp/updater
+        mkdir -p /tmp/updater/ota
 
         for MANIFEST in $(cat /tmp/found_manifests.txt); do
           FILENAME=$(basename "$MANIFEST")
           if [[ "$FILENAME" == *_ota.json ]]; then
             CODENAME="${FILENAME%_ota.json}"
-            cp "$MANIFEST" "/tmp/cloudy/updater/ota/${CODENAME}.json"
+            cp "$MANIFEST" "/tmp/updater/ota/${CODENAME}.json"
             echo "OTA manifest updated for ${CODENAME}."
           else
             CODENAME="${FILENAME%.json}"
-            cp "$MANIFEST" "/tmp/cloudy/updater/${CODENAME}.json"
+            cp "$MANIFEST" "/tmp/updater/${CODENAME}.json"
             echo "Full-ROM manifest updated for ${CODENAME}."
           fi
         done
 
-        cd /tmp/cloudy
+        cd /tmp/updater
         git config user.name "LumiROM Bot"
         git config user.email "noreply@github.com"
-        git add updater
+        git add -- "*.json" ota
         git diff --cached --quiet && echo "Manifest unchanged, nothing to push." && exit 0
         git commit -m "OTA: publish manifests"
         git push

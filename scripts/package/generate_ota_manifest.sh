@@ -1,6 +1,10 @@
 #!/bin/bash
 
-source scripts/utils/bash_colors.sh
+# Resolve the repo root from this file so colors and changelog paths work
+# regardless of the caller's cwd.
+OTA_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+source "$OTA_REPO_ROOT/scripts/utils/bash_colors.sh"
 
 ROM_NAME="${ROM_NAME:-LumiROM}"
 MAINTAINER_NAME="${MAINTAINER_NAME:-Lumi}"
@@ -70,6 +74,17 @@ _BUILD_RELEASE_JSON() {
     KERNEL_VERSION="$(grep "^kernel_version=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
     PARTITION_LAYOUT="$(grep "^partition_layout=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
 
+    # Full changelog page for this exact version, if the maintainer committed it.
+    # changelogs/LumiROM <major.minor>.x/LumiROM <version>.md
+    local CHANGELOG_FULL=""
+    if [ -n "$VERSION" ]; then
+        local SERIES
+        SERIES="$(cut -d "." -f 1,2 <<< "$VERSION")"
+        if [ -f "$OTA_REPO_ROOT/changelogs/LumiROM ${SERIES}.x/LumiROM ${VERSION}.md" ]; then
+            CHANGELOG_FULL="https://github.com/LumiROM/LumiROM/blob/main/changelogs/LumiROM%20${SERIES}.x/LumiROM%20${VERSION}.md"
+        fi
+    fi
+
     local FILE_NAME FILE_SIZE FILE_SHA256
     FILE_NAME="$(basename "$ZIP_PATH")"
     FILE_SIZE="$(stat -c "%s" "$ZIP_PATH")"
@@ -87,6 +102,7 @@ _BUILD_RELEASE_JSON() {
         --arg kernel_version "$KERNEL_VERSION" \
         --arg partition_layout "$PARTITION_LAYOUT" \
         --arg changelog "$CHANGELOG" \
+        --arg changelog_full "$CHANGELOG_FULL" \
         --arg url "$DOWNLOAD_URL" \
         --arg filename "$FILE_NAME" \
         --arg size "$FILE_SIZE" \
@@ -103,6 +119,7 @@ _BUILD_RELEASE_JSON() {
             kernel_version: $kernel_version,
             partition_layout: $partition_layout,
             changelog: ($changelog | split(";") | map(select(length > 0))),
+            changelog_full: (if $changelog_full == "" then null else $changelog_full end),
             download: {
                 url: $url,
                 filename: $filename,
@@ -113,7 +130,7 @@ _BUILD_RELEASE_JSON() {
         }'
 }
 
-# Builds the full-ROM manifest (updater/{device}.json in the cloudy repo).
+# Builds the full-ROM manifest ({device}.json in the LumiROM/updater repo).
 # New releases are prepended to the existing history, newest first.
 # Usage: GENERATE_OTA_MANIFEST <ROM_ZIP> <DOWNLOAD_URL> <CHANGELOG> [EXISTING_JSON]
 GENERATE_OTA_MANIFEST() {
@@ -154,7 +171,7 @@ GENERATE_OTA_MANIFEST() {
     fi
 }
 
-# Builds the OTA-only manifest (updater/ota/{device}.json in the cloudy repo).
+# Builds the OTA-only manifest (ota/{device}.json in the LumiROM/updater repo).
 # This manifest is replaced on every build: it always points to the newest
 # incremental package only.
 # Usage: GENERATE_OTA_INCREMENTAL_MANIFEST <INC_ZIP> <INC_URL> <CHANGELOG>

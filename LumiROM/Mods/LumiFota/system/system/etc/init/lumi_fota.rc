@@ -1,0 +1,14 @@
+# LumiFota OTA staging (de.lumi.fota)
+#
+# The app stages packages in /data/ota_package/lumi (labeled ota_package_file so
+# uncrypt may read them) and lets RecoverySystem/uncrypt set up the BCB. Nothing
+# here changes /cache/recovery permissions: the stock 0770 system:cache is what
+# the app relies on (ACCESS_CACHE_FILESYSTEM -> gid cache).
+
+on post-fs-data
+    mkdir /data/ota_package 0770 system cache
+
+    # One-shot safety net: drop any leftover staging automation so a reboot can
+    # never re-trigger an already processed update.
+    rm -f /cache/recovery/command
+    rm -f /cache/recovery/openrecoveryscript

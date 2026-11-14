@@ -52,7 +52,7 @@ usage() {
     echo "Optional:"
     echo "  -t, --target <SM-XXXXX>    Base device to port from (auto-derived from stock if omitted)"
     echo "  -m, --maintainer <name>    Maintainer name (default: git config user.name)"
-    echo "      --no-mods              Exclude mods (Cloudy app, Vulkan fix, VoLTE fix, tweaks, wallpapers)"
+    echo "      --no-mods              Exclude mods (LumiFota app, Vulkan fix, VoLTE fix, tweaks, wallpapers)"
     echo "      --no-ai                Exclude Galaxy AI features"
     echo "      --bpf-legacy           Enable if your kernel BPF version is lower than 5.10"
     echo "      --img-zip              Deliver the partition images (.img) in a ZIP instead of a flashable ROM"
@@ -267,9 +267,9 @@ add_mods() {
     source scripts/features/Mods.sh
     run ADD_MODS "$FIRM_DIR"
 
-    log_section "Adding Cloudy OTA Helper"
-    source scripts/features/Cloudy.sh
-    run ADD_CLOUDY "$FIRM_DIR"
+    log_section "Adding LumiFota OTA Updater"
+    source scripts/features/LumiFota.sh
+    run ADD_LUMIFOTA "$FIRM_DIR"
 }
 
 add_galaxy_ai() {

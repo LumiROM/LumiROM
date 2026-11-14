@@ -10,7 +10,7 @@ PATCH_SECSETTINGS() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_SECSETTINGS_DIR>"
-        echo "  Applies the SecSettings patches (Cloudy entry + ROM logo)."
+        echo "  Applies the SecSettings patches (LumiFota entry + ROM logo)."
         return 1
     fi
 
@@ -22,7 +22,7 @@ PATCH_SECSETTINGS() {
     fi
 
     local PATCHES=(
-        "0002-Open-Cloudy-from-Software-update-in-settings.patch"
+        "0002-Open-LumiFota-from-Software-update-in-settings.patch"
         "0003-Add-LumiROM-Logo.patch"
     )
 
