@@ -267,6 +267,10 @@ add_mods() {
     source scripts/features/Mods.sh
     run ADD_MODS "$FIRM_DIR"
 
+    log_section "Patching hotspot"
+    source scripts/features/HotspotFix.sh
+    run ADD_SOFTAP_FIX "$FIRM_DIR"
+
     log_section "Adding LumiFota OTA Updater"
     source scripts/features/LumiFota.sh
     run ADD_LUMIFOTA "$FIRM_DIR"

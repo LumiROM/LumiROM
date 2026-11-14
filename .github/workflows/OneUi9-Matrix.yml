@@ -204,6 +204,19 @@ jobs:
         source scripts/features/Mods.sh
         ADD_MODS "$FIRM_DIR"
 
+    - name: Patching hotspot
+      shell: bash
+      env:
+        PLATFORM_PK8: ${{ secrets.PLATFORM_PK8 }}
+        PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
+      run: |
+        source scripts/features/HotspotFix.sh
+        if [ "$USE_MODS" = "true" ]; then
+            ADD_SOFTAP_FIX "$FIRM_DIR"
+        else
+            echo "Mods are disabled, skipping hotspot patch"
+        fi
+
     - name: Adding LumiFota OTA Updater
       shell: bash
       env:
