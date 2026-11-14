@@ -1,0 +1,7 @@
+id=lumi_display
+name=LumiROM display tuning
+version=v1.0.0
+versionCode=100
+author=LumiROM
+description=HBM threshold tuning for the A32 family: HBM entry at 2500 lux, with the services.jar hysteresis patch.
+devices=SM-A325F,SM-A325M,SM-M325F

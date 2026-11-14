@@ -1,0 +1,18 @@
+--- a/smali/com/android/server/display/BrightnessRangeController$$ExternalSyntheticLambda0.smali
++++ b/smali/com/android/server/display/BrightnessRangeController$$ExternalSyntheticLambda0.smali
+@@ -41,6 +41,15 @@
+ 
+     iget v1, v1, Lcom/android/server/display/config/HighBrightnessModeData;->minimumLux:F
+ 
++    iget-boolean v2, v0, Lcom/android/server/display/HighBrightnessModeController;->mIsInAllowedAmbientRange:Z
++
++    if-eqz v2, :cond_hyst
++
++    const v2, 0x3f4ccccd    # 0.8f
++
++    mul-float/2addr v1, v2
++
++    :cond_hyst
+     cmpl-float v1, p0, v1
+ 
+     if-ltz v1, :cond_1
