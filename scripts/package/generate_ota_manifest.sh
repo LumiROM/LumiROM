@@ -118,7 +118,9 @@ _BUILD_RELEASE_JSON() {
             device_model: $device_model,
             kernel_version: $kernel_version,
             partition_layout: $partition_layout,
-            changelog: ($changelog | split(";") | map(select(length > 0))),
+            changelog: ($changelog | split(";")
+                | map(gsub("^[ \t\r\n]+"; "") | gsub("[ \t\r\n]+$"; ""))
+                | map(select(length > 0))),
             changelog_full: (if $changelog_full == "" then null else $changelog_full end),
             download: {
                 url: $url,
@@ -144,7 +146,7 @@ GENERATE_OTA_MANIFEST() {
     local ROM_ZIP="$1"
     local DOWNLOAD_URL="$2"
     local CHANGELOG="$3"
-    local EXISTING_JSON="$4"
+    local EXISTING_JSON="${4:-}"
 
     if [ ! -f "$ROM_ZIP" ]; then
         echo "${RED}Error:${RESET} ROM zip not found: $ROM_ZIP" >&2
@@ -164,7 +166,11 @@ GENERATE_OTA_MANIFEST() {
     BASE="$(_BUILD_MAINTAINER_JSON "$DEVICE")"
 
     if [ -n "$EXISTING_JSON" ] && jq -e ".releases" "$EXISTING_JSON" >/dev/null 2>&1; then
-        jq --argjson release "$RELEASE" '.releases = [$release] + .releases' "$EXISTING_JSON"
+        # Replace any previous entry for the same version so re-running the
+        # workflow does not duplicate the release.
+        jq --argjson release "$RELEASE" \
+            '.releases = [$release] + [.releases[] | select(.version_code != $release.version_code)]' \
+            "$EXISTING_JSON"
     else
         jq -n --argjson base "$BASE" --argjson release "$RELEASE" \
             '$base + { releases: [$release] }'
