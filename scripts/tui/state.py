@@ -15,15 +15,14 @@ BASE_DEVICE_MAP = {
     "SM-A325F": "SM-A346B",
     "SM-A325M": "SM-A346B",
     "SM-M325F": "SM-A346B",
-    "SM-A225F": "SM-A245F",
-    "SM-A225M": "SM-A245F",
-    "SM-E225F": "SM-A245F",
-    "SM-M225F": "SM-A245F",
+    "SM-A225F": "SM-A346B",
+    "SM-A225M": "SM-A346B",
+    "SM-E225F": "SM-A346B",
+    "SM-M225F": "SM-A346B",
 }
 
 BASE_DEVICE_IMEI = {
     "SM-A346B": "353117555323497",
-    "SM-A245F": "358212589089183",
 }
 
 CSC_RE = re.compile(r"^[A-Za-z]{3}$")

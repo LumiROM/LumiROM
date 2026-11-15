@@ -13,12 +13,10 @@ GET_BASE_DEVICE() {
         return 1
     fi
 
+    # The Galaxy A34 firmware is the base for every supported device.
     case "$1" in
-        SM-A325F|SM-A325M|SM-M325F)
+        SM-A325F|SM-A325M|SM-M325F|SM-A225F|SM-A225M|SM-E225F|SM-M225F)
             echo "SM-A346B"
-            ;;
-        SM-A225F|SM-A225M|SM-E225F|SM-M225F)
-            echo "SM-A245F"
             ;;
         *)
             echo "${RED}Error:${RESET} No base device found for $1." >&2
@@ -172,15 +170,9 @@ DOWNLOAD_FIRMWARE_LUMI() {
     rm -rf "$DOWN_DIR"
     mkdir -p "$DOWN_DIR"
 
-    if [[ "$STOCK_DEVICE" == "SM-A325F" || "$STOCK_DEVICE" == "SM-A325M" || "$STOCK_DEVICE" == "SM-M325F" ]]; then
-        export TARGET_DEVICE="SM-A346B"
-        echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
-        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/FW/SM-A346B/SM-A346B.zip?download=true" || return 1
-    elif [[ "$STOCK_DEVICE" == "SM-A225F" || "$STOCK_DEVICE" == "SM-A225M" || "$STOCK_DEVICE" == "SM-E225F" || "$STOCK_DEVICE" == "SM-M225F" ]]; then
-        export TARGET_DEVICE="SM-A245F"
-        echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
-        aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/FW/SM-A245F_4_20260220151250_g2yvot48sr_fac_A245FXXSBEZB5_A245FOXMBEZB5_A245FXXSBEZB5_A245FXXSBEZB5_SEK.zip?download=true" || return 1
-    fi
+    export TARGET_DEVICE="SM-A346B"
+    echo "${YELLOW}Downloading firmware for${RESET} ${TARGET_DEVICE}"
+    aria2c -x 16 -d "${DOWN_DIR}/${TARGET_DEVICE}" -o "${TARGET_DEVICE}.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/FW/SM-A346B/SM-A346B.zip?download=true" || return 1
 
     # Cleanup any leftover .aria2 control files
     wait
@@ -198,11 +190,7 @@ DOWNLOAD_OTA() {
     mkdir -p "$DOWN_DIR"
 
     echo "${YELLOW}Downloading OTA${RESET}"
-    if [ -d "FIRMWARE/SM-A346B" ]; then
-        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A346B.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/OTA/SM-A346BOMB.zip?download=true" || return 1
-    elif [ -d "FIRMWARE/SM-A245F" ]; then
-        aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A245F.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/OTA/SM-A245F_BOMB.zip?download=true" || return 1
-    fi
+    aria2c -x 16 -d "$DOWN_DIR" -o "OTA_SM-A346B.zip" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/OTA/SM-A346BOMB.zip?download=true" || return 1
     # Cleanup any leftover .aria2 control files
     wait
     find "$DOWN_DIR" -name "*.aria2" -exec rm -f {} +
