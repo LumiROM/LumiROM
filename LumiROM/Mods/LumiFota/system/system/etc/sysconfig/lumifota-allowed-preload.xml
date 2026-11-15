@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    System-preload allowlist entry for the LumiFota OTA app (de.lumi.fota).
+
+    One UI's PackageManager only registers system packages that appear in an
+    "allowed-system-preload" entry; anything else under /system, /product,
+    /system_ext or /vendor is dropped during the boot scan without a visible
+    log on user builds.  Every installed system package on the device is in
+    the stock allowed-system-preload-apps.xml - the only exceptions are APEX
+    and data apps - which is why LumiFota (16.9 MB, correctly signed and
+    whitelisted) never showed up in `pm list packages`.
+
+    Sysconfig files are merged, so this small file is enough; the stock
+    allowed-system-preload-apps.xml stays untouched.
+-->
+<config>
+    <allowed-system-preload package="de.lumi.fota"/>
+</config>
