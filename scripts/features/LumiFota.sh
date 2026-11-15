@@ -89,6 +89,12 @@ ADD_LUMIFOTA() {
 ; Same, in case the app is mapped to priv_app instead of platform_app.
 (allow priv_app_all ota_package_file (dir (search write add_name remove_name create getattr open)))
 (allow priv_app_all ota_package_file (file (create open read write getattr setattr unlink rename map ioctl lock)))
+; uncrypt resolves /dev/block/platform/bootdevice/by-name/userdata before
+; writing the block map; without lnk_file read it fails with EACCES
+; ("Failed to get canonical ..." / uncrypt_error 119) and the framework
+; aborts the "Preparing to update" reboot.
+(allow uncrypt userdata_block_device (lnk_file (ioctl read getattr lock map open watch watch_reads)))
+(allow uncrypt userdata_block_device (blk_file (write read getattr ioctl lock append map open)))
 LUMIFOTA_EOF
         fi
     else
