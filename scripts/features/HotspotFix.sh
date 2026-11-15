@@ -290,6 +290,15 @@ HotspotFix_REPACK_SIGN_APEX() {
     FILES=$(printf '%s\n' "$FILES" | grep -vx 'apex_payload.img' | grep -vx 'apex_pubkey' | tr '\n' ' ')
     FILES="apex_payload.img apex_pubkey $FILES"
 
+    # --alignment-preserved exists since apksigner 0.9; older builds (e.g. the
+    # android-sdk-build-tools package on some distros) fail with
+    # "Unsupported option" after minutes of work, so check it up front.
+    if ! "$APKSIGNER_BIN" sign --help 2>&1 | grep -q -- '--alignment-preserved'; then
+        echo "${RED} - apksigner is too old: it lacks --alignment-preserved (needs >= 0.9)${RESET}"
+        echo "   Set APKSIGNER to a build-tools apksigner (e.g. \$ANDROID_HOME/build-tools/34.0.0/apksigner)."
+        return 1
+    fi
+
     rm -f "$OUT" "$OUT.zip" "$OUT.aligned"
     ( cd "$STAGE" && zip -q -0 -X "$OUT.zip" $FILES ) || {
         echo "${RED} - failed to rebuild the APEX zip${RESET}"
