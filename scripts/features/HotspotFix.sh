@@ -62,6 +62,10 @@ HotspotFix_BUILD_PATCHED_JAR() {
         echo "${RED} - apktool build failed for service-wifi.jar${RESET}"
         return 1
     }
+    if ! unzip -t "$SOFTAP_DIR/patched/service-wifi.jar" >/dev/null 2>&1; then
+        echo "${RED} - rebuilt service-wifi.jar is not a valid zip${RESET}"
+        return 1
+    fi
     return 0
 }
 
@@ -82,6 +86,60 @@ HotspotFix_STRIP_AVB_FOOTER() {
         return 1
     fi
     dd if="$SRC" of="$OUT" bs="$FS_BYTES" count=1 status=none
+    return 0
+}
+
+# ---------------------------------------------------------------
+# Grow the raw ext4 payload before writing the larger patched jar
+# ---------------------------------------------------------------
+HotspotFix_GROW_PAYLOAD_FS() {
+    if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+        echo "Usage: ${FUNCNAME[0]} <RAW_FS_IMG> [EXTRA_BYTES]"
+        return 1
+    fi
+    local RAW="$1"
+    local EXTRA="${2:-4194304}"
+
+    command -v e2fsck >/dev/null 2>&1 || {
+        echo "${RED} - e2fsck not found (needed to grow the payload)${RESET}"
+        return 1
+    }
+    command -v resize2fs >/dev/null 2>&1 || {
+        echo "${RED} - resize2fs not found (needed to grow the payload)${RESET}"
+        return 1
+    }
+    command -v dumpe2fs >/dev/null 2>&1 || {
+        echo "${RED} - dumpe2fs not found (needed to grow the payload)${RESET}"
+        return 1
+    }
+
+    local RC
+    e2fsck -f -y "$RAW" >/dev/null 2>&1
+    RC=$?
+    if [ "$RC" -gt 2 ]; then
+        echo "${RED} - e2fsck failed on the payload filesystem (${RC})${RESET}"
+        return 1
+    fi
+
+    local CUR
+    CUR=$(stat -c%s "$RAW")
+    truncate -s $((CUR + EXTRA)) "$RAW" || {
+        echo "${RED} - failed to extend the payload image${RESET}"
+        return 1
+    }
+    resize2fs "$RAW" >/dev/null 2>&1 || {
+        echo "${RED} - resize2fs failed on the payload filesystem${RESET}"
+        return 1
+    }
+
+    local FREE
+    FREE=$(dumpe2fs -h "$RAW" 2>/dev/null \
+        | awk -F: '/Free blocks:/ {gsub(/ /,"",$2); print $2}')
+    if [ -z "$FREE" ] || [ "$FREE" -lt 128 ]; then
+        echo "${RED} - payload filesystem has too few free blocks (${FREE:-unknown})${RESET}"
+        return 1
+    fi
+    echo "${GREEN} - payload filesystem grown (+${EXTRA} bytes, ${FREE} free blocks)${RESET}"
     return 0
 }
 
@@ -296,6 +354,35 @@ HotspotFix_PATCH_PAYLOAD() {
     return 0
 }
 
+# ---------------------------------------------------------------
+# Verify that the jar stored in the payload is complete and valid
+# ---------------------------------------------------------------
+HotspotFix_VERIFY_PAYLOAD_JAR() {
+    if [ "$#" -ne 3 ]; then
+        echo "Usage: ${FUNCNAME[0]} <RAW_FS_IMG> <EXPECTED_JAR> <TMP_JAR>"
+        return 1
+    fi
+    local RAW="$1"
+    local EXPECT="$2"
+    local TMP="$3"
+
+    rm -f "$TMP"
+    debugfs -R "dump /javalib/service-wifi.jar $TMP" "$RAW" >/dev/null 2>&1 || {
+        echo "${RED} - failed to dump the patched jar from the payload${RESET}"
+        return 1
+    }
+    if ! cmp -s "$EXPECT" "$TMP"; then
+        echo "${RED} - patched jar in the payload differs from the built jar${RESET}"
+        return 1
+    fi
+    if ! unzip -t "$TMP" >/dev/null 2>&1; then
+        echo "${RED} - patched jar in the payload is not a valid zip${RESET}"
+        return 1
+    fi
+    echo "${GREEN} - payload jar verified${RESET}"
+    return 0
+}
+
 ADD_SOFTAP_FIX() {
     echo ""
     if [ "$#" -ne 1 ]; then
@@ -361,13 +448,30 @@ ADD_SOFTAP_FIX() {
         return 1
     }
 
-    HotspotFix_PATCH_PAYLOAD "$PAYLOAD" "$SOFTAP_DIR/patched/service-wifi.jar" || {
+    HotspotFix_STRIP_AVB_FOOTER "$PAYLOAD" "$SOFTAP_DIR/patched/payload_raw.img" || {
+        echo "${RED} - failed to strip avb footer${RESET}"
+        return 1
+    }
+
+    # The stock ext4 payload has almost no free space, while the rebuilt jar
+    # is a few blocks larger. Grow the filesystem first; otherwise debugfs
+    # truncates the jar and drops its central directory (WifiService then
+    # fails to load and system_server bootloops).
+    HotspotFix_GROW_PAYLOAD_FS "$SOFTAP_DIR/patched/payload_raw.img" || {
+        echo "${RED} - failed to grow the payload filesystem${RESET}"
+        return 1
+    }
+
+    HotspotFix_PATCH_PAYLOAD "$SOFTAP_DIR/patched/payload_raw.img" \
+        "$SOFTAP_DIR/patched/service-wifi.jar" || {
         echo "${RED} - patching service-wifi.jar into payload failed${RESET}"
         return 1
     }
 
-    HotspotFix_STRIP_AVB_FOOTER "$PAYLOAD" "$SOFTAP_DIR/patched/payload_raw.img" || {
-        echo "${RED} - failed to strip avb footer${RESET}"
+    HotspotFix_VERIFY_PAYLOAD_JAR "$SOFTAP_DIR/patched/payload_raw.img" \
+        "$SOFTAP_DIR/patched/service-wifi.jar" \
+        "$SOFTAP_DIR/patched/verify-service-wifi.jar" || {
+        echo "${RED} - the patched jar in the payload is incomplete${RESET}"
         return 1
     }
 
