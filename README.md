@@ -21,7 +21,12 @@
 </p>
 
 LumiROM is a custom ROM created to provide a totally new experience to low-end MediaTek devices.
-It focuses on stability while upgrading the Android version, so you can test new One UI releases and enjoy new features such as Galaxy AI ✨
+It focuses on stability while upgrading the Android version, so you can test new One UI releases on hardware that was never meant to run them.
+
+> [!NOTE]
+> **Why no Galaxy AI?**
+> LumiROM targets low-end MediaTek phones (4-6 GB RAM, no NPU). The full Galaxy AI stack is too heavy for them: it causes lag, memory pressure and battery drain, so official builds are AI-free.
+> If you want it, you can still build it yourself: Galaxy AI remains available in the build script (enabled by default; use `--no-ai` to disable it, which is what official builds do).
 
 ## Quick Start
 - Just want the ROM? Download the latest release from my [Telegram channel](https://t.me/LumiROMs) and head over to [Installing the ROM](#installing-the-rom).
@@ -29,7 +34,7 @@ It focuses on stability while upgrading the Android version, so you can test new
 
 ## What does it do?
 
-It downloads the firmware from Samsung servers using [samloader](https://github.com/ananjaser1211/samloader), extracts the partition images and then applies all the features implemented in the repository - Galaxy AI, heavy debloat, Knox patches, performance tweaks and QoL improvements - so the device can be used again with a fresh and modern experience.
+It downloads the firmware from Samsung servers using [samloader](https://github.com/ananjaser1211/samloader), extracts the partition images and then applies all the features implemented in the repository - heavy debloat, Knox patches, performance tweaks and QoL improvements - so the device can be used again with a fresh and modern experience.
 
 The whole process can run either on **GitHub Actions** or **locally** on your machine (requires Ubuntu/Debian distro or WSL) - either with the CLI script or with the **LumiROM Builder** terminal UI.
 
@@ -67,17 +72,8 @@ Where:
 - VoLTE fix.
 - Custom wallpapers included.
 
-### Galaxy AI ✨
-- **Call assist** - change the caller's voice and make real-time translated calls.
-- **Writing assist** - compose and translate text, summarize long texts and more.
-- **Note assist** - automatic text organization and summarization.
-- **Transcript assist** - AI-powered voice transcriptions.
-- **Browsing assist** - summarized web browsing.
-- **Photo assist** - AI photo editing and object removal.
-- **Weather wallpaper** - wallpapers that change based on time and weather conditions.
-- **Now brief** - smart notification summaries.
-- **Now nudge** - intelligent reminders and prompts.
-- **Health assist** - AI-powered health assistance.
+### No Galaxy AI by default
+Official builds are AI-free for performance and stability. See the note at the top if you want to build with Galaxy AI.
 
 ### Enhanced Functionality
 - Screenshot anywhere (enabled globally).
@@ -189,8 +185,10 @@ cd LumiROM
 Only the stock model, region and IMEI are required - everything else has a default:
 
 ```bash
-bash build_local.sh -s SM-A325F -c DBT -i 353117555323497
+bash build_local.sh -s SM-A325F -c DBT -i 353117555323497 --no-ai
 ```
+
+This is the same profile used by official builds. Remove `--no-ai` if you want to build with Galaxy AI.
 
 | Option | Meaning |
 | :--- | :--- |
@@ -200,7 +198,7 @@ bash build_local.sh -s SM-A325F -c DBT -i 353117555323497
 | `-t, --target` | Base device to port from - auto-derived from your stock model if omitted (see the **Base** column of the Supported Devices table) |
 | `-m, --maintainer` | Your name - defaults to your git username |
 | `--no-mods` | Exclude mods (Cloudy app, Vulkan fix, VoLTE fix, tweaks, wallpapers) |
-| `--no-ai` | Exclude Galaxy AI features |
+| `--no-ai` | Exclude Galaxy AI features (used by official builds) |
 | `--bpf-legacy` | Enable only if your kernel BPF is lower than 5.10 |
 | `--img-zip` | Deliver the partition images (.img) in a ZIP instead of a flashable ROM |
 | `-h, --help` | Show all options and the supported devices |
@@ -211,7 +209,7 @@ bash build_local.sh -s SM-A325F -c DBT -i 353117555323497
 #### 3. Run the build:
 Add any extra options you need:
 ```bash
-bash build_local.sh -s SM-A225F -c DBT -i 358212589089183 --no-mods --img-zip
+bash build_local.sh -s SM-A225F -c DBT -i 358212589089183 --no-mods --img-zip --no-ai
 ```
 <br>
 The script will install dependencies, download firmware (if not cached), apply all patches and build the ROM. The output ZIP will be in the `ROM/` folder.
