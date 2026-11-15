@@ -1,0 +1,62 @@
+--- a/smali/com/android/server/display/HighBrightnessModeController.smali
++++ b/smali/com/android/server/display/HighBrightnessModeController.smali
+@@ -797,56 +797,11 @@
+ .end method
+ 
+ .method public final isHbmCurrentlyAllowed()Z
+-    .locals 3
++    .locals 0
+ 
+-    invoke-virtual {p0}, Lcom/android/server/display/HighBrightnessModeController;->hbmControllerEnabled()Z
++    const/4 p0, 0x0
+ 
+-    move-result v0
+-
+-    const/4 v1, 0x0
+-
+-    const/4 v2, 0x1
+-
+-    if-nez v0, :cond_1
+-
+-    iget-object v0, p0, Lcom/android/server/display/HighBrightnessModeController;->mHbmData:Lcom/android/server/display/config/HighBrightnessModeData;
+-
+-    if-eqz v0, :cond_0
+-
+-    iget p0, p0, Lcom/android/server/display/HighBrightnessModeController;->mBrightness:F
+-
+-    iget v0, v0, Lcom/android/server/display/config/HighBrightnessModeData;->transitionPoint:F
+-
+-    cmpl-float p0, p0, v0
+-
+-    if-lez p0, :cond_0
+-
+-    return v2
+-
+-    :cond_0
+-    return v1
+-
+-    :cond_1
+-    iget-boolean v0, p0, Lcom/android/server/display/HighBrightnessModeController;->mIsAutoBrightnessEnabled:Z
+-
+-    if-eqz v0, :cond_2
+-
+-    iget-boolean v0, p0, Lcom/android/server/display/HighBrightnessModeController;->mIsTimeAvailable:Z
+-
+-    if-eqz v0, :cond_2
+-
+-    iget-boolean v0, p0, Lcom/android/server/display/HighBrightnessModeController;->mIsInAllowedAmbientRange:Z
+-
+-    if-eqz v0, :cond_2
+-
+-    iget-boolean p0, p0, Lcom/android/server/display/HighBrightnessModeController;->mIsBlockedByLowPowerMode:Z
+-
+-    if-nez p0, :cond_2
+-
+-    return v2
+-
+-    :cond_2
+-    return v1
++    return p0
+ .end method
+ 
+ .method public isThermalThrottlingActive()Z
