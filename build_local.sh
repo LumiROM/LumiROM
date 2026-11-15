@@ -277,7 +277,11 @@ add_mods() {
 }
 
 add_galaxy_ai() {
-    log_section "Adding Galaxy AI"
+    if [ "$USE_GALAXY_AI" = "true" ]; then
+        log_section "Adding Galaxy AI"
+    else
+        log_section "Removing Galaxy AI"
+    fi
     source scripts/features/Galaxy_AI.sh
     run GALAXY_AI "$FIRM_DIR"
 }
@@ -514,9 +518,9 @@ main() {
     if [ "$USE_MODS" = "true" ]; then
         add_mods
     fi
-    if [ "$USE_GALAXY_AI" = "true" ]; then
-        add_galaxy_ai
-    fi
+    # GALAXY_AI() handles both paths: it adds the mod when USE_GALAXY_AI=true
+    # and removes the stock AI apps when it is false, so it must always run.
+    add_galaxy_ai
     apply_display_id
     decompile_framework
     apply_knox_patches
