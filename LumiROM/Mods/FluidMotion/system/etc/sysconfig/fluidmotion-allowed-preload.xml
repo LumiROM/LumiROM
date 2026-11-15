@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    System-preload allowlist entry for the FluidMotion settings app
+    (dev.flexy.fluidmotion).
+
+    One UI's PackageManager only registers system packages that appear in an
+    allowed-system-preload entry.  FluidMotion.apk ships at
+    /system/priv-app/FluidMotion but was never installed (it only showed up
+    under /data/app when installed by hand), because its package was the only
+    other system package missing from the stock
+    allowed-system-preload-apps.xml.  Same fix as LumiFota.
+-->
+<config>
+    <allowed-system-preload package="dev.flexy.fluidmotion"/>
+</config>
