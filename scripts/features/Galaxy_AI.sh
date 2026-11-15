@@ -199,6 +199,45 @@ GALAXY_AI() {
             echo "${GREEN}Kept${RESET} Document Scanner (VexScanner)"
         fi
 
+        # Drop the orphan permission/sysconfig XMLs that referenced the
+        # removed apps.  Keep the Vex framework (Document Scanner) and the
+        # shared SAIV/videoeditor pieces that Camera/Gallery may still use.
+        local AI_LEFTOVER_PATTERNS=(
+            "system/system/etc/permissions/*callassistant*"
+            "system/system/etc/permissions/*photoremaster*"
+            "system/system/etc/permissions/*smartsuggest*"
+            "system/system/etc/permissions/*visionintelligence*"
+            "system/system/etc/permissions/*moments*"
+            "system/system/etc/permissions/*aicore*"
+            "system/system/etc/permissions/*liveeffect*"
+            "system/system/etc/permissions/*mhsai*"
+            "system/system/etc/permissions/*videoeditorlite*"
+            "system/system/etc/default-permissions/*callassistant*"
+            "system/system/etc/default-permissions/*photoremaster*"
+            "system/system/etc/default-permissions/*smartsuggest*"
+            "system/system/etc/default-permissions/*moments*"
+            "system/system/etc/default-permissions/*aicore*"
+            "system/system/etc/default-permissions/*liveeffect*"
+            "system/system/etc/default-permissions/*mhsai*"
+            "system/system/etc/sysconfig/*callassistant*"
+            "system/system/etc/sysconfig/*photoremaster*"
+            "system/system/etc/sysconfig/*smartsuggest*"
+            "system/system/etc/sysconfig/*moments*"
+            "system/system/etc/sysconfig/*aicore*"
+            "system/system/etc/sysconfig/*liveeffect*"
+            "system/system/etc/sysconfig/*mhsai*"
+            "system/system/etc/sysconfig/*videoeditorlite*"
+        )
+        local AI_LEFTOVER AI_LEFT
+        for AI_LEFTOVER in "${AI_LEFTOVER_PATTERNS[@]}"; do
+            for AI_LEFT in $EXTRACTED_FIRM_DIR/$AI_LEFTOVER; do
+                if [ -e "$AI_LEFT" ]; then
+                    sudo rm -f "$AI_LEFT"
+                    echo "${GREEN}Removed leftover${RESET} ${AI_LEFT#"$EXTRACTED_FIRM_DIR"/}"
+                fi
+            done
+        done
+
         # Turn off the AI feature flags that the stock A34 may still expose.
         local AI_FEATURE
         for AI_FEATURE in \
