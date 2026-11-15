@@ -80,7 +80,7 @@ Official builds are AI-free for performance and stability. See the note at the t
 - More floating features enabled.
 - Screen recorder support.
 - Bluetooth recording support.
-- Built-in [Cloudy](https://github.com/Luminous418/cloudy) app - download and install new ROM versions directly from the phone, even from a ZIP stored on the sdcard (available since 8.6.4).
+- Built-in **LumiFota** app - the new OTA client built from scratch with the One UI 9 Software Update look. It replaces Cloudy (discontinued) and can download/install new ROM versions directly from the phone, even from a ZIP stored on the sdcard.
 
 ### Knox Patches (built-in, no root needed)
 Knox functionality is patched directly via smali modifications - no modules or root required:
@@ -197,7 +197,7 @@ This is the official profile: AI is disabled by default. Add `--ai` if you want 
 | `-i, --imei` | A valid 15-digit IMEI of the base device - you can find examples inside `build_local.sh` |
 | `-t, --target` | Base device to port from - auto-derived from your stock model if omitted (see the **Base** column of the Supported Devices table) |
 | `-m, --maintainer` | Your name - defaults to your git username |
-| `--no-mods` | Exclude mods (Cloudy app, Vulkan fix, VoLTE fix, tweaks, wallpapers) |
+| `--no-mods` | Exclude mods (LumiFota app, Vulkan fix, VoLTE fix, tweaks, wallpapers) |
 | `--ai` | Enable Galaxy AI (disabled by default) |
 | `--no-ai` | Explicitly disable Galaxy AI (default) |
 | `--bpf-legacy` | Enable only if your kernel BPF is lower than 5.10 |
@@ -290,13 +290,13 @@ Press **Start Build** and the build runs in the terminal panel on the left. Sinc
 
 Once you have downloaded or built LumiROM, there are three ways to install it:
 
-### Option 1: Cloudy app (LumiROM 8.6.4+)
-Starting from LumiROM 8.6.4, the ROM includes [Cloudy](https://github.com/Luminous418/cloudy), which handles the whole installation process for you:
-- Open Cloudy and download the ROM directly from inside the app, **or**
+### Option 1: LumiFota app (LumiROM 9.0.2+)
+Cloudy is discontinued and has been replaced by **LumiFota**, a new OTA app built from scratch with the One UI 9 Software Update look. It handles the whole installation process for you:
+- Open LumiFota and download the ROM directly from inside the app, **or**
 - Tap **Select ROM from internal storage** and pick the ZIP if you already downloaded it.
 
 ### Option 2: Recovery
-If you don't have the Cloudy app:
+If you don't have the LumiFota app:
 1. Download the ROM ZIP.
 2. Reboot your phone into recovery mode.
 3. Select the ROM ZIP and flash it.
@@ -312,7 +312,7 @@ adb sideload <rom>.zip
 
 ## OTA Signing
 
-Every flashable package - both the full ROM and the incremental OTA - must be signed with `signapk -w`. The signature is appended as a ZIP comment (the *footer*) that Cloudy and Android's `RecoverySystem` read before installing. Without it the device rejects the package with:
+Every flashable package - both the full ROM and the incremental OTA - must be signed with `signapk -w`. The signature is appended as a ZIP comment (the *footer*) that LumiFota and Android's `RecoverySystem` read before installing. Without it the device rejects the package with:
 
 ```text
 Package verification failed: no signature in file (no footer)
@@ -332,7 +332,7 @@ HF_USER=<hf-user> HF_TOKEN=<token> \
   scripts/package/resign_published_ota.sh [--dry-run] [device ...]
 ```
 
-It defaults to `a32 a22 m32 f22`. For each device it downloads the incremental from its OTA manifest, re-signs it, regenerates the manifest at `OTA_MANIFESTS/{device}_ota.json`, and (unless `--dry-run`) re-uploads it to the `<HF_USER>/OTAs` bucket. Remember to commit the regenerated manifests to the [cloudy](https://github.com/Luminous418/cloudy) repository (`updater/ota/{device}.json`).
+It defaults to `a32 a22 m32 f22`. For each device it downloads the incremental from its OTA manifest, re-signs it, regenerates the manifest at `OTA_MANIFESTS/{device}_ota.json`, and (unless `--dry-run`) re-uploads it to the `<HF_USER>/OTAs` bucket. Remember to commit the regenerated manifests to the [updater](https://github.com/LumiROM/updater) repository (`{device}.json` at the root, e.g. `a32.json`).
 
 ## Licensing
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
