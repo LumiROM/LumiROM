@@ -1,0 +1,24 @@
+--- a/smali/com/android/server/display/DisplayDeviceConfig.smali
++++ b/smali/com/android/server/display/DisplayDeviceConfig.smali
+@@ -2947,14 +2947,20 @@
+ 
+     iput v1, v6, Lcom/android/server/display/config/HighBrightnessModeData;->transitionPoint:F
+ 
+-    const-wide/16 v8, 0x0
++    const-wide/32 v8, 0x1b7740
+ 
+     iput-wide v8, v6, Lcom/android/server/display/config/HighBrightnessModeData;->timeWindowMillis:J
+ 
++    const-wide/32 v8, 0x493e0
++
+     iput-wide v8, v6, Lcom/android/server/display/config/HighBrightnessModeData;->timeMaxMillis:J
+ 
++    const-wide/32 v8, 0xea60
++
+     iput-wide v8, v6, Lcom/android/server/display/config/HighBrightnessModeData;->timeMinMillis:J
+ 
++    const-wide/16 v8, 0x0
++
+     const/4 v0, 0x1
+ 
+     iput-boolean v0, v6, Lcom/android/server/display/config/HighBrightnessModeData;->allowInLowPowerMode:Z
