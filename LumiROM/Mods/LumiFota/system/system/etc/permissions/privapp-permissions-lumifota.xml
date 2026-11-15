@@ -17,5 +17,9 @@
         <!-- Grants gid "cache", needed for DAC access to /data/ota_package
              (system:cache 0770) and /cache/recovery (system:cache 0770). -->
         <permission name="android.permission.ACCESS_CACHE_FILESYSTEM"/>
+        <!-- Remove the staged OTA package after installation.  Also
+             signature|privileged, so it must be whitelisted or the whole
+             priv-app is silently skipped under enforce. -->
+        <permission name="android.permission.DELETE_CACHE_FILES"/>
     </privapp-permissions>
 </permissions>
