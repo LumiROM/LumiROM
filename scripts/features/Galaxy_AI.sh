@@ -164,5 +164,71 @@ GALAXY_AI() {
     	echo
         echo "${RED}The use of Galaxy AI for this build have been disabled by the user${RESET}"
         UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI" "TRUE"
+
+        # The Galaxy AI mod is not applied in this path, but the stock A34
+        # firmware already ships several AI components. Remove them so the
+        # build is actually AI-free and does not need a post-boot debloat.
+        local AI_STOCK_APPS=(
+            "system/system/priv-app/SamsungSmartSuggestions"
+            "system/system/priv-app/PhotoRemasterService"
+            "system/system/priv-app/CallAssistant"
+            "system/system/priv-app/Moments"
+            "system/system/priv-app/SamsungAiCore"
+            "system/system/priv-app/LiveEffectService"
+            "system/system/app/VisionIntelligence3.7"
+            "system/system/app/VideoEditorLite_Dream_N"
+            "system/system/app/MhsAiService"
+            "system/system/saiv"
+            "product/priv-app/AiWallpaper"
+        )
+        local AI_APP
+        for AI_APP in "${AI_STOCK_APPS[@]}"; do
+            if [ -e "$EXTRACTED_FIRM_DIR/$AI_APP" ]; then
+                sudo rm -rf "$EXTRACTED_FIRM_DIR/$AI_APP"
+                echo "${GREEN}Removed${RESET} $AI_APP"
+            fi
+        done
+
+        # Keep the Document Scanner: it is a standalone app from the mod and
+        # the stock Vex framework (vexfwk_service) stays in the firmware.
+        if [ -d "$AI_DIR/system/system/priv-app/VexScanner" ] && \
+           [ ! -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/VexScanner" ]; then
+            sudo mkdir -p "$EXTRACTED_FIRM_DIR/system/system/priv-app"
+            sudo cp -rfa "$AI_DIR/system/system/priv-app/VexScanner" \
+                "$EXTRACTED_FIRM_DIR/system/system/priv-app/"
+            echo "${GREEN}Kept${RESET} Document Scanner (VexScanner)"
+        fi
+
+        # Turn off the AI feature flags that the stock A34 may still expose.
+        local AI_FEATURE
+        for AI_FEATURE in \
+            SEC_FLOATING_FEATURE_COMMON_SUPPORT_AI_AGENT \
+            SEC_FLOATING_FEATURE_COMMON_SUPPORT_GENERATIVE_AI \
+            SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_PERSONALIZED_DATA_CORE \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_OFFLINE_LANGUAGEMODEL \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_C2PA \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_IMAGE_CLIPPER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_OBJECT_ERASER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_REFLECTION_ERASER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_SHADOW_ERASER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_SMART_LASSO \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_SPOT_FIXER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_STYLE_TRANSFER \
+            SEC_FLOATING_FEATURE_GENAI_SUPPORT_TIME_WEATHER_WALLPAPER \
+            SEC_FLOATING_FEATURE_SAIV_SUPPORT_AI_REVITAL \
+            SEC_FLOATING_FEATURE_VISION_SUPPORT_AI_MY_FAVORITE_CONTENTS \
+            SEC_FLOATING_FEATURE_SYSTEMUI_SUPPORT_BRIEF_NOTIFICATION \
+            SEC_FLOATING_FEATURE_MMFW_SUPPORT_MEDIA_CONTEXT_ANALYZER \
+            SEC_FLOATING_FEATURE_MMFW_SUPPORT_TARGET_TRACKING; do
+            UPDATE_FLOATING_FEATURE "$AI_FEATURE" "FALSE"
+        done
+
+        # These keys hold model/version strings; remove them instead of
+        # writing an invalid boolean value.
+        sed -i -e '/SEC_FLOATING_FEATURE_GENAI_CONFIG_FOUNDATION_MODEL/d' \
+               -e '/SEC_FLOATING_FEATURE_GENAI_CONFIG_LLM_VERSION/d' \
+               -e '/SEC_FLOATING_FEATURE_SAIV_CONFIG_AI_REVITAL_VERSION/d' \
+               -e '/SEC_FLOATING_FEATURE_SAIV_CONFIG_MIDAS/d' \
+               "$TARGET_FLOATING_FEATURE"
     fi
 }
