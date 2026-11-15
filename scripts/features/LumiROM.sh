@@ -1248,7 +1248,12 @@ APPLY_PROP_FEATURES() {
     
 
     # Related to Updater App
+    # LumiFota reads ro.lumi.rom.ver / ro.lumi.rom.ver.code and falls back to
+    # the old ro.cloudy.* names, so write both: the new ones for LumiFota and
+    # the legacy pair for older updater builds that may still be installed.
     if [ "$USE_MODS" = "true" ]; then
+        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver" "$LUMIROM_VERSION"
+        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver.code" "$LUMIROM_CODE"
         BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver" "$LUMIROM_VERSION"
         BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver.code" "$LUMIROM_CODE"
         BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.maintainer" "$LUMIROM_MAINTAINER"
