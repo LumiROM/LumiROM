@@ -1,0 +1,16 @@
+--- a/smali/com/android/server/display/AutomaticBrightnessController.smali
++++ b/smali/com/android/server/display/AutomaticBrightnessController.smali
+@@ -1185,6 +1185,13 @@
+     iget-wide v0, p0, Lcom/android/server/display/AutomaticBrightnessController;->mDarkeningLightDebounceConfig:J
+ 
+     :goto_2
++    iget-boolean v2, p0, Lcom/android/server/display/AutomaticBrightnessController;->mLastHBM:Z
++
++    if-eqz v2, :cond_hbm_hold
++
++    const-wide/32 v0, 0xea60
++
++    :cond_hbm_hold
+     add-long/2addr p1, v0
+ 
+     return-wide p1
