@@ -16,8 +16,9 @@ on:
         default: true
         type: boolean
       USE_GALAXY_AI:
+        description: "Include Galaxy AI (disabled by default)"
         required: false
-        default: true
+        default: false
         type: boolean
       USE_UI_8_TETHERING_APEX:
         description: "Activate if the BPF version on kernel is lower than 5.10"
@@ -231,7 +232,7 @@ jobs:
             echo "Mods are disabled, skipping LumiFota OTA Updater"
         fi
 
-    - name: Adding Galaxy AI
+    - name: Configuring Galaxy AI
       shell: bash
       run: |
         source scripts/features/Galaxy_AI.sh

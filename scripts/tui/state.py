@@ -68,7 +68,7 @@ class BuildConfig:
     imei: str = ""
     maintainer: str = ""
     use_mods: bool = True
-    use_ai: bool = True
+    use_ai: bool = False
     bpf_legacy: bool = False
     img_zip: bool = False
     skip_target_files: bool = False
@@ -80,7 +80,9 @@ class BuildConfig:
             args += ["-m", self.maintainer]
         if not self.use_mods:
             args.append("--no-mods")
-        if not self.use_ai:
+        if self.use_ai:
+            args.append("--ai")
+        else:
             args.append("--no-ai")
         if self.bpf_legacy:
             args.append("--bpf-legacy")

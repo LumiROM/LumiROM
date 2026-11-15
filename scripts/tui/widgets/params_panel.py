@@ -34,7 +34,7 @@ class ParamsPanel(VerticalScroll):
             yield Switch(value=True, id="use-mods")
             yield Label("Include mods", classes="switch-label")
         with Horizontal(classes="switch-row"):
-            yield Switch(value=True, id="use-ai")
+            yield Switch(value=False, id="use-ai")
             yield Label("Include Galaxy AI", classes="switch-label")
         with Horizontal(classes="switch-row"):
             yield Switch(value=False, id="bpf")

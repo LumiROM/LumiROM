@@ -26,7 +26,7 @@ It focuses on stability while upgrading the Android version, so you can test new
 > [!NOTE]
 > **Why no Galaxy AI?**
 > LumiROM targets low-end MediaTek phones (4-6 GB RAM, no NPU). The full Galaxy AI stack is too heavy for them: it causes lag, memory pressure and battery drain, so official builds are AI-free.
-> If you want it, you can still build it yourself: Galaxy AI remains available in the build script (enabled by default; use `--no-ai` to disable it, which is what official builds do).
+> If you want it, you can still build it yourself: AI is disabled by default, so add `--ai` to enable it.
 
 ## Quick Start
 - Just want the ROM? Download the latest release from my [Telegram channel](https://t.me/LumiROMs) and head over to [Installing the ROM](#installing-the-rom).
@@ -185,10 +185,10 @@ cd LumiROM
 Only the stock model, region and IMEI are required - everything else has a default:
 
 ```bash
-bash build_local.sh -s SM-A325F -c DBT -i 353117555323497 --no-ai
+bash build_local.sh -s SM-A325F -c DBT -i 353117555323497
 ```
 
-This is the same profile used by official builds. Remove `--no-ai` if you want to build with Galaxy AI.
+This is the official profile: AI is disabled by default. Add `--ai` if you want to build with Galaxy AI.
 
 | Option | Meaning |
 | :--- | :--- |
@@ -198,7 +198,8 @@ This is the same profile used by official builds. Remove `--no-ai` if you want t
 | `-t, --target` | Base device to port from - auto-derived from your stock model if omitted (see the **Base** column of the Supported Devices table) |
 | `-m, --maintainer` | Your name - defaults to your git username |
 | `--no-mods` | Exclude mods (Cloudy app, Vulkan fix, VoLTE fix, tweaks, wallpapers) |
-| `--no-ai` | Exclude Galaxy AI features (used by official builds) |
+| `--ai` | Enable Galaxy AI (disabled by default) |
+| `--no-ai` | Explicitly disable Galaxy AI (default) |
 | `--bpf-legacy` | Enable only if your kernel BPF is lower than 5.10 |
 | `--img-zip` | Deliver the partition images (.img) in a ZIP instead of a flashable ROM |
 | `-h, --help` | Show all options and the supported devices |
@@ -209,7 +210,7 @@ This is the same profile used by official builds. Remove `--no-ai` if you want t
 #### 3. Run the build:
 Add any extra options you need:
 ```bash
-bash build_local.sh -s SM-A225F -c DBT -i 358212589089183 --no-mods --img-zip --no-ai
+bash build_local.sh -s SM-A225F -c DBT -i 358212589089183 --no-mods --img-zip
 ```
 <br>
 The script will install dependencies, download firmware (if not cached), apply all patches and build the ROM. The output ZIP will be in the `ROM/` folder.
@@ -264,7 +265,7 @@ python3 -m scripts.tui
 ```
 
 #### 4. Fill the form and build:
-On the right panel, choose your **Stock device**, type the **CSC/region** (3 letters, always uppercased automatically) and the **IMEI** of the base device, then set your **Maintainer** name. You can also toggle mods, Galaxy AI, the BPF-legacy option, image-only ZIP delivery and an incremental build. The exact command is always previewed on the left.
+On the right panel, choose your **Stock device**, type the **CSC/region** (3 letters, always uppercased automatically) and the **IMEI** of the base device, then set your **Maintainer** name. You can also toggle mods, optional Galaxy AI, the BPF-legacy option, image-only ZIP delivery and an incremental build. The exact command is always previewed on the left.
 
 Press **Start Build** and the build runs in the terminal panel on the left. Since it is a real terminal, colors, progress bars and `sudo` prompts all work as usual - type your password there when asked.
 

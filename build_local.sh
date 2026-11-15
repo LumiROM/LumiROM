@@ -16,7 +16,7 @@ fi
 # =====================================================================
 set_defaults() {
     USE_MODS="true"
-    USE_GALAXY_AI="true"
+    USE_GALAXY_AI="false"
     USE_UI_8_TETHERING_APEX="false"
     ZIP_IMG="false"
     INCREMENTAL_FROM=""
@@ -53,7 +53,8 @@ usage() {
     echo "  -t, --target <SM-XXXXX>    Base device to port from (auto-derived from stock if omitted)"
     echo "  -m, --maintainer <name>    Maintainer name (default: git config user.name)"
     echo "      --no-mods              Exclude mods (LumiFota app, Vulkan fix, VoLTE fix, tweaks, wallpapers)"
-    echo "      --no-ai                Exclude Galaxy AI features"
+    echo "      --ai                   Enable Galaxy AI (disabled by default)"
+    echo "      --no-ai                Explicitly disable Galaxy AI (default)"
     echo "      --bpf-legacy           Enable if your kernel BPF version is lower than 5.10"
     echo "      --img-zip              Deliver the partition images (.img) in a ZIP instead of a flashable ROM"
     echo "      --no-target-files      Skip generating the TARGET_FILES zip (useful for test builds)"
@@ -67,7 +68,7 @@ usage() {
     echo ""
     echo "Examples:"
     echo "  bash build_local.sh -s SM-A325F -c EUX -i 353117555323497"
-    echo "  bash build_local.sh -s SM-A225F -c INS -i 358212589089183 --no-ai --img-zip"
+    echo "  bash build_local.sh -s SM-A225F -c INS -i 358212589089183 --ai --img-zip"
 }
 
 # =====================================================================
@@ -82,6 +83,7 @@ parse_args() {
             -i|--imei)    TARGET_IMEI="${2:?Option $1 requires a value}"; shift 2 ;;
             -m|--maintainer) LUMIROM_MAINTAINER="${2:?Option $1 requires a value}"; shift 2 ;;
             --no-mods)    USE_MODS="false"; shift ;;
+            --ai)         USE_GALAXY_AI="true"; shift ;;
             --no-ai)      USE_GALAXY_AI="false"; shift ;;
             --bpf-legacy) USE_UI_8_TETHERING_APEX="true"; shift ;;
             --img-zip)    ZIP_IMG="true"; shift ;;
