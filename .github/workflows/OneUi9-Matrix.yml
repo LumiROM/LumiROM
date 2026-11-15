@@ -82,9 +82,10 @@ jobs:
     - name: Install Android build-tools
       run: |
         set -euo pipefail
-        # Ubuntu's android-sdk-build-tools ships an apksigner older than 0.9,
-        # which lacks --alignment-preserved: the hotspot APEX patch needs it.
-        BT_URL="https://dl.google.com/android/repository/build-tools_r34-linux.zip"
+        # Ubuntu's android-sdk-build-tools ships an apksigner without
+        # --alignment-preserved (added in build-tools 35), which the hotspot
+        # APEX patch needs.
+        BT_URL="https://dl.google.com/android/repository/build-tools_r37_linux.zip"
         curl -fsSL "$BT_URL" -o /tmp/build-tools.zip
         rm -rf /tmp/build-tools && unzip -q /tmp/build-tools.zip -d /tmp/build-tools
         BT_DIR="$(dirname "$(find /tmp/build-tools -type f -name apksigner | head -n1)")"
