@@ -85,10 +85,10 @@ ADD_LUMIFOTA() {
 (allow platform_app_all cache_recovery_file (dir (search write add_name remove_name create getattr open)))
 (allow platform_app_all cache_recovery_file (file (create open write getattr setattr unlink)))
 (allow platform_app_all ota_package_file (dir (search write add_name remove_name create getattr open)))
-(allow platform_app_all ota_package_file (file (create open write getattr setattr unlink rename)))
+(allow platform_app_all ota_package_file (file (create open read write getattr setattr unlink rename map ioctl lock)))
 ; Same, in case the app is mapped to priv_app instead of platform_app.
 (allow priv_app_all ota_package_file (dir (search write add_name remove_name create getattr open)))
-(allow priv_app_all ota_package_file (file (create open write getattr setattr unlink rename)))
+(allow priv_app_all ota_package_file (file (create open read write getattr setattr unlink rename map ioctl lock)))
 LUMIFOTA_EOF
         fi
     else
