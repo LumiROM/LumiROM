@@ -16,6 +16,7 @@
 - Fixed the GPU staying at 299 MHz on the A34→A32 port: the GED fallback DVFS now samples correctly and keeps a 663 MHz floor, dropping the GPU frame time from ~13-14 ms to ~5 ms and making 90 Hz animations much smoother.
 - Fixed the log spam on every launch. Apps ask for a 0 Hz frame rate to mean "no preference" and the display director logged that as a failed mode lookup (559 lines in four minutes); those requests are now ignored.
 - Fixed the battery log spam: the fuel gauge was looked up as `sec-fuelgauge` instead of `sm5714-fuelgauge`, so ASOC read -1 and `Fail to get psy ((null))` printed every ten seconds. The name is fixed, ASOC reads real values and nodes for absent hardware (wireless charging on the A32) no longer report an error.
+- Fixed the software update install on systems without root. `uncrypt` could not resolve the userdata block device (SELinux) so the framework aborted the update and LumiFota fell back to asking for root. The policy now allows it: the system shows its "Android system update / Preparing to update" progress, reboots by itself and TWRP installs the staged package through `openrecoveryscript`.
 - Fixed the LumiFota OTA app and the FluidMotion settings app not installing. One UI only registers system packages that are declared in `allowed-system-preload`, so both were dropped during the boot scan without any error. They are now declared, so LumiFota is installed as the privileged updater and Settings → LumiROM → UI → Fluid Motion opens its screen again.
 
 ## More
@@ -23,6 +24,7 @@
 - [Repo] `services.jar` patch that forces `HighBrightnessModeController.isHbmCurrentlyAllowed()` to `false`. The previous HBM timing, hysteresis and darkening-hold patches were dropped: `timeMaxMillis` capped HBM at five minutes and the A32 panel driver cannot do HBM at all.
 - [Repo] `services.jar` patch that drops refresh-rate requests of 0 Hz before the mode lookup (`AppRequestObserver.findModeLocked`).
 - [Repo] Kernel: `fuelgauge_name` falls back to `sm5714-fuelgauge` and `psy_do_property()` skips the error when the power supply name is NULL, i.e. when the hardware is not present.
+- [Repo] LumiFota: SELinux now allows `read`/`map` of the staged package in `/data/ota_package` and the app ships with the rootless install path (BCB + `openrecoveryscript` + `PowerManager.reboot("recovery")`).
 - [Repo] Hotspot APEX patch: strip the AVB footer, grow the ext4 payload with `resize2fs`, write and verify the patched `service-wifi.jar`, then re-sign the payload and repack the APEX.
 - [Repo] AI-free default and `--ai` opt-in in `build_local.sh`, the TUI and both GitHub workflows. The AI cleanup removes the stock AI apps and their orphan permission/sysconfig XMLs while keeping the Vex framework and Document Scanner.
 - [Repo] LumiFota/updater integration. Cloudy is discontinued.
