@@ -43,17 +43,16 @@ Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/main/chang
 
 ## Supported Devices
 
-| Device | Model | Fingerprint | Base |
-| :--- | :--- | :--- | :--- |
-| Samsung Galaxy A22 | SM-A225F | Side-FP | SM-A245F (A24) |
-| Samsung Galaxy A32 | SM-A325F | FOD | SM-A346B (A34) |
-| Samsung Galaxy A32 | SM-A325M | FOD | SM-A346B (A34) |
-| Samsung Galaxy F22 | SM-E225F | Side-FP | SM-A245F (A24) |
-| Samsung Galaxy M32 | SM-M325F | FOD | SM-A346B (A34) |
+| Device | Model | Fingerprint |
+| :--- | :--- | :--- |
+| Samsung Galaxy A22 | SM-A225F | Side-FP |
+| Samsung Galaxy A32 | SM-A325F | FOD |
+| Samsung Galaxy A32 | SM-A325M | FOD |
+| Samsung Galaxy F22 | SM-E225F | Side-FP |
+| Samsung Galaxy M32 | SM-M325F | FOD |
 
 Where:
 - **Fingerprint**: **FOD** means fingerprint under display, **Side-FP** means side-mounted fingerprint (power button).
-- **Base**: the newer Samsung device whose firmware LumiROM downloads and uses to build the port for your phone, so it can run a modern One UI build on older hardware.
 
 ## Features
 
@@ -125,7 +124,7 @@ Open your forked repository.
 #### 3. Set Your Device Model:
 Fill in the `STOCK_DEVICE` and `TARGET_DEVICE` options:
 - `STOCK_DEVICE`: your phone's model. If it is present in the /LumiROM/Devices folder of this repository (see [Supported Devices](#supported-devices)), the tool will work for your device. If not, it will not work.
-- `TARGET_DEVICE`, `TARGET_CSC` and `TARGET_IMEI`: refer to your device's **Base** from the Supported Devices table - the base model, a region code and a valid 15-digit IMEI of that base device.
+- `TARGET_DEVICE`, `TARGET_CSC` and `TARGET_IMEI`: the base firmware model (`SM-A346B`, Galaxy A34), a region code and a valid 15-digit IMEI of that base device.
 
 > [!NOTE]
 > The `All Devices` workflow (Matrix) is only intended for the developer, as it builds LumiROM for every supported device at once in a single run. If you are building from a fork, always use the `LumiROM Tools` workflow instead.
@@ -195,7 +194,7 @@ This is the official profile: AI is disabled by default. Add `--ai` if you want 
 | `-s, --stock` | Your phone model - must be one of the supported models (e.g. `SM-A325F`) |
 | `-c, --csc` | Region code of the base firmware (e.g. `DBT`) |
 | `-i, --imei` | A valid 15-digit IMEI of the base device - you can find examples inside `build_local.sh` |
-| `-t, --target` | Base device to port from - auto-derived from your stock model if omitted (see the **Base** column of the Supported Devices table) |
+| `-t, --target` | Base device to port from - auto-derived from your stock model if omitted |
 | `-m, --maintainer` | Your name - defaults to your git username |
 | `--no-mods` | Exclude mods (LumiFota app, Vulkan fix, VoLTE fix, tweaks, wallpapers) |
 | `--ai` | Enable Galaxy AI (disabled by default) |
