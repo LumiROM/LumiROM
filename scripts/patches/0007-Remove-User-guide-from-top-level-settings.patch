@@ -1,0 +1,10 @@
+--- a/res/xml/sec_top_level_settings.xml
++++ b/res/xml/sec_top_level_settings.xml
+@@ -98,7 +98,6 @@
+             <extra android:name="from_settings" android:value="true" />
+         </intent>
+     </com.android.settings.widget.HomepagePreference>
+-    <com.android.settings.widget.HomepagePreference android:icon="@drawable/sec_ic_settings_user_manual" android:title="@string/user_manual" android:key="top_level_user_manual" android:summary="@string/summary_placeholder" android:order="340000" settings:controller="com.samsung.android.settings.homepage.TopLevelUserManualPreferenceController" settings:highlightableMenuKey="@string/menu_key_user_manual" />
+     <com.android.settings.widget.HomepagePreference android:icon="@drawable/sec_ic_settings_tips" android:title="@string/sec_tips_title" android:key="top_level_tips" android:summary="@string/summary_placeholder" android:order="340000" settings:controller="com.samsung.android.settings.homepage.TopLevelTipsPreferenceController" settings:highlightableMenuKey="@string/menu_key_tips">
+         <intent android:targetPackage="@string/config_sec_toplevel_tips_package" android:targetClass="@string/config_sec_toplevel_tips_class">
+             <extra android:name="from_settings" android:value="true" />

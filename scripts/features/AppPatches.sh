@@ -24,6 +24,7 @@ PATCH_SECSETTINGS() {
     local PATCHES=(
         "0002-Open-LumiFota-from-Software-update-in-settings.patch"
         "0003-Add-LumiROM-Logo.patch"
+        "0007-Remove-User-guide-from-top-level-settings.patch"
     )
 
     for PATCH in "${PATCHES[@]}"; do
