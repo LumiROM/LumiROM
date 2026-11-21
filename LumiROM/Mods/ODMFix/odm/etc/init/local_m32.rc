@@ -1,0 +1,16 @@
+# Arreglos locales para One UI 9 en el M32.
+#
+# 1) Fotos JPEG en blanco: el vendor activa ro.vendor.jpeg_decode_sw_opt=1 y
+#    libhwui pide memoria en el heap dma-buf "mtk_mm". El boot.img del M32
+#    todavia no lleva el kernel con DMA-BUF heaps, asi que se desactiva el
+#    camino optimizado igual que en 9.0.2.
+on early-init
+    setprop debug.jpegfull.opt.switch 0
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr
+
+on boot
+    setprop debug.jpegfull.opt.switch 0
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr
+
+on property:sys.boot_completed=1
+    write /proc/sys/net/ipv4/tcp_congestion_control bbr

@@ -3,8 +3,11 @@ SKIPUNZIP=1
 # ODM init rules are shared by devices with the same 4.14 platform:
 # local_a32.rc for the A32 family, local_a22.rc for the A22 family.
 case "$STOCK_DEVICE" in
-    SM-A325F|SM-A325M|SM-M325F)
+    SM-A325F|SM-A325M)
         RC=local_a32.rc
+        ;;
+    SM-M325F)
+        RC=local_m32.rc
         ;;
     SM-A225F|SM-A225M|SM-E225F|SM-M225F)
         RC=local_a22.rc
