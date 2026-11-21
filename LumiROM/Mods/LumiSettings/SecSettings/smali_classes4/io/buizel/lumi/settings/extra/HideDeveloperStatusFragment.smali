@@ -135,7 +135,7 @@
 .end method
 
 .method public final onCreateView(Landroid/view/LayoutInflater;Landroid/view/ViewGroup;Landroid/os/Bundle;)Landroid/view/View;
-    .locals 2
+    .locals 5
 
     invoke-super {p0, p1, p2, p3}, Lcom/android/settings/SettingsPreferenceFragment;->onCreateView(Landroid/view/LayoutInflater;Landroid/view/ViewGroup;Landroid/os/Bundle;)Landroid/view/View;
 
@@ -249,15 +249,45 @@
 
     iput-object v1, p0, Lio/buizel/lumi/settings/extra/HideDeveloperStatusFragment;->mLoadingViewController:Lcom/android/settings/widget/LoadingViewController;
 
-    invoke-virtual {p0}, Landroidx/fragment/app/Fragment;->getActivity()Landroidx/fragment/app/FragmentActivity;
+    # One UI 9 removed SettingsActivity.mMainSwitch. Inflate the switch bar
+    # header used by Samsung's own app-picker screens and add it to the list.
+    invoke-virtual {p0}, Landroidx/fragment/app/Fragment;->getLayoutInflater()Landroid/view/LayoutInflater;
 
-    move-result-object p1
+    move-result-object v2
 
-    check-cast p1, Lcom/android/settings/SettingsActivity;
+    const-string v3, "layout"
+    const-string v4, "camera_flash_notification_app_picker_header"
 
-    iget-object p1, p1, Lcom/android/settings/SettingsActivity;->mMainSwitch:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    invoke-static {v3, v4}, Lio/buizel/lumi/utils/Utils;->getResourceId(Ljava/lang/String;Ljava/lang/String;)I
 
-    iput-object p1, p0, Lio/buizel/lumi/settings/extra/HideDeveloperStatusFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    move-result v3
+
+    const/4 v4, 0x0
+
+    invoke-virtual {v2, v3, v4, v4}, Landroid/view/LayoutInflater;->inflate(ILandroid/view/ViewGroup;Z)Landroid/view/View;
+
+    move-result-object v2
+
+    iget-object v3, p0, Lio/buizel/lumi/settings/extra/HideDeveloperStatusFragment;->mAppPickerView:Landroidx/picker/widget/SeslAppPickerListView;
+
+    invoke-virtual {v3, v2}, Landroidx/picker/widget/SeslAppPickerView;->addHeader(Landroid/view/View;)V
+
+    const-string v3, "id"
+    const-string v4, "main_switch_bar"
+
+    invoke-static {v3, v4}, Lio/buizel/lumi/utils/Utils;->getResourceId(Ljava/lang/String;Ljava/lang/String;)I
+
+    move-result v3
+
+    invoke-virtual {v2, v3}, Landroid/view/View;->requireViewById(I)Landroid/view/View;
+
+    move-result-object v2
+
+    check-cast v2, Lcom/android/settings/widget/SettingsMainSwitchBar;
+
+    iput-object v2, p0, Lio/buizel/lumi/settings/extra/HideDeveloperStatusFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+
+    move-object p1, v2
 
     iget-object p2, p0, Lio/buizel/lumi/settings/extra/HideDeveloperStatusFragment;->mContext:Landroid/content/Context;
 

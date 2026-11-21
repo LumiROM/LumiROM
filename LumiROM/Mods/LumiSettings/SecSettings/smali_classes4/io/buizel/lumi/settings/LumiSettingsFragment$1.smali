@@ -23,7 +23,7 @@
 
 
 # virtual methods
-.method public final onMenuItemClick(Landroid/view/MenuItem;)V
+.method public final onMenuItemClick(Landroid/view/MenuItem;)Z
     .locals 2
 
     iget-object p0, p0, Lio/buizel/lumi/settings/LumiSettingsFragment$1;->this$0:Lio/buizel/lumi/settings/LumiSettingsFragment;
@@ -67,5 +67,7 @@
     :goto_0
     invoke-virtual {p0, p1}, Landroid/os/PowerManager;->reboot(Ljava/lang/String;)V
 
-    return-void
+    const/4 v0, 0x1
+
+    return v0
 .end method
