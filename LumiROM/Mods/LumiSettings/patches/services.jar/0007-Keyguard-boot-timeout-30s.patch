@@ -1,0 +1,18 @@
+--- a/smali_classes2/com/android/server/wm/RootWindowContainer$MyHandler.smali
++++ b/smali_classes2/com/android/server/wm/RootWindowContainer$MyHandler.smali
+@@ -68,6 +68,15 @@
+     move v1, v3
+ 
+     :goto_0
++    const-wide/16 v8, 0x1388
++
++    cmp-long v2, v4, v8
++
++    if-nez v2, :lumi_keep_timeout
++
++    const-wide/16 v4, 0x7530
++
++    :lumi_keep_timeout
+     iget-object p0, p0, Lcom/android/server/wm/RootWindowContainer$MyHandler;->this$0:Lcom/android/server/wm/RootWindowContainer;
+ 
+     iget-object p0, p0, Lcom/android/server/wm/WindowContainer;->mWmService:Lcom/android/server/wm/WindowManagerService;
