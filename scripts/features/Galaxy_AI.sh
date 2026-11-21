@@ -178,7 +178,12 @@ GALAXY_AI() {
             "system/system/app/VisionIntelligence3.7"
             "system/system/app/VideoEditorLite_Dream_N"
             "system/system/app/MhsAiService"
-            "system/system/saiv"
+            # Keep /system/saiv except the OCR models: FaceService loads
+            # /system/saiv/face (MobileFace) and /system/saiv/imageCropper
+            # (ICE TFLite) at runtime. Removing the whole tree left both
+            # interpreters null and FaceDetectionWorker crashed in a loop
+            # (libtensorflowlite and libHpr_RecFace SIGSEGV).
+            "system/system/saiv/textrecognition"
             "product/priv-app/AiWallpaper"
         )
         local AI_APP
