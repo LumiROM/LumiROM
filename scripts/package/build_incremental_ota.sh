@@ -268,7 +268,8 @@ BUILD_INCREMENTAL_OTA() {
     head -n $((SPLIT_LINE - 1)) "$TEMPLATE_SCRIPT" > "$UPDATER_SCRIPT"
 
     sed -i "s!ui_print(\"Source: .*\");!ui_print(\"Source: $FINGERPRINT\");!" "$UPDATER_SCRIPT"
-    sed -i "s!^getprop(\"ro.boot.em.model\").*!getprop(\"ro.boot.em.model\") == \"$STOCK_DEVICE\" || abort(\"E3004: This package is for $DEVICE_CODENAME\");!" "$UPDATER_SCRIPT"
+    local ANSI_RED='ifelse(getprop("twrp.console_ansi") == "1", "\\x1b[31m", "")'
+    sed -i "s!^getprop(\"ro.boot.em.model\").*!getprop(\"ro.boot.em.model\") == \"$STOCK_DEVICE\" || abort(concat(\"E3004: \", $ANSI_RED, \"This package is for $DEVICE_CODENAME\"));!" "$UPDATER_SCRIPT"
     sed -i "s!ui_print(\".*for .*\");!ui_print(\"   $LUMIROM_VERSION-$BUILD_DATE $BUILD_STATUS for $DISPLAY_NAME\");!" "$UPDATER_SCRIPT"
     sed -i "s!ui_print(\"One UI version: .*\");!ui_print(\"One UI version: $ONEUI_VERSION\");!" "$UPDATER_SCRIPT"
 

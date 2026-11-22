@@ -39,7 +39,10 @@ UPDATE_ZIP_SCRIPT() {
         echo "${GREEN}Detected Fingerprint:${RESET} $FINGERPRINT"
         sed -i "s!ui_print(\"Source: .*\");!ui_print(\"Source: $FINGERPRINT\");!" "$UPDATER_PATH"
         
-        NEW_CHECK="getprop(\"ro.boot.em.model\") == \"$DEVICE\" || abort(\"E3004: This package is for $DEVICE_CODENAME\");"
+        # Keep the coloured abort from the template: escape the ESC for edify
+        # (\\x1b below becomes a literal \x1b in the generated script).
+        local ANSI_RED='ifelse(getprop("twrp.console_ansi") == "1", "\\x1b[31m", "")'
+        NEW_CHECK="getprop(\"ro.boot.em.model\") == \"$DEVICE\" || abort(concat(\"E3004: \", $ANSI_RED, \"This package is for $DEVICE_CODENAME\"));"
 
         echo "${GREEN}Updating device on updater-script for${RESET} $DISPLAY_NAME..."
       
