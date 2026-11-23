@@ -5,6 +5,13 @@
 #    libkumihodecoderservice) ya puede reservar memoria y no hace falta
 #    desactivarlo con debug.jpegfull.opt.switch.
 #
+#    A32 vendor has no ueventd line for mtk_mm, so it stays 0600 root:root
+#    and apps can't open it (blank JPEGs in Telegram etc). Give it the same
+#    permissions AOSP uses for /dev/dma_heap/system.
+on post-fs-data
+    chown system system /dev/dma_heap/mtk_mm
+    chmod 0444 /dev/dma_heap/mtk_mm
+
 # 2) BBR: networksetting.rc del vendor pone bic; el odm se procesa despues.
 on boot
     write /proc/sys/net/ipv4/tcp_congestion_control bbr
