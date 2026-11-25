@@ -98,7 +98,9 @@ exist, the firmware download and extraction are skipped. This is what
 published once in a public Hugging Face bucket (`FW/<model>/<version>/images.zip`
 plus `latest.txt` with version, sizes and sha256). `fw_bucket.sh pull` restores
 them, and falls back to Samsung when the bucket is cold or unreachable. The
-weekly mirror keeps it current; only one version is kept.
+bucket is `LuminousJD418/FW` and reads need no credentials, so forks build from
+it without configuring anything; only its owner can publish to it. The weekly
+mirror keeps it current, and only one version is kept.
 
 **Updater script.** `template/.../updater-script` is data with `@PLACEHOLDER@`
 tokens and `#@IF KEY` blocks. `render_updater_script` (in
