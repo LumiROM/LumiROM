@@ -118,7 +118,8 @@ jobs:
 
     - name: Fetch base firmware
       env:
-        HF_USER: ${{ vars.HF_USER }}
+        # The bucket is public and owned by the project: no HF_USER needed, so
+        # forks get the fast path too. The token is only used when present.
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: bash scripts/ci/firmware.sh base
 

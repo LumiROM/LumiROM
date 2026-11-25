@@ -20,8 +20,10 @@
 #   prune <version>      Delete every published version except <version>.
 #
 # Environment:
-#   HF_USER, HF_TOKEN     Bucket owner and token (token only for write actions).
-#   FW_BUCKET             Bucket id, defaults to "$HF_USER/FW".
+#   HF_USER, HF_TOKEN     Owner and token; the token is only needed to publish.
+#   FW_BUCKET             Bucket id, defaults to the project bucket
+#                         (LuminousJD418/FW). Reads need no credentials, so
+#                         forks build from it out of the box.
 #   IMGS_DIR, FIRM_DIR    Working directories (defaults: <repo>/IMGs, <repo>/FIRMWARE).
 #   BASE_MODEL/BASE_CSC/BASE_IMEI
 #                         Base firmware to mirror. Fall back to TARGET_*, then to
@@ -38,7 +40,10 @@ cd "$REPO_ROOT"
 
 HF_USER="${HF_USER:-}"
 HF_TOKEN="${HF_TOKEN:-}"
-BUCKET_ID="${FW_BUCKET:-${HF_USER}/FW}"
+# The base firmware is the same for every device and the bucket is public, so
+# the owner is fixed: forks build from it without configuring anything.
+FW_BUCKET_DEFAULT="LuminousJD418/FW"
+BUCKET_ID="${FW_BUCKET:-$FW_BUCKET_DEFAULT}"
 BASE_MODEL="${BASE_MODEL:-${TARGET_DEVICE:-SM-A346B}}"
 BASE_CSC="${BASE_CSC:-${TARGET_CSC:-EUX}}"
 BASE_IMEI="${BASE_IMEI:-${TARGET_IMEI:-353117555323497}}"
@@ -138,8 +143,6 @@ cmd_check() {
 }
 
 cmd_pull() {
-    [ -n "$HF_USER" ] || { echo "HF_USER is not set, skipping the FW bucket" >&2; return 1; }
-
     local tmp_zip version
     local manifest
     manifest="$(mktemp)"
@@ -200,7 +203,7 @@ cmd_pull() {
 cmd_push() {
     local version="${1:-}"
     [ -n "$version" ] || die "push needs a version"
-    [ -n "$HF_USER" ] || die "HF_USER is not set"
+    [ -n "$HF_TOKEN" ] || die "HF_TOKEN is not set (only the bucket owner can publish)"
 
     local partitions part
     local -a parts=() files=()
@@ -248,7 +251,7 @@ cmd_push() {
 cmd_prune() {
     local keep="${1:-}"
     [ -n "$keep" ] || die "prune needs the version to keep"
-    [ -n "$HF_USER" ] || return 0
+    [ -n "$HF_TOKEN" ] || return 0
 
     local listing
     listing="$(python3 scripts/package/hf_bucket.py --bucket "$BUCKET_ID" list "FW/$BASE_MODEL")" || return 0
@@ -272,7 +275,12 @@ cmd_prune() {
 }
 
 cmd_mirror() {
-    [ -n "$HF_USER" ] || die "HF_USER is not set"
+    : "${HF_TOKEN:?HF_TOKEN is not set (only the bucket owner can publish)}"
+
+    local owner="${BUCKET_ID%%/*}"
+    if [ -n "${HF_USER:-}" ] && [ "$HF_USER" != "$owner" ]; then
+        die "HF_USER ($HF_USER) does not own $BUCKET_ID; only $owner can mirror it"
+    fi
 
     local latest remote tmp
     tmp="$(mktemp)"
