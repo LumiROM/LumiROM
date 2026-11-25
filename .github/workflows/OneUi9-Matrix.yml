@@ -259,8 +259,6 @@ jobs:
         path: OTA_MANIFESTS/
         retention-days: 1
 
-    - name: Cleanup
-      run: sudo rm -rf *
 
   release:
     runs-on: ubuntu-latest
