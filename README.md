@@ -324,7 +324,7 @@ Package verification failed: no signature in file (no footer)
 
 Signing is fully automatic:
 - The **full ROM** is signed by `ota_sign_zip` (`scripts/package/sign_ota.sh`).
-- The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `SIGN_INCREMENTAL_OTA` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
+- The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `ota_sign_incremental` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
 - Both workflows (`OneUi9.yml` and `OneUi9-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing, the build fails on purpose so a broken OTA is never published. Signing uses the bundled `bin/apktool/signapk.jar` (self-contained, works with any Java >= 9), falling back to a system `signapk` (`/usr/share/signapk/signapk.jar`) if the bundled jar is absent. See `bin/apktool/signapk-NOTICE.txt` for the bundled jar's third-party licenses.
 
 ### Re-signing already published OTAs

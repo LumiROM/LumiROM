@@ -45,6 +45,16 @@ jobs:
           python3 -c "import ast, sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])" "$script" || exit 1
         done < <(git ls-files '*.py')
 
+    - name: helper references
+      # Catches a renamed helper that a call site (or a mod payload) still uses
+      # with the old name; the shell would only fail mid-build.
+      run: |
+        if grep -rnE '^[[:space:]]*(MOD|ROM|FW|PKG|OTA|DEPS|KNOX|HOTSPOT|APPS|AI|FOTA)_[A-Z0-9_]+[[:space:]]' LumiROM/Mods --include='*.sh'; then
+          echo "::error::mod payloads still call old uppercase helper names"
+          exit 1
+        fi
+        python3 scripts/dev/check_function_refs.py
+
     - name: workflow yaml
       run: |
         python3 -c "import glob, yaml; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]; print('workflows OK')"

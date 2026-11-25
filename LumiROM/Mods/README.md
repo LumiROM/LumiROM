@@ -56,17 +56,17 @@ SKIPUNZIP=1
 
 case "$STOCK_DEVICE" in
     SM-A325F|SM-A325M)
-        MOD_COPY_FILE "$MODPATH" system "etc/init/example.rc" "etc/init/example.rc"
+        mod_copy_file "$MODPATH" system "etc/init/example.rc" "etc/init/example.rc"
         ;;
 esac
 ```
 
 Available helpers:
 
-- `MOD_PARTITION_DIR <partition>`: prints the firmware destination.
-- `MOD_COPY_TREE <mod_dir> <partition>`: copies a whole partition tree.
-- `MOD_COPY_FILE <mod_dir> <partition> <source> <destination>`: copies one
+- `mod_partition_dir <partition>`: prints the firmware destination.
+- `mod_copy_tree <mod_dir> <partition>`: copies a whole partition tree.
+- `mod_copy_file <mod_dir> <partition> <source> <destination>`: copies one
   file or directory. Paths are relative to the partition root.
-- `MOD_PROP_GET <file> <key>`: reads a value from a properties file.
+- `mod_prop_get <file> <key>`: reads a value from a properties file.
 
 `customize.sh` is sourced, so use `return 0` / `return 1` instead of `exit`.

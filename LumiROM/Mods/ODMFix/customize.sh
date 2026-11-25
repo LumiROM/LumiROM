@@ -19,4 +19,4 @@ case "$STOCK_DEVICE" in
         ;;
 esac
 
-MOD_COPY_FILE "$MODPATH" odm "etc/init/$RC" "etc/init/$RC"
+mod_copy_file "$MODPATH" odm "etc/init/$RC" "etc/init/$RC"
