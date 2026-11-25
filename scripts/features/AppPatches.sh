@@ -6,6 +6,39 @@ source scripts/utils/bash_colors.sh
 source scripts/utils/platform_key.sh
 
 
+# apps_apply_sed_patch <patch_file> <target>
+# Patch files carry a sed instruction on the first line and the text to insert
+# or append on the rest. The classic `i\` / `a\` / `c\` form keeps the leading
+# whitespace and needs no shell-level escaping (the shell is never asked to
+# parse the file).
+apps_apply_sed_patch() {
+    local PATCH_FILE="$1"
+    local TARGET="$2"
+
+    [ -f "$PATCH_FILE" ] || return 1
+    [ -f "$TARGET" ] || return 1
+
+    local PATCH_INST CONTENT EXPR LINE
+    PATCH_INST="$(head -n 1 "$PATCH_FILE")"
+    CONTENT="$(tail -n +2 "$PATCH_FILE")"
+
+    case "$PATCH_INST" in
+        */i|*/a|*/c)
+            EXPR="${PATCH_INST}\\"
+            while IFS= read -r LINE; do
+                EXPR+=$'\n'"${LINE}\\"
+            done <<< "$CONTENT"
+            EXPR="${EXPR%\\}"
+            ;;
+        *)
+            # Any other instruction (e.g. s) stays on one line.
+            EXPR="$PATCH_INST $CONTENT"
+            ;;
+    esac
+
+    sed -i "$EXPR" "$TARGET"
+}
+
 apps_patch_secsettings() {
     echo ""
     if [ "$#" -ne 1 ]; then
@@ -228,16 +261,7 @@ apps_add_lumisettings() {
             ' "$TARGET" > "$TARGET.lumi_tmp" && mv "$TARGET.lumi_tmp" "$TARGET"
             rm -f "$TMPC"
         else
-            local PATCH_INST CONTENT
-            local -a SED_ARGS=()
-            PATCH_INST="$(head -n 1 "$f")"
-            CONTENT="$(tail -n +2 "$f")"
-            CONTENT="$(sed -e "s/\"/\\\\\"/g" -e "s/\\$/\\\\$/g" -e "s/ /\\\ /g" -e "s/\\\\n/\\\\\\\\\n/g" <<< "$CONTENT")"
-            CONTENT="$(sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' <<< "$CONTENT")"
-            # Split the sed instruction into words without asking the shell to
-            # parse it: these files are data from LumiROM/Mods, never code.
-            read -r -a SED_ARGS <<< "$PATCH_INST"
-            sed -i "${SED_ARGS[@]}" "$TARGET"
+            apps_apply_sed_patch "$f" "$TARGET"
         fi
     done < <(find "$MOD_DIR/SecSettings" -type f)
 

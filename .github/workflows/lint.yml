@@ -55,6 +55,9 @@ jobs:
         fi
         python3 scripts/dev/check_function_refs.py
 
+    - name: sed patches apply
+      run: bash scripts/dev/test_sed_patches.sh
+
     - name: workflow yaml
       run: |
         python3 -c "import glob, yaml; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]; print('workflows OK')"
