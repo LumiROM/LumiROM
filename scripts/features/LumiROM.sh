@@ -19,7 +19,7 @@ IS_OFFICIAL() {
         export ROM_TAG="✨ LumiROM Official Build"
     fi
 
-    if [ -n "$GITHUB_ENV" ]; then
+    if [ -n "${GITHUB_ENV:-}" ]; then
         echo "BUILD_STATUS=$BUILD_STATUS" >> "$GITHUB_ENV"
         echo "ROM_TAG=$ROM_TAG" >> "$GITHUB_ENV"
     fi

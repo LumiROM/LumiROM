@@ -25,7 +25,7 @@ GOFILE_UPLOAD() {
     echo "$LINK"
     echo
 
-    if [ -n "$GITHUB_ENV" ] && [ -n "$URL_VAR" ]; then
+    if [ -n "${GITHUB_ENV:-}" ] && [ -n "$URL_VAR" ]; then
         echo "${URL_VAR}=$LINK" >> "$GITHUB_ENV"
     fi
 }
@@ -50,7 +50,7 @@ UPLOAD_FILE() {
             fi
             echo "Uploading $FILE_NAME to Hugging Face bucket $BUCKET"
             python3 "$(dirname "$0")/upload_hf.py" "$FILE" "$REMOTE_PATH" --bucket "$BUCKET"
-            if [ -n "$GITHUB_ENV" ] && [ -n "$HF_USER" ]; then
+            if [ -n "${GITHUB_ENV:-}" ] && [ -n "$HF_USER" ]; then
                 echo "${URL_VAR}=https://huggingface.co/buckets/${BUCKET}/resolve/${REMOTE_PATH}?download=true" >> "$GITHUB_ENV"
             fi
             ;;

@@ -158,7 +158,6 @@ GALAXY_AI() {
         fi
 
         # Cleanup any leftover .aria2 control files
-        wait
         find "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -name "*.aria2" -exec rm -f {} +
     else
     	echo

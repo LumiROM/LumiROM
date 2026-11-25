@@ -83,42 +83,43 @@ CALCULATE_SIZE_AND_RESERVED()
 
 BUILD_IMAGE_MKFS()
 {
-    local BUILD_CMD=""
+    # Built as an array so no second round of shell quoting is needed.
+    local -a BUILD_CMD=()
 
     case "$FS_TYPE" in
         "erofs")
-            BUILD_CMD+="$MKFS_EROFS "
-            BUILD_CMD+="-z \"lz4hc\" "
-            BUILD_CMD+="-b \"4096\" "
-            BUILD_CMD+="--mount-point \"$MOUNT_POINT\" "
-            BUILD_CMD+="--fs-config-file \"$FS_CONFIG_FILE\" "
-            BUILD_CMD+="--file-contexts \"$FILE_CONTEXT_FILE\" "
-            BUILD_CMD+="-T \"1640995200\" "
+            BUILD_CMD+=("$MKFS_EROFS")
+            BUILD_CMD+=(-z "lz4hc")
+            BUILD_CMD+=(-b "4096")
+            BUILD_CMD+=(--mount-point "$MOUNT_POINT")
+            BUILD_CMD+=(--fs-config-file "$FS_CONFIG_FILE")
+            BUILD_CMD+=(--file-contexts "$FILE_CONTEXT_FILE")
+            BUILD_CMD+=(-T "1640995200")
             if $MAP_FILE; then
-                BUILD_CMD+="--block-list-file \"${OUTPUT_FILE//.img/.map}\" "
+                BUILD_CMD+=(--block-list-file "${OUTPUT_FILE//.img/.map}")
             fi
-            BUILD_CMD+="\"$OUTPUT_FILE\" \"$INPUT_DIR\""
+            BUILD_CMD+=("$OUTPUT_FILE" "$INPUT_DIR")
             ;;
         "ext4")
-            BUILD_CMD+="mkuserimg_mke2fs "
+            BUILD_CMD+=(mkuserimg_mke2fs)
             if $SPARSE; then
-                BUILD_CMD+="-s "
+                BUILD_CMD+=(-s)
             fi
-            BUILD_CMD+="\"$INPUT_DIR\" \"$OUTPUT_FILE\" \"ext4\" \"$MOUNT_POINT\" "
-            BUILD_CMD+="\"$IMAGE_SIZE\" "
-            BUILD_CMD+="-j \"0\" "
-            BUILD_CMD+="-T \"1640995200\" "
-            BUILD_CMD+="-C \"$FS_CONFIG_FILE\" "
+            BUILD_CMD+=("$INPUT_DIR" "$OUTPUT_FILE" "ext4" "$MOUNT_POINT")
+            BUILD_CMD+=("$IMAGE_SIZE")
+            BUILD_CMD+=(-j "0")
+            BUILD_CMD+=(-T "1640995200")
+            BUILD_CMD+=(-C "$FS_CONFIG_FILE")
             if $MAP_FILE; then
-                BUILD_CMD+="-B \"${OUTPUT_FILE//.img/.map}\" "
+                BUILD_CMD+=(-B "${OUTPUT_FILE//.img/.map}")
             fi
-            BUILD_CMD+="-L \"$MOUNT_POINT\" "
+            BUILD_CMD+=(-L "$MOUNT_POINT")
             if [ "$INODES" ]; then
-                BUILD_CMD+="-i \"$INODES\" "
+                BUILD_CMD+=(-i "$INODES")
             fi
-            BUILD_CMD+="-M \"0\" "
-            BUILD_CMD+="--inode_size \"256\" "
-            BUILD_CMD+="\"$FILE_CONTEXT_FILE\""
+            BUILD_CMD+=(-M "0")
+            BUILD_CMD+=(--inode_size "256")
+            BUILD_CMD+=("$FILE_CONTEXT_FILE")
             ;;
         *)
             LOG "  [ERROR] Unsupported file system type: $FS_TYPE"
@@ -126,7 +127,7 @@ BUILD_IMAGE_MKFS()
             ;;
     esac
 
-    eval "$BUILD_CMD" || exit 1
+    "${BUILD_CMD[@]}" || exit 1
 }
 
 PREPARE_SCRIPT()

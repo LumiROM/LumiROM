@@ -136,7 +136,7 @@ DOWNLOAD_FIRMWARE() {
             fi
 
             echo "- ✅ Latest version found: $VERSION"
-            if [ -n "$GITHUB_ENV" ]; then
+            if [ -n "${GITHUB_ENV:-}" ]; then
                 echo "VERSION=$VERSION" >> "$GITHUB_ENV"
             fi
         fi
@@ -172,7 +172,6 @@ DOWNLOAD_VENDOR() {
     aria2c -x 16 -k 1M -d "$DOWN_DIR" -o "vendor.img" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://github.com/LumiROM/VendorsForMTKG80/releases/download/${STOCK_DEVICE}_latest/vendor.img" || return 1
     
     # Cleanup any leftover .aria2 control files
-    wait
     find "$DOWN_DIR" -name "*.aria2" -exec rm -f {} +
 }
 
@@ -328,6 +327,7 @@ EXTRACT_FIRMWARE_IMG() {
 	local FIRM_DIR="$2"
 
 	echo "${YELLOW}Extracting images from $IMG_DIR${RESET}"
+    local -a EXTRACT_PIDS=()
     for imgfile in "$IMG_DIR"/*.img; do
         [ -e "$imgfile" ] || continue
 
@@ -362,9 +362,19 @@ EXTRACT_FIRMWARE_IMG() {
                     ;;
             esac
         ) &
+        EXTRACT_PIDS+=("$!")
     done
 
-    wait
+    # Check every extraction: `wait` alone returns 0 and would hide a
+    # partition that silently failed to extract.
+    local PID FAILED=0
+    for PID in "${EXTRACT_PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to extract${RESET}" >&2
+        return 1
+    fi
 
     # Correct owner and permissions of extracted ext4 partitions
     sudo chown -R $USER:$USER "$FIRM_DIR/vendor/"
@@ -585,6 +595,7 @@ BUILD_IMG() {
     GEN_FS_CONFIG "$EXTRACTED_FIRM_DIR"
 	GEN_FILE_CONTEXTS "$EXTRACTED_FIRM_DIR"
 
+    local -a BUILD_PIDS=()
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
         [[ -d "$PART" ]] || continue    
         PARTITION="$(basename "$PART")"
@@ -612,9 +623,19 @@ BUILD_IMG() {
                 "$SRC_DIR" "$FILE_CONTEXTS" "$FS_CONFIG"
             touch "$OUT_DIR/$PARTITION.map"
         ) &
+        BUILD_PIDS+=("$!")
     done
 
-    wait
+    # Wait for every partition and fail if any image failed to build; `wait`
+    # with no arguments always returns 0 and would hide those failures.
+    local PID FAILED=0
+    for PID in "${BUILD_PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partition images failed to build${RESET}" >&2
+        return 1
+    fi
 
     # Updates the list sequentially to avoid race conditions
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
@@ -652,25 +673,38 @@ IMG_TO_BROTLI() {
     # This is for compressing to .new.dat
     echo "${BLUE}=== Converting IMG to SDAT ===${RESET}"
 
+    local -a PIDS=()
     for f in "$IMG_DIR"/*.img; do
         [[ -f "$f" ]] || continue
         PARTITION="$(basename "$f" .img)"
 
         (
             echo "${GREEN}Converting $PARTITION.img...${RESET}"
-            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1
+            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1 || {
+                echo "${RED}Error: img2sdat failed for $PARTITION${RESET}" >&2
+                exit 1
+            }
             touch "$TMP_DIR/$PARTITION.patch.dat"
             echo "${GREEN}Created patch.dat for $PARTITION${RESET}"
         ) &
+        PIDS+=("$!")
     done
 
-    wait
+    local PID FAILED=0
+    for PID in "${PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to convert${RESET}" >&2
+        return 1
+    fi
 
     # Compress it to .new.dat.br to make later a .zip file
     echo ""
     echo "${BLUE}=== Compressing DAT files with Brotli (Parallel) ===${RESET}"
 
     local JOBS=4 # Set to match vCPUs
+    PIDS=()
     for DAT in "$TMP_DIR"/*.new.dat; do
         [[ -f "$DAT" ]] || continue
         PARTITION="$(basename "$DAT" .new.dat)"
@@ -678,9 +712,13 @@ IMG_TO_BROTLI() {
 
         (
             echo "${YELLOW}Compressing $PARTITION.new.dat...${RESET}"
-            brotli -f -q 1 --output="$OUT_FILE" "$DAT"
+            brotli -f -q 1 --output="$OUT_FILE" "$DAT" || {
+                echo "${RED}Error: brotli failed for $PARTITION${RESET}" >&2
+                exit 1
+            }
             echo "${GREEN}Finished $PARTITION.new.dat.br${RESET}"
         ) &
+        PIDS+=("$!")
 
         # Limit concurrent jobs
         while [ $(jobs -r | wc -l) -ge "$JOBS" ]; do
@@ -688,7 +726,14 @@ IMG_TO_BROTLI() {
         done
     done
 
-    wait
+    FAILED=0
+    for PID in "${PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to compress${RESET}" >&2
+        return 1
+    fi
     echo ""
     echo "${GREEN}All partitions converted and compressed successfully.${RESET}"
 }

@@ -3,6 +3,16 @@
 # =====================================================================
 #  LumiROM local builder
 # =====================================================================
+#
+# Shell options:
+#   -u           Fail on unset variables, so typos and a missing .env value
+#                stop the build instead of producing a broken ROM.
+#   -o pipefail  A pipeline fails if any command in it fails.
+#
+# `set -e` is intentionally not enabled: every build step goes through run(),
+# which aborts on failure with a clear message, while other helpers rely on
+# non-zero returns for control flow.
+set -uo pipefail
 
 START_TIME=$(date +%s)
 
@@ -15,6 +25,10 @@ fi
 #  Default configuration
 # =====================================================================
 set_defaults() {
+    STOCK_DEVICE=""
+    TARGET_DEVICE=""
+    TARGET_CSC=""
+    TARGET_IMEI=""
     USE_MODS="true"
     USE_GALAXY_AI="false"
     USE_UI_8_TETHERING_APEX="false"
@@ -29,14 +43,49 @@ set_defaults() {
 #  Helpers
 # =====================================================================
 
-# Runs a command piping its output to the log
-run() {
-    "$@" 2>&1 | tee -a "$LOG_FILE"
+# die <message>: print the error, record it in the error log and abort.
+# Works before the logging system is loaded (setup_environment).
+die() {
+    local message="$*"
+    printf '\n%sERROR:%s %s\n' "${RED:-}" "${RESET:-}" "$message" >&2
+    if [ -n "${ERROR_LOG:-}" ]; then
+        printf '[%s] ERROR: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >> "$ERROR_LOG" 2>/dev/null || true
+    fi
+    exit 1
 }
 
-# Like `run`, but in the background (for parallel jobs)
+# Runs a command piping its output to the log. Aborts the build on failure:
+# piping to tee hides the real exit status, so it is read from PIPESTATUS.
+run() {
+    local status
+    "$@" 2>&1 | tee -a "${LOG_FILE:-/dev/null}"
+    status=${PIPESTATUS[0]}
+    [ "$status" -eq 0 ] || die "command failed (exit $status): $*"
+    return 0
+}
+
+# Like `run`, but without aborting on failure (optional/cleanup steps).
+try() {
+    "$@" 2>&1 | tee -a "${LOG_FILE:-/dev/null}"
+    return "${PIPESTATUS[0]}"
+}
+
+# Like `run`, but in the background (for parallel jobs).
+# Collect the jobs with wait_jobs before using their output.
+PAR_PIDS=()
 par() {
     run "$@" &
+    PAR_PIDS+=("$!")
+}
+
+# Waits for every job started with par(), then aborts if any of them failed.
+wait_jobs() {
+    local pid failed=0
+    for pid in "${PAR_PIDS[@]}"; do
+        wait "$pid" || failed=1
+    done
+    PAR_PIDS=()
+    [ "$failed" -eq 0 ] || die "one or more parallel jobs failed (see the log above)"
 }
 
 usage() {
@@ -128,7 +177,7 @@ resolve_target_device() {
     source scripts/firmware/FW.sh
 
     if [ -z "$TARGET_DEVICE" ]; then
-        TARGET_DEVICE=$(GET_BASE_DEVICE "$STOCK_DEVICE") || exit 1
+        TARGET_DEVICE=$(GET_BASE_DEVICE "$STOCK_DEVICE") || die "no base device for $STOCK_DEVICE"
     fi
 
     source scripts/utils/validation.sh
@@ -139,6 +188,10 @@ resolve_target_device() {
 #  System environment variables
 # =====================================================================
 setup_environment() {
+    if [ -z "${LUMIROM_VERSION:-}" ]; then
+        die "LUMIROM_VERSION is not set. Add it to .env (LUMIROM_VERSION=<version>) or export it before running this script."
+    fi
+
     export OUTPUT_FILESYSTEM="erofs"
     export LUMIROM_CODE="${LUMIROM_VERSION//./0}"
     export OUT_DIR="$PWD/OUT"
@@ -201,7 +254,12 @@ setup_directories() {
 check_environment() {
     log_section "Checking the environment"
     source scripts/firmware/local_official.sh
-    IS_LOCAL_OFFICIAL >> "$LOG_FILE" 2>&1
+    # Runs in the current shell: IS_LOCAL_OFFICIAL exports BUILD_STATUS, which
+    # the packaging steps need. Process substitution keeps stdout visible while
+    # still writing it to the log.
+    if ! IS_LOCAL_OFFICIAL > >(tee -a "$LOG_FILE") 2>&1; then
+        die "environment check failed (IS_LOCAL_OFFICIAL)"
+    fi
 }
 
 # =====================================================================
@@ -306,7 +364,7 @@ decompile_framework() {
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
     par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
-    wait
+    wait_jobs
 }
 
 apply_knox_patches() {
@@ -350,7 +408,7 @@ recompile_framework() {
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
     par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
-    wait
+    wait_jobs
 
     if [ ! -f "$WORK_DIR/SecSettings_rebuilt.apk" ] || \
             [ ! -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ] || \
@@ -359,8 +417,7 @@ recompile_framework() {
             [ ! -f "$WORK_DIR/services.jar" ] || \
             [ ! -f "$WORK_DIR/knoxsdk.jar" ] || \
             [ ! -f "$WORK_DIR/samsungkeystoreutils.jar" ]; then
-        echo "${RED}ERROR: a decompiled artifact failed to recompile (see the log above). Aborting.${RESET}"
-        exit 1
+        die "a decompiled artifact failed to recompile (see the log above)"
     fi
 
     run FIX_FRAMEWORK_MIME "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
@@ -487,8 +544,12 @@ package_output() {
 # =====================================================================
 cleanup() {
     log_message "Cleaning up temporary directories..."
-    run sudo rm -rf ./OUT/ ./TMP/ ./WORK/ ./FIRMWARE/ ./makerom/
-    [ -n "$LUMIROM_ENV_FILE" ] && rm -f "$LUMIROM_ENV_FILE"
+    if ! try sudo rm -rf ./OUT/ ./TMP/ ./WORK/ ./FIRMWARE/ ./makerom/; then
+        log_message "Warning: could not remove some temporary directories (continuing)"
+    fi
+    if [ -n "${LUMIROM_ENV_FILE:-}" ]; then
+        rm -f "$LUMIROM_ENV_FILE"
+    fi
 
     log_message "✓ LumiROM $LUMIROM_VERSION for $STOCK_DEVICE is ready!"
     log_message "✓ You can find it in the ROM folder"

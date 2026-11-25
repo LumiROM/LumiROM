@@ -201,8 +201,8 @@ HotspotFix_GET_ROOT_DIGEST() {
 # Locate the Android SDK's zipalign (preferred) for APEX page alignment
 # ---------------------------------------------------------------
 HotspotFix_FIND_ZIPALIGN() {
-    if [ -n "$ZIPALIGN" ] && [ -x "$ZIPALIGN" ]; then
-        echo "$ZIPALIGN"
+    if [ -n "${ZIPALIGN:-}" ] && [ -x "${ZIPALIGN:-}" ]; then
+        echo "${ZIPALIGN:-}"
         return 0
     fi
     if command -v zipalign >/dev/null 2>&1; then
@@ -210,7 +210,7 @@ HotspotFix_FIND_ZIPALIGN() {
         return 0
     fi
     local root cand roots
-    roots="$ANDROID_HOME $ANDROID_SDK_ROOT $HOME/Android/Sdk $HOME/android-sdk ${ANDROID_HOME:-/nonexistent}"
+    roots="${ANDROID_HOME:-} ${ANDROID_SDK_ROOT:-} $HOME/Android/Sdk $HOME/android-sdk"
     for root in $roots; do
         [ -d "$root/build-tools" ] || continue
         cand=$(ls -1 "$root"/build-tools/*/zipalign 2>/dev/null | sort -V | tail -1)
@@ -226,8 +226,8 @@ HotspotFix_FIND_ZIPALIGN() {
 # Locate the Android SDK's apksigner
 # ---------------------------------------------------------------
 HotspotFix_FIND_APKSIGNER() {
-    if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
-        echo "$APKSIGNER"
+    if [ -n "${APKSIGNER:-}" ] && [ -x "${APKSIGNER:-}" ]; then
+        echo "${APKSIGNER:-}"
         return 0
     fi
     if command -v apksigner >/dev/null 2>&1; then
@@ -235,7 +235,7 @@ HotspotFix_FIND_APKSIGNER() {
         return 0
     fi
     local root cand roots
-    roots="$ANDROID_HOME $ANDROID_SDK_ROOT $HOME/Android/Sdk $HOME/android-sdk"
+    roots="${ANDROID_HOME:-} ${ANDROID_SDK_ROOT:-} $HOME/Android/Sdk $HOME/android-sdk"
     for root in $roots; do
         [ -d "$root/build-tools" ] || continue
         cand=$(ls -1 "$root"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)

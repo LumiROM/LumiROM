@@ -229,11 +229,15 @@ ADD_LUMISETTINGS() {
             rm -f "$TMPC"
         else
             local PATCH_INST CONTENT
+            local -a SED_ARGS=()
             PATCH_INST="$(head -n 1 "$f")"
             CONTENT="$(tail -n +2 "$f")"
             CONTENT="$(sed -e "s/\"/\\\\\"/g" -e "s/\\$/\\\\$/g" -e "s/ /\\\ /g" -e "s/\\\\n/\\\\\\\\\n/g" <<< "$CONTENT")"
             CONTENT="$(sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' <<< "$CONTENT")"
-            eval "sed -i \"$PATCH_INST $CONTENT\" \"$TARGET\""
+            # Split the sed instruction into words without asking the shell to
+            # parse it: these files are data from LumiROM/Mods, never code.
+            read -r -a SED_ARGS <<< "$PATCH_INST"
+            sed -i "${SED_ARGS[@]}" "$TARGET"
         fi
     done < <(find "$MOD_DIR/SecSettings" -type f)
 

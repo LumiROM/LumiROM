@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source scripts/utils/bash_colors.sh
+source scripts/package/updater_script.sh
 
 GET_IMAGE_SIZE() {
     local FILE="$1"
@@ -35,6 +36,120 @@ GET_INCREMENTAL_CODENAME() {
         SM-E225F) echo "f22" ;;
         *) echo "unknown" ;;
     esac
+}
+
+# GENERATE_INCREMENTAL_UPDATER_SCRIPT <template> <output> <incr_dir>
+#                                   <install|skip|none> <partition...>
+#
+# Keeps the banner/prism block and the kernel/cache block from the rendered
+# template and generates the partition section in between. `boot_mode`
+# decides whether boot.img is flashed (install), reported as unchanged (skip)
+# or omitted (none).
+#
+# Reads the build metadata from the caller's dynamically scoped variables:
+# STOCK_DEVICE, DEVICE_CODENAME, DISPLAY_NAME, FINGERPRINT, LUMIROM_VERSION,
+# BUILD_DATE, BUILD_STATUS, ONEUI_VERSION, SOURCE_VERSION.
+GENERATE_INCREMENTAL_UPDATER_SCRIPT() {
+    if [ "$#" -lt 4 ]; then
+        echo "Usage: ${FUNCNAME[0]} <template> <output> <incr_dir> <install|skip|none> <partition...>" >&2
+        return 1
+    fi
+
+    local TEMPLATE="$1"
+    local OUTPUT="$2"
+    local INCR_DIR="$3"
+    local BOOT_MODE="$4"
+    shift 4
+    local -a PARTITIONS=("$@")
+
+    local BOOT_INSTALL=false BOOT_SKIP=false
+    case "$BOOT_MODE" in
+        install) BOOT_INSTALL=true ;;
+        skip)    BOOT_SKIP=true ;;
+        none)    ;;
+        *)
+            echo "${RED}Error:${RESET} invalid boot mode: $BOOT_MODE" >&2
+            return 1
+            ;;
+    esac
+
+    local RENDERED="$OUTPUT.rendered"
+    if ! render_updater_script "$TEMPLATE" "$RENDERED" \
+            "DEVICE_MODEL=$STOCK_DEVICE" \
+            "DEVICE_CODENAME=$DEVICE_CODENAME" \
+            "BUILD_TAG=$LUMIROM_VERSION-$BUILD_DATE $BUILD_STATUS" \
+            "DISPLAY_NAME=$DISPLAY_NAME" \
+            "ONEUI_VERSION=$ONEUI_VERSION" \
+            "FINGERPRINT=$FINGERPRINT" \
+            "BOOT_INSTALL=$BOOT_INSTALL" \
+            "BOOT_SKIP=$BOOT_SKIP"; then
+        rm -f "$RENDERED"
+        return 1
+    fi
+
+    # Everything before the partition section (banner + prism cleanup) and
+    # from the kernel section onwards (boot + cache wipe) comes verbatim from
+    # the template; only the partition section is generated here.
+    local SPLIT_LINE TAIL_LINE
+    SPLIT_LINE="$(grep -n '^# --- Start patching dynamic partitions ---' "$RENDERED" | cut -d ":" -f 1)"
+    TAIL_LINE="$(grep -n '^# --- Installing kernel ---' "$RENDERED" | cut -d ":" -f 1)"
+
+    if [ -z "$SPLIT_LINE" ] || [ -z "$TAIL_LINE" ]; then
+        echo "${RED}Error:${RESET} updater-script template is missing its section markers" >&2
+        rm -f "$RENDERED"
+        return 1
+    fi
+
+    head -n $((SPLIT_LINE - 1)) "$RENDERED" > "$OUTPUT"
+
+    {
+        echo "ui_print(\"Incremental update from $SOURCE_VERSION\");"
+        echo "ui_print(\" \");"
+    } >> "$OUTPUT"
+
+    echo 'show_progress(0.400000, 45);' >> "$OUTPUT"
+
+    local PARTITION RANGES_FILE SHA1_FILE RANGES SHA1
+    for PARTITION in "${PARTITIONS[@]}"; do
+        RANGES_FILE="$INCR_DIR/$PARTITION.touched_src_ranges"
+        SHA1_FILE="$INCR_DIR/$PARTITION.touched_src_sha1"
+
+        if [ -f "$SHA1_FILE" ] && [ -n "$(cat "$SHA1_FILE")" ]; then
+            RANGES="$(cat "$RANGES_FILE")"
+            SHA1="$(cat "$SHA1_FILE")"
+            {
+                echo "ui_print(\"Verifying $PARTITION image...\");"
+                echo "if (range_sha1(map_partition(\"$PARTITION\"), \"$RANGES\") == \"$SHA1\" || block_image_verify(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\")) then"
+                echo "ui_print(\"Verified $PARTITION image...\");"
+                echo "else"
+                echo "ifelse(block_image_recover(map_partition(\"$PARTITION\"), \"$RANGES\") && block_image_verify(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\"), ui_print(\"$PARTITION recovered successfully.\"), abort(\"E1004: $PARTITION partition fails to recover\"));"
+                echo "endif;"
+            } >> "$OUTPUT"
+        else
+            echo "ui_print(\"Patching $PARTITION image unconditionally...\");" >> "$OUTPUT"
+        fi
+    done
+
+    {
+        echo "# --- Start patching dynamic partitions ---"
+        echo ""
+        echo "# Update dynamic partition metadata"
+        echo "assert(update_dynamic_partitions(package_extract_file(\"dynamic_partitions_op_list\")));"
+        for PARTITION in "${PARTITIONS[@]}"; do
+            echo ""
+            echo "# Patch partition $PARTITION"
+            echo "ui_print(\"Patching $PARTITION image...\");"
+            echo "show_progress(0.100000, 0);"
+            echo "block_image_update(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\") ||"
+            echo "  abort(\"E1001: Failed to update $PARTITION image.\");"
+        done
+        echo ""
+        echo "# --- End patching dynamic partitions ---"
+        echo ""
+    } >> "$OUTPUT"
+
+    tail -n +"$TAIL_LINE" "$RENDERED" >> "$OUTPUT"
+    rm -f "$RENDERED"
 }
 
 BUILD_INCREMENTAL_OTA() {
@@ -243,8 +358,8 @@ BUILD_INCREMENTAL_OTA() {
         fi
     done
 
-    if [ -n "$STOCK_SUPER_SIZE" ] && [ "$TOTAL_SIZE" -gt "$STOCK_SUPER_SIZE" ]; then
-        echo "${RED}Error: target partitions ($TOTAL_SIZE bytes) do not fit in the super partition ($STOCK_SUPER_SIZE bytes)${RESET}"
+    if [ -n "${STOCK_SUPER_SIZE:-}" ] && [ "$TOTAL_SIZE" -gt "${STOCK_SUPER_SIZE:-0}" ]; then
+        echo "${RED}Error: target partitions ($TOTAL_SIZE bytes) do not fit in the super partition (${STOCK_SUPER_SIZE:-0} bytes)${RESET}"
         exit 1
     fi
 
@@ -263,81 +378,27 @@ BUILD_INCREMENTAL_OTA() {
     local DISPLAY_NAME
     DISPLAY_NAME="$(GET_INCREMENTAL_DISPLAY_NAME "$DEVICE_CODENAME")"
 
-    local SPLIT_LINE
-    SPLIT_LINE="$(grep -n "^# --- Start patching dynamic partitions ---" "$TEMPLATE_SCRIPT" | cut -d ":" -f 1)"
-    head -n $((SPLIT_LINE - 1)) "$TEMPLATE_SCRIPT" > "$UPDATER_SCRIPT"
-
-    sed -i "s!ui_print(\"Source: .*\");!ui_print(\"Source: $FINGERPRINT\");!" "$UPDATER_SCRIPT"
-    local ANSI_RED='ifelse(getprop("twrp.console_ansi") == "1", "\\x1b[31m", "")'
-    sed -i "s!^getprop(\"ro.boot.em.model\").*!getprop(\"ro.boot.em.model\") == \"$STOCK_DEVICE\" || abort(concat(\"E3004: \", $ANSI_RED, \"This package is for $DEVICE_CODENAME\"));!" "$UPDATER_SCRIPT"
-    sed -i "s!ui_print(\".*for .*\");!ui_print(\"   $LUMIROM_VERSION-$BUILD_DATE $BUILD_STATUS for $DISPLAY_NAME\");!" "$UPDATER_SCRIPT"
-    sed -i "s!ui_print(\"One UI version: .*\");!ui_print(\"One UI version: $ONEUI_VERSION\");!" "$UPDATER_SCRIPT"
-
-    {
-        echo "ui_print(\"Incremental update from $SOURCE_VERSION\");"
-        echo "ui_print(\" \");"
-    } >> "$UPDATER_SCRIPT"
-
-    echo 'show_progress(0.400000, 45);' >> "$UPDATER_SCRIPT"
-
-    local RANGES_FILE SHA1_FILE RANGES SHA1
-    for PARTITION in "${CHANGED_PARTITIONS[@]}"; do
-        RANGES_FILE="$INCR_DIR/$PARTITION.touched_src_ranges"
-        SHA1_FILE="$INCR_DIR/$PARTITION.touched_src_sha1"
-
-        if [ -f "$SHA1_FILE" ] && [ -n "$(cat "$SHA1_FILE")" ]; then
-            RANGES="$(cat "$RANGES_FILE")"
-            SHA1="$(cat "$SHA1_FILE")"
-            {
-                echo "ui_print(\"Verifying $PARTITION image...\");"
-                echo "if (range_sha1(map_partition(\"$PARTITION\"), \"$RANGES\") == \"$SHA1\" || block_image_verify(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\")) then"
-                echo "ui_print(\"Verified $PARTITION image...\");"
-                echo "else"
-                echo "ifelse(block_image_recover(map_partition(\"$PARTITION\"), \"$RANGES\") && block_image_verify(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\"), ui_print(\"$PARTITION recovered successfully.\"), abort(\"E1004: $PARTITION partition fails to recover\"));"
-                echo "endif;"
-            } >> "$UPDATER_SCRIPT"
-        else
-            echo "ui_print(\"Patching $PARTITION image unconditionally...\");" >> "$UPDATER_SCRIPT"
-        fi
-    done
-
-    {
-        echo "# --- Start patching dynamic partitions ---"
-        echo ""
-        echo "# Update dynamic partition metadata"
-        echo "assert(update_dynamic_partitions(package_extract_file(\"dynamic_partitions_op_list\")));"
-        for PARTITION in "${CHANGED_PARTITIONS[@]}"; do
-            echo ""
-            echo "# Patch partition $PARTITION"
-            echo "ui_print(\"Patching $PARTITION image...\");"
-            echo "show_progress(0.100000, 0);"
-            echo "block_image_update(map_partition(\"$PARTITION\"), package_extract_file(\"$PARTITION.transfer.list\"), \"$PARTITION.new.dat.br\", \"$PARTITION.patch.dat\") ||"
-            echo "  abort(\"E1001: Failed to update $PARTITION image.\");"
-        done
-        echo ""
-        echo "# --- End patching dynamic partitions ---"
-        echo ""
-    } >> "$UPDATER_SCRIPT"
-
-    local TAIL_LINE
-    TAIL_LINE="$(grep -n "^# --- Wiping cache ---" "$TEMPLATE_SCRIPT" | cut -d ":" -f 1)"
-    if [ -n "$TAIL_LINE" ]; then
-        tail -n +"$TAIL_LINE" "$TEMPLATE_SCRIPT" >> "$UPDATER_SCRIPT"
-    fi
-
-    local SPECIFIC_BOOT="$(pwd)/LumiROM/Devices/$STOCK_DEVICE/boot.img"
+    local SPECIFIC_BOOT="$PWD/LumiROM/Devices/$STOCK_DEVICE/boot.img"
     local SOURCE_BOOT="$WORK_DIR_INC/source/boot.img"
+    local BOOT_MODE="none"
 
     if [ -f "$SPECIFIC_BOOT" ] && [ -f "$SOURCE_BOOT" ] && \
        [ "$(sha1sum "$SPECIFIC_BOOT" | cut -d " " -f 1)" = "$(sha1sum "$SOURCE_BOOT" | cut -d " " -f 1)" ]; then
         echo "${GREEN}Boot image unchanged, skipping it...${RESET}"
-        sed -i "/^ui_print(\"Installing boot image...\");\$/,+1c ui_print(\"Boot image unchanged, skipping...\");" "$UPDATER_SCRIPT"
+        BOOT_MODE="skip"
     elif [ -f "$SPECIFIC_BOOT" ]; then
         echo "${GREEN}Copying boot.img from $STOCK_DEVICE...${RESET}"
         cp "$SPECIFIC_BOOT" "$STAGE/boot.img"
+        BOOT_MODE="install"
     else
         echo "${YELLOW}Warning: no boot.img found for $STOCK_DEVICE, it will not be included${RESET}"
-        sed -i "/^ui_print(\"Installing boot image...\");\$/,+1d" "$UPDATER_SCRIPT"
+    fi
+
+    if ! GENERATE_INCREMENTAL_UPDATER_SCRIPT \
+            "$TEMPLATE_SCRIPT" "$UPDATER_SCRIPT" "$INCR_DIR" "$BOOT_MODE" \
+            "${CHANGED_PARTITIONS[@]}"; then
+        echo "${RED}Error: failed to generate the incremental updater-script${RESET}" >&2
+        exit 1
     fi
 
     cp "$IMG_DIR/build_info.txt" "$STAGE/build_info.txt"
