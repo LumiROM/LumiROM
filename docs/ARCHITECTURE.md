@@ -105,6 +105,11 @@ tokens and `#@IF KEY` blocks. `render_updater_script` (in
 `scripts/package/updater_script.sh`) fills it and fails if a value is missing;
 nothing rewrites it with `sed` afterwards.
 
+**Build metadata.** `build_info.txt` inside every package records the codename,
+version, fingerprint, `base_firmware_version` (the A34 release the images came
+from, when the FW bucket was used) and `kernel_version`, which is read from the
+device's prebuilt `boot.img` by `scripts/utils/kernel_version.py`.
+
 **Target files and incremental OTAs.** `pkg_create_target_files` stores the
 images plus their block maps. `ota_build` diffs a previous target-files zip
 against the current images and emits an incremental package whose updater-script
@@ -157,7 +162,5 @@ matrix.
 
 * `set -e` is not enabled in `build_local.sh` (documented in the file): steps go
   through `run`, and some helpers use non-zero returns for control flow.
-* `KERNEL_VERSION` is never populated, so `build_info.txt` records an empty
-  `kernel_version`.
 * The incremental OTA flashes `boot.img` only when it differs from the previous
   target files.

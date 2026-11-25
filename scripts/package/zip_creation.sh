@@ -112,6 +112,16 @@ pkg_create_flashable_zip() {
         ANDROID_VERSION="$(grep "^ro.build.version.release=" "$BUILD_PROP" | cut -d "=" -f 2)"
         SECURITY_PATCH="$(grep "^ro.build.version.security_patch=" "$BUILD_PROP" | cut -d "=" -f 2)"
 
+        # Kernel version of the boot image this device ships. The boot image is
+        # authoritative; a stale KERNEL_VERSION from the device config or the
+        # environment is only kept when the image cannot be read.
+        local DETECTED_KERNEL_VERSION
+        DETECTED_KERNEL_VERSION="$(python3 scripts/utils/kernel_version.py \
+            "$(pwd)/LumiROM/Devices/$DEVICE/boot.img" 2>/dev/null || true)"
+        if [ -n "$DETECTED_KERNEL_VERSION" ]; then
+            KERNEL_VERSION="$DETECTED_KERNEL_VERSION"
+        fi
+
         # Base (Galaxy A34) firmware the images were unpacked from, when known.
         # fw_prepare_partitions prunes IMGs/, so the marker lives in FIRM_DIR; the
         # IMGS_DIR lookup keeps builds made before that change working.
@@ -122,6 +132,8 @@ pkg_create_flashable_zip() {
                 break
             fi
         done
+
+        echo "Kernel version: ${KERNEL_VERSION:-unknown}"
 
         {
             echo "device=$DEVICE_CODENAME"
