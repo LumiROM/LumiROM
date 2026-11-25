@@ -1,0 +1,50 @@
+name: Lint
+
+# Cheap checks that catch real breakage (syntax, quoting) before a 45-minute
+# build does. Warnings are not enforced: the codebase still has ~95 of them
+# (mostly `local x=$(cmd)` and variables used by sourced scripts).
+
+on:
+  push:
+    paths:
+      - "**.sh"
+      - "**.py"
+      - ".github/workflows/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+
+    - name: Install shellcheck
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y shellcheck
+        shellcheck --version | head -2
+
+    - name: bash syntax
+      run: |
+        fail=0
+        while IFS= read -r script; do
+          bash -n "$script" || fail=1
+        done < <(git ls-files '*.sh')
+        exit "$fail"
+
+    - name: shellcheck (errors only)
+      run: shellcheck --severity=error $(git ls-files '*.sh')
+
+    - name: python syntax
+      run: |
+        while IFS= read -r script; do
+          # ast.parse avoids writing __pycache__ next to vendored tools.
+          python3 -c "import ast, sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])" "$script" || exit 1
+        done < <(git ls-files '*.py')
+
+    - name: workflow yaml
+      run: |
+        python3 -c "import glob, yaml; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]; print('workflows OK')"

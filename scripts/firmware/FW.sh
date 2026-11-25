@@ -496,7 +496,7 @@ fw_gen_file_contexts() {
         local TMP_EXEC_TYPES=$(mktemp)
         find "$EXTRACTED_FIRM_DIR" -name "*.cil" -not -name "*_genfs_*" \( \
             -path "*/mapping/${TARGET_VER}.*" -o -not -path "*/mapping/*" \) -type f 2>/dev/null \
-            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + 2>/dev/null | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
+            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
 
         # Lookup: unescaped path -> context
         local TMP_LOOKUP=$(mktemp)

@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 SKIPUNZIP=1
 
 # ODM init rules are shared by devices with the same 4.14 platform:

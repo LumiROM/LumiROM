@@ -49,7 +49,7 @@ initialize_logs() {
     local use_galaxy_ai="$7"
     local use_ui_8_tethering_apex="$8"
     local output_filesystem="$9"
-    local lumirom_maintainer="$10"
+    local lumirom_maintainer="${10}"
     
     {
         echo "${BLUE}======================================${RESET}"
