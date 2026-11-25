@@ -117,3 +117,64 @@ render_updater_script() {
     mkdir -p "$(dirname "$OUTPUT")" || return 1
     printf '%s' "$OUT" > "$OUTPUT" || return 1
 }
+
+# =====================================================================
+#  SamsungCamera dirty-flash cleanup
+# =====================================================================
+# A dirty flash can leave the camera's package cache pointing at the previous
+# APK, so the same block is injected into the full OTA and the incremental OTA
+# (and both are re-zipped before signing).
+CAMERA_CLEANUP_MARKER="LumiROM SamsungCamera dirty-flash cleanup"
+CAMERA_CLEANUP_ANCHOR="# --- End patching dynamic partitions ---"
+
+camera_cleanup_block() {
+    cat <<'EOF'
+# --- LumiROM SamsungCamera dirty-flash cleanup ---
+ui_print("Cleaning stale SamsungCamera state...");
+run_program("/sbin/sh", "-c", "grep -q \" /data \" /proc/mounts || mount -o rw /data 2>/dev/null; rm -rf /data/system/package_cache/* /data/dalvik-cache/*SamsungCamera* /data/app/*com.sec.android.app.camera* /data/app/~~*/com.sec.android.app.camera* /data/data/com.sec.android.app.camera /data/user/0/com.sec.android.app.camera /data/user_de/0/com.sec.android.app.camera 2>/dev/null");
+EOF
+}
+
+# inject_camera_cleanup_file <updater-script>
+# Idempotent. Returns 1 if the anchor line is missing: a silently skipped
+# injection would produce a dirty-flash bug that is hard to trace later.
+inject_camera_cleanup_file() {
+    local SCRIPT="$1"
+    [ -f "$SCRIPT" ] || return 0
+
+    if grep -q "$CAMERA_CLEANUP_MARKER" "$SCRIPT"; then
+        return 0
+    fi
+
+    if ! grep -qxF "$CAMERA_CLEANUP_ANCHOR" "$SCRIPT"; then
+        echo "${RED:-}Error:${RESET:-} cannot inject the camera cleanup: '$CAMERA_CLEANUP_ANCHOR' not found in $SCRIPT" >&2
+        return 1
+    fi
+
+    local BLOCK_FILE
+    BLOCK_FILE="$(mktemp)"
+    camera_cleanup_block > "$BLOCK_FILE"
+    sed -i "/^# --- End patching dynamic partitions ---\$/r $BLOCK_FILE" "$SCRIPT"
+    rm -f "$BLOCK_FILE"
+}
+
+# inject_camera_cleanup_zip <zip>
+# Re-zips the package, so it must run before signing.
+inject_camera_cleanup_zip() {
+    local ZIP_FILE="$1"
+    [ -f "$ZIP_FILE" ] || return 0
+
+    local ZIP_ABS TMP_DIR
+    ZIP_ABS="$(readlink -f "$ZIP_FILE")"
+    TMP_DIR="$(mktemp -d)"
+    mkdir -p "$TMP_DIR/META-INF/com/google/android"
+
+    if unzip -p "$ZIP_ABS" META-INF/com/google/android/updater-script \
+            > "$TMP_DIR/META-INF/com/google/android/updater-script" 2>/dev/null; then
+        if inject_camera_cleanup_file "$TMP_DIR/META-INF/com/google/android/updater-script"; then
+            ( cd "$TMP_DIR" && zip -q "$ZIP_ABS" META-INF/com/google/android/updater-script )
+        fi
+    fi
+
+    rm -rf "$TMP_DIR"
+}
