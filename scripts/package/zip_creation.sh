@@ -27,7 +27,8 @@ pkg_render_updater_script() {
         ONEUI_VERSION="${ONEUI_VERSION/0/.}"
 
         case "$DEVICE" in
-            SM-A325F|SM-A325M) DEVICE_CODENAME="a32";  DISPLAY_NAME="Galaxy A32 4G" ;;
+            SM-A325F)          DEVICE_CODENAME="a32";  DISPLAY_NAME="Galaxy A32 4G" ;;
+            SM-A325M)          DEVICE_CODENAME="a32m"; DISPLAY_NAME="Galaxy A32 4G" ;;
             SM-A225F)          DEVICE_CODENAME="a22";  DISPLAY_NAME="Galaxy A22 4G" ;;
             SM-M325F)          DEVICE_CODENAME="m32";  DISPLAY_NAME="Galaxy M32 4G" ;;
             SM-E225F)          DEVICE_CODENAME="f22";  DISPLAY_NAME="Galaxy F22 4G" ;;
