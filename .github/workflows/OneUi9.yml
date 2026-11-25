@@ -225,6 +225,7 @@ jobs:
       env:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
+        OTA_SIGN_REQUIRED: ${{ steps.ota-cap.outputs.can_ota }}
       run: bash scripts/ci/rom.sh sign
 
     - name: Prepare IMG zip
@@ -258,6 +259,7 @@ jobs:
       env:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
+        OTA_SIGN_REQUIRED: ${{ steps.ota-cap.outputs.can_ota }}
       run: bash scripts/ci/incremental.sh sign
 
     - name: Upload ROM to ${{ github.event.inputs.DESTINATION }}

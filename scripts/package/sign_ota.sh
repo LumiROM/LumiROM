@@ -42,8 +42,14 @@ ota_sign_zip() {
     local KEY_DIR
     KEY_DIR="$(key_ota_files)"
     if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/ota.pk8" ] || [ ! -f "$KEY_DIR/ota.x509.pem" ]; then
-        echo "${RED}No OTA signing key available, skipping signature.${RESET}"
-        return 1
+        # A fork without the OTA secrets still gets a usable (unsigned) ROM;
+        # official runs set OTA_SIGN_REQUIRED=true and fail instead.
+        if [ "${OTA_SIGN_REQUIRED:-false}" = "true" ]; then
+            echo "${RED}No OTA signing key available and OTA_SIGN_REQUIRED=true.${RESET}"
+            return 1
+        fi
+        echo "${YELLOW}No OTA signing key available: the package stays unsigned.${RESET}"
+        return 0
     fi
 
     local CERT="$KEY_DIR/ota.x509.pem"
