@@ -94,7 +94,7 @@ jobs:
     - name: Install required packages
       run: |
         source scripts/utils/install_packages.sh
-        INSTALL_PACKAGES
+        deps_install
 
     - name: Install Android build-tools
       run: bash scripts/ci/toolchain.sh
@@ -120,7 +120,7 @@ jobs:
     - name: Validate inputs
       run: |
         source scripts/utils/validation.sh
-        VALIDATION
+        validate_inputs
 
     - name: Detect official OTA capabilities
       id: ota-cap
@@ -136,7 +136,7 @@ jobs:
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
       run: |
         source scripts/features/LumiROM.sh
-        IS_OFFICIAL
+        rom_is_official
 
     - name: Fetch base firmware
       env:

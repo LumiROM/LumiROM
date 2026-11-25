@@ -6,7 +6,7 @@ source scripts/utils/bash_colors.sh
 source scripts/utils/platform_key.sh
 
 
-PATCH_SECSETTINGS() {
+apps_patch_secsettings() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_SECSETTINGS_DIR>"
@@ -56,7 +56,7 @@ PATCH_SECSETTINGS() {
 }
 
 
-REBUILD_AND_SIGN_APK() {
+apps_rebuild_and_sign_apk() {
     echo ""
     if [ "$#" -ne 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <APKTOOL> <DECOMPILED_DIR> <FRAMEWORK_DIR> <OUT_APK>"
@@ -86,7 +86,7 @@ REBUILD_AND_SIGN_APK() {
     rm -f "$OUT_APK"
 
     local KEY_DIR
-    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
+    KEY_DIR="$(key_files)"
     echo "${YELLOW}Re-signing with platform key from $KEY_DIR${RESET}"
     apksigner sign --key "$KEY_DIR/platform.pk8" --cert "$KEY_DIR/platform.x509.pem" \
         --out "$OUT_APK" "$ALIGNED" || return 1
@@ -96,7 +96,7 @@ REBUILD_AND_SIGN_APK() {
 }
 
 
-PATCH_SETUPWIZARD() {
+apps_patch_setupwizard() {
     echo ""
     if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_SETUPWIZARD_DIR> [LOGO_PNG]"
@@ -145,7 +145,7 @@ PATCH_SETUPWIZARD() {
 }
 
 
-LUMISETTINGS_SEARCH_PATCH() {
+apps_lumisettings_search_patch() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
         return 1
@@ -184,7 +184,7 @@ LUMISETTINGS_SEARCH_PATCH() {
 }
 
 
-ADD_LUMISETTINGS() {
+apps_add_lumisettings() {
     echo ""
     if [ "$#" -ne 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <FRAMEWORK_DIR> <SERVICES_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
@@ -266,13 +266,13 @@ ADD_LUMISETTINGS() {
         fi
     done < <(find "$MOD_DIR/patches/services.jar" -name '*.patch' | sort -n)
 
-    LUMISETTINGS_SEARCH_PATCH "$SECSETTINGS_DIR" "$INTELLIGENCE_DIR"
+    apps_lumisettings_search_patch "$SECSETTINGS_DIR" "$INTELLIGENCE_DIR"
 
     echo "${GREEN} - LumiSettings applied${RESET}"
 }
 
 
-ADD_KNOXPATCH() {
+apps_add_knoxpatch() {
     echo ""
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <FRAMEWORK_DIR> <KNOXSDK_DIR> <SAMSUNGKEYSTOREUTILS_DIR>"

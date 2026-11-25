@@ -5,7 +5,7 @@ source scripts/package/updater_script.sh
 
 # Renders makerom/META-INF/com/google/android/updater-script with this build's
 # metadata. The template lives in template/ and is never mutated in place.
-UPDATE_ZIP_SCRIPT() {
+pkg_render_updater_script() {
         if [ "$#" -ne 1 ]; then
             echo "Usage: ${FUNCNAME[0]} <extracted_firmware_dir>"
             return 1
@@ -57,7 +57,7 @@ UPDATE_ZIP_SCRIPT() {
         fi
 }
 
-FLASHABLE_ZIP_CREATION() {
+pkg_create_flashable_zip() {
     
         BUILD_DATE=$(date +'%d%m%Y')
         TIMESTAMP=$(date +'%s')
@@ -112,7 +112,7 @@ FLASHABLE_ZIP_CREATION() {
         SECURITY_PATCH="$(grep "^ro.build.version.security_patch=" "$BUILD_PROP" | cut -d "=" -f 2)"
 
         # Base (Galaxy A34) firmware the images were unpacked from, when known.
-        # PREPARE_PARTITIONS prunes IMGs/, so the marker lives in FIRM_DIR; the
+        # fw_prepare_partitions prunes IMGs/, so the marker lives in FIRM_DIR; the
         # IMGS_DIR lookup keeps builds made before that change working.
         BASE_FW_VERSION=""
         for BASE_FW_MARKER in "$FIRM_DIR/base_firmware_version.txt" "$IMGS_DIR/base_firmware_version.txt"; do
@@ -182,7 +182,7 @@ FLASHABLE_ZIP_CREATION() {
         rm -rf "$MAKEROM_DIR"
 }
 
-ZIP_IMG() {
+pkg_zip_images() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <IMG_DIR> <OUT_ZIP>"
         return 1
@@ -208,7 +208,7 @@ ZIP_IMG() {
     fi
 }
 
-IMG_ZIP_CREATION() {
+pkg_create_image_zip() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <OUT_DIR>"
         return 1
@@ -246,9 +246,9 @@ IMG_ZIP_CREATION() {
 
     local ZIP_FILE="LumiROM_${LUMIROM_VERSION}-${BUILD_DATE}_${BUILD_STATUS}_${DEVICE_CODENAME}_IMG.zip"
 
-    ZIP_IMG "$OUT_DIR" "$(pwd)/ROM/${FOLDER_NAME}${ZIP_FILE}"
+    pkg_zip_images "$OUT_DIR" "$(pwd)/ROM/${FOLDER_NAME}${ZIP_FILE}"
 }
-CREATE_TARGET_FILES() {
+pkg_create_target_files() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <OUTPUT_ZIP>"
         return 1

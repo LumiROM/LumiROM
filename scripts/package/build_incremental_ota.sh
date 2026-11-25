@@ -3,7 +3,7 @@
 source scripts/utils/bash_colors.sh
 source scripts/package/updater_script.sh
 
-GET_IMAGE_SIZE() {
+ota_image_size() {
     local FILE="$1"
     local MAGIC BLOCK_SIZE BLOCKS
     MAGIC="$(od -A n -t x1 -j 0 -N 4 "$FILE" 2>/dev/null | tr -d ' \n')"
@@ -16,7 +16,7 @@ GET_IMAGE_SIZE() {
     fi
 }
 
-GET_INCREMENTAL_DISPLAY_NAME() {
+ota_display_name() {
     case "$1" in
         a32) echo "Galaxy A32 4G" ;;
         a32m) echo "Galaxy A32 4G" ;;
@@ -27,7 +27,7 @@ GET_INCREMENTAL_DISPLAY_NAME() {
     esac
 }
 
-GET_INCREMENTAL_CODENAME() {
+ota_codename() {
     case "$1" in
         SM-A325F) echo "a32" ;;
         SM-A325M) echo "a32m" ;;
@@ -38,7 +38,7 @@ GET_INCREMENTAL_CODENAME() {
     esac
 }
 
-# GENERATE_INCREMENTAL_UPDATER_SCRIPT <template> <output> <incr_dir>
+# ota_generate_updater_script <template> <output> <incr_dir>
 #                                   <install|skip|none> <partition...>
 #
 # Keeps the banner/prism block and the kernel/cache block from the rendered
@@ -49,7 +49,7 @@ GET_INCREMENTAL_CODENAME() {
 # Reads the build metadata from the caller's dynamically scoped variables:
 # STOCK_DEVICE, DEVICE_CODENAME, DISPLAY_NAME, FINGERPRINT, LUMIROM_VERSION,
 # BUILD_DATE, BUILD_STATUS, ONEUI_VERSION, SOURCE_VERSION.
-GENERATE_INCREMENTAL_UPDATER_SCRIPT() {
+ota_generate_updater_script() {
     if [ "$#" -lt 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <template> <output> <incr_dir> <install|skip|none> <partition...>" >&2
         return 1
@@ -152,7 +152,7 @@ GENERATE_INCREMENTAL_UPDATER_SCRIPT() {
     rm -f "$RENDERED"
 }
 
-BUILD_INCREMENTAL_OTA() {
+ota_build() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <SOURCE_TARGET_FILES_ZIP> <IMG_DIR>"
         echo "       Outputs the incremental zip into ROM/\$FOLDER_NAME"
@@ -242,7 +242,7 @@ BUILD_INCREMENTAL_OTA() {
     [ -n "$FINGERPRINT" ] || FINGERPRINT="Unknown/Release-Keys"
 
     local DEVICE_CODENAME
-    DEVICE_CODENAME="$(GET_INCREMENTAL_CODENAME "$STOCK_DEVICE")"
+    DEVICE_CODENAME="$(ota_codename "$STOCK_DEVICE")"
 
     local ONEUI_VERSION
     ONEUI_VERSION="$(grep "^ro.build.version.oneui=" "$FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d "=" -f 2)"
@@ -350,9 +350,9 @@ BUILD_INCREMENTAL_OTA() {
     local OP_LIST="$STAGE/dynamic_partitions_op_list"
     local TOTAL_SIZE=0 PART_SIZE SRC_SIZE OP_LINES=""
     for PARTITION in "${CHANGED_PARTITIONS[@]}"; do
-        PART_SIZE="$(GET_IMAGE_SIZE "$IMG_DIR/$PARTITION.img")"
+        PART_SIZE="$(ota_image_size "$IMG_DIR/$PARTITION.img")"
         TOTAL_SIZE=$((TOTAL_SIZE + PART_SIZE))
-        SRC_SIZE="$(GET_IMAGE_SIZE "$WORK_DIR_INC/source/$PARTITION.img" 2>/dev/null || echo 0)"
+        SRC_SIZE="$(ota_image_size "$WORK_DIR_INC/source/$PARTITION.img" 2>/dev/null || echo 0)"
         if [ "$PART_SIZE" != "$SRC_SIZE" ]; then
             OP_LINES+="resize $PARTITION $PART_SIZE"$'\n'
         fi
@@ -376,7 +376,7 @@ BUILD_INCREMENTAL_OTA() {
     local TEMPLATE_SCRIPT="$TEMPLATE_DIR/META-INF/com/google/android/updater-script"
     local UPDATER_SCRIPT="$STAGE/META-INF/com/google/android/updater-script"
     local DISPLAY_NAME
-    DISPLAY_NAME="$(GET_INCREMENTAL_DISPLAY_NAME "$DEVICE_CODENAME")"
+    DISPLAY_NAME="$(ota_display_name "$DEVICE_CODENAME")"
 
     local SPECIFIC_BOOT="$PWD/LumiROM/Devices/$STOCK_DEVICE/boot.img"
     local SOURCE_BOOT="$WORK_DIR_INC/source/boot.img"
@@ -394,7 +394,7 @@ BUILD_INCREMENTAL_OTA() {
         echo "${YELLOW}Warning: no boot.img found for $STOCK_DEVICE, it will not be included${RESET}"
     fi
 
-    if ! GENERATE_INCREMENTAL_UPDATER_SCRIPT \
+    if ! ota_generate_updater_script \
             "$TEMPLATE_SCRIPT" "$UPDATER_SCRIPT" "$INCR_DIR" "$BOOT_MODE" \
             "${CHANGED_PARTITIONS[@]}"; then
         echo "${RED}Error: failed to generate the incremental updater-script${RESET}" >&2

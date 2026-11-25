@@ -4,7 +4,7 @@ set -e
 
 DESTINY="$1"
 
-GOFILE_UPLOAD() {
+gofile_upload() {
     local FILE="$1"
     local URL_VAR="$2"
 
@@ -30,7 +30,7 @@ GOFILE_UPLOAD() {
     fi
 }
 
-UPLOAD_FILE() {
+upload_file() {
     local FILE="$1"
     local URL_VAR="$2"
     local FILE_NAME
@@ -57,7 +57,7 @@ UPLOAD_FILE() {
 
         gofile)
             echo "Uploading $FILE_NAME to GoFile"
-            GOFILE_UPLOAD "$FILE" "$URL_VAR"
+            gofile_upload "$FILE" "$URL_VAR"
             ;;
 
         *)
@@ -76,8 +76,8 @@ fi
 
 while IFS= read -r ZIP_PATH; do
     if [[ "$(basename "$ZIP_PATH")" == *"INCREMENTAL"* ]]; then
-        UPLOAD_FILE "$ZIP_PATH" "DOWNLOAD_URL_INCREMENTAL"
+        upload_file "$ZIP_PATH" "DOWNLOAD_URL_INCREMENTAL"
     else
-        UPLOAD_FILE "$ZIP_PATH" "DOWNLOAD_URL"
+        upload_file "$ZIP_PATH" "DOWNLOAD_URL"
     fi
 done <<< "$FOUND_ZIPS"

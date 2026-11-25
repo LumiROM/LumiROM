@@ -2,7 +2,7 @@
 
 source scripts/utils/bash_colors.sh
 
-REPLACE_SMALI_METHOD() {
+knox_replace_smali_method() {
     local FILE="$1"
     local METHOD_NAME="$2"
     local NEW_BODY=$(echo "$3" | tail -n +2)
@@ -31,7 +31,7 @@ REPLACE_SMALI_METHOD() {
 }" "$FILE" <<< "$NEW_BODY"
 }
 
-PATCH_FLAG_SECURE() {
+knox_patch_flag_secure() {
 	echo ""
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
@@ -49,7 +49,7 @@ PATCH_FLAG_SECURE() {
 
     return v0
     '
-    REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+    knox_replace_smali_method "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
   
 	local FILE_2="${1}/smali_classes2/com/android/server/wm/WindowManagerService.smali"
     local METHOD_NAME_2=".method public final notifyScreenshotListeners(I)Ljava/util/List;"
@@ -91,11 +91,11 @@ PATCH_FLAG_SECURE() {
 
     throw p0
     '
-    REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_2" "$REPLACE_BODY_2"
+    knox_replace_smali_method "$FILE_2" "$METHOD_NAME_2" "$REPLACE_BODY_2"
 }
 
 
-PATCH_SECURE_FOLDER() {
+knox_patch_secure_folder() {
     echo ""
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
@@ -117,9 +117,9 @@ PATCH_SECURE_FOLDER() {
     return p0
     '
 
-    REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-    REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
-	REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_3" "$REPLACE_BODY_1"
+    knox_replace_smali_method "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+    knox_replace_smali_method "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
+	knox_replace_smali_method "$FILE_1" "$METHOD_NAME_3" "$REPLACE_BODY_1"
 
     local FILE_2="${1}/smali/com/android/server/StorageManagerService.smali"
     local METHOD_NAME_4=".method public static isRootedDevice()Z"
@@ -130,11 +130,11 @@ PATCH_SECURE_FOLDER() {
  
     return v0
     '
-    REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_4" "$REPLACE_BODY_2"
+    knox_replace_smali_method "$FILE_2" "$METHOD_NAME_4" "$REPLACE_BODY_2"
 }
 
 
-CUSTOM_PLATFORM_SIGNATURE() {
+knox_custom_platform_signature() {
     echo ""
 	if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY> <PLATFORM_CERT_HEX>"
@@ -178,7 +178,7 @@ CUSTOM_PLATFORM_SIGNATURE() {
 }
 
 
-DISABLE_SIGNATURE_VERIFICATION() {
+knox_disable_signature_verification() {
     echo ""
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_FRAMEWORK_DIRECTORY>"
@@ -196,11 +196,11 @@ DISABLE_SIGNATURE_VERIFICATION() {
  
     return v0
     '
-	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
+	knox_replace_smali_method "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
 }
 
 
-PATCH_KNOX_GUARD() {
+knox_patch_knox_guard() {
     echo ""
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
@@ -228,13 +228,13 @@ PATCH_KNOX_GUARD() {
 
     throw p0
     '
-    REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+    knox_replace_smali_method "$FILE" "$METHOD_NAME_1" "$REPLACE_BODY_1"
     rm -rf "$FIRM_DIR/system/system/priv-app/KnoxGuard"
     rm -rf "$FIRM_DIR/system/system_ext/priv-app/KnoxGuard"
     rm -rf "$FIRM_DIR/system_ext/priv-app/KnoxGuard"
 }
 
-PATCH_SSRM() {
+knox_patch_ssrm() {
     echo ""
 	if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_SSRM_DIRECTORY>"

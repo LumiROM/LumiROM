@@ -33,7 +33,7 @@ case "$ACTION" in
     build)
         : "${OUT_DIR:?OUT_DIR is not set}"
         source scripts/package/build_incremental_ota.sh
-        BUILD_INCREMENTAL_OTA "$PWD/prev-target-files.zip" "$OUT_DIR"
+        ota_build "$PWD/prev-target-files.zip" "$OUT_DIR"
         ;;
     inject-cleanup)
         : "${FOLDER_NAME:?FOLDER_NAME is not set}"
@@ -48,7 +48,7 @@ case "$ACTION" in
         ;;
     sign)
         source scripts/package/sign_ota.sh
-        SIGN_INCREMENTAL_OTA
+        ota_sign_incremental
         ;;
     *)
         echo "Usage: $0 <fetch-source|build|inject-cleanup|sign>" >&2

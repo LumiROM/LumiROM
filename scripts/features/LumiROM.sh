@@ -8,13 +8,13 @@ source scripts/utils/platform_key.sh
 
 source scripts/features/AppPatches.sh
 
-IS_OFFICIAL() {
+rom_is_official() {
     export BUILD_STATUS="UNOFFICIAL"
     export ROM_TAG="🛠️ LumiROM Unofficial Build"
 
     # A build is official only when it is signed with LumiROM's own platform
     # key (not the AOSP testkey).
-    if IS_CUSTOM_PLATFORM_KEY; then
+    if key_is_custom; then
         export BUILD_STATUS="OFFICIAL"
         export ROM_TAG="✨ LumiROM Official Build"
     fi
@@ -24,10 +24,10 @@ IS_OFFICIAL() {
         echo "ROM_TAG=$ROM_TAG" >> "$GITHUB_ENV"
     fi
 
-    echo "${BLUE}--- $ROM_TAG detected (key: $(GET_ACTIVE_PLATFORM_KEY_SOURCE)) ---${RESET}"
+    echo "${BLUE}--- $ROM_TAG detected (key: $(key_active_source)) ---${RESET}"
 }
 
-CHECK_FILE() {
+rom_check_file() {
     if [ ! -f "$1" ]; then
         echo "${RED}[!] File not found:${RESET} $1"
         echo "- Skipping..."
@@ -37,7 +37,7 @@ CHECK_FILE() {
 }
 
 
-STRIP_DATA_ENCRYPTION_FSTAB() {
+rom_strip_data_encryption() {
     local EXTRACTED_FIRM_DIR="$1"
     local fstab
 
@@ -56,7 +56,7 @@ STRIP_DATA_ENCRYPTION_FSTAB() {
 }
 
 
-DISABLE_FBE() {
+rom_disable_fbe() {
     local EXTRACTED_FIRM_DIR="$1"
  	
 	if [ "$#" -ne 1 ]; then
@@ -71,7 +71,7 @@ DISABLE_FBE() {
     ANDROID_RELEASE="$(grep -m1 '^ro.build.version.release=' "$EXTRACTED_FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')"
     if [ -n "$ANDROID_RELEASE" ] && [ "$ANDROID_RELEASE" -ge 17 ] 2>/dev/null; then
         echo "${YELLOW}Android $ANDROID_RELEASE: removing all /data encryption (FBE/FDE/metadata).${RESET}"
-        STRIP_DATA_ENCRYPTION_FSTAB "$EXTRACTED_FIRM_DIR"
+        rom_strip_data_encryption "$EXTRACTED_FIRM_DIR"
         return 0
     fi
 
@@ -89,7 +89,7 @@ DISABLE_FBE() {
 }
 
 
-DISABLE_FDE() {
+rom_disable_fde() {
     local EXTRACTED_FIRM_DIR="$1"
  	
 	if [ "$#" -ne 1 ]; then
@@ -97,13 +97,13 @@ DISABLE_FDE() {
         return 1
     fi
 
-    # Android 17 has no FDE; DISABLE_FBE already removed all /data
+    # Android 17 has no FDE; rom_disable_fbe already removed all /data
     # encryption flags (including forceencrypt/encryptable). Keep this
     # function idempotent for CI callers.
     local ANDROID_RELEASE
     ANDROID_RELEASE="$(grep -m1 '^ro.build.version.release=' "$EXTRACTED_FIRM_DIR/system/system/build.prop" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')"
     if [ -n "$ANDROID_RELEASE" ] && [ "$ANDROID_RELEASE" -ge 17 ] 2>/dev/null; then
-        echo "${YELLOW}Android $ANDROID_RELEASE: /data encryption already stripped by DISABLE_FBE.${RESET}"
+        echo "${YELLOW}Android $ANDROID_RELEASE: /data encryption already stripped by rom_disable_fbe.${RESET}"
         return 0
     fi
 
@@ -120,7 +120,7 @@ DISABLE_FDE() {
   done
 }
 
-DELETE_ICCC() {
+rom_delete_iccc() {
     local EXTRACTED_FIRM_DIR="$1"
     echo "${YELLOW}Starting wipe...${RESET}"
     # Delete iccc to prevent soft-bootloop
@@ -145,7 +145,7 @@ DELETE_ICCC() {
     echo "${GREEN}Wipe iccc completed${RESET}"
 }
 
-DEBLOAT_VENDOR() {
+rom_debloat_vendor() {
     local EXTRACTED_FIRM_DIR="$1"
     echo "${YELLOW}Starting Debloat...${RESET}"
 
@@ -175,7 +175,7 @@ DEBLOAT_VENDOR() {
     echo "${GREEN}Vendor debloat completed${RESET}"
 }
 
-DEBLOAT_WSM() {
+rom_debloat_wsm() {
     local EXTRACTED_FIRM_DIR="$1"
     echo "${YELLOW}Starting WSM Debloat...${RESET}"
 
@@ -199,7 +199,7 @@ DEBLOAT_WSM() {
     echo "${GREEN}WSM Debloat completed${RESET}"
 }
 
-PATCH_FSTAB_EROFS() {
+rom_patch_fstab_erofs() {
     local EXTRACTED_FIRM_DIR="$1"
     
     if [ -z "$EXTRACTED_FIRM_DIR" ]; then
@@ -240,7 +240,7 @@ PATCH_FSTAB_EROFS() {
     echo "${GREEN}Done, now${RESET} $STOCK_DEVICE ${GREEN}is EROFS-enabled.${RESET}"
 }
 
-INSTALL_FRAMEWORK() {
+rom_install_framework() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <framework-res.apk>"
         return 1
@@ -254,10 +254,10 @@ INSTALL_FRAMEWORK() {
 }
 
 
-DECOMPILE() {
+rom_decompile() {
     echo ""
     if [ "$#" -ne 3 ]; then
-        echo "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FILE> <DECOMPILE_DIR>"
+        echo "Usage: rom_decompile <APKTOOL_JAR_DIR> <FILE> <DECOMPILE_DIR>"
         return 1
     fi
 
@@ -273,7 +273,7 @@ DECOMPILE() {
 }
 
 
-RECOMPILE() {
+rom_recompile() {
     echo ""
 	if [ "$#" -ne 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
@@ -304,7 +304,7 @@ RECOMPILE() {
     fi
 }
 
-FIX_FRAMEWORK_MIME() {
+rom_fix_framework_mime() {
     echo ""
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <STOCK_FRAMEWORK_JAR> <BUILT_FRAMEWORK_JAR>"
@@ -317,7 +317,7 @@ FIX_FRAMEWORK_MIME() {
     local BUILT="$2"
 
     if [ ! -f "$STOCK" ] || [ ! -f "$BUILT" ]; then
-        echo "${RED}FIX_FRAMEWORK_MIME: missing jar ($STOCK / $BUILT)${RESET}"
+        echo "${RED}rom_fix_framework_mime: missing jar ($STOCK / $BUILT)${RESET}"
         return 1
     fi
 
@@ -341,7 +341,7 @@ FIX_FRAMEWORK_MIME() {
     rm -rf "$TMP"
 }
 
-HEX_PATCH() {
+rom_hex_patch() {
     echo ""
 	if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <FILE> <TARGET_VALUE> <REPLACE_VALUE>"
@@ -377,7 +377,7 @@ HEX_PATCH() {
     return 1
 }
 
-PATCH_BT_LIB() {
+rom_patch_bt_lib() {
     echo ""
 	if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIRECTORY> <WORK_DIR>"
@@ -445,7 +445,7 @@ PATCH_BT_LIB() {
 
         if echo "$HEXDATA" | grep -qiE "$from_regex"; then
             echo "- Found Bluetooth patch pattern [$idx]"
-            HEX_PATCH "$BT_LIB_FILE" "$from" "$to" || return 1
+            rom_hex_patch "$BT_LIB_FILE" "$from" "$to" || return 1
             PATCHED=1
 			cp -rfa "$WORK_DIR/libbluetooth_jni.so" "$EXTRACTED_FIRM_DIR/system/system/lib64/"
             break
@@ -462,7 +462,7 @@ PATCH_BT_LIB() {
 }
 
 
-FIX_VNDK() {
+rom_fix_vndk() {
     echo "${YELLOW}- Checking ${RESET}$STOCK_DEVICE ${YELLOW}and${RESET} $TARGET_DEVICE ${YELLOW}vndk version.${RESET}"
     if [ -f "$TARGET_ROM_SYSTEM_EXT_DIR/apex/com.android.vndk.v${STOCK_VNDK_VERSION}.apex" ]; then
         echo "${GREEN}- VNDK matched.${RESET}"
@@ -477,7 +477,7 @@ FIX_VNDK() {
 }
 
 
-FIX_SYSTEM_EXT() {
+rom_fix_system_ext() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -549,7 +549,7 @@ FIX_SYSTEM_EXT() {
 }
 
 
-AUTO_FIX_SELINUX() {
+rom_auto_fix_selinux() {
     if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR> [TARGET_VER]"
         return 1
@@ -558,13 +558,13 @@ AUTO_FIX_SELINUX() {
     local EXTRACTED_FIRM_DIR="${1%/}"
     local TARGET_VER="${2:-${SELINUX_TARGET_VER:-${STOCK_VNDK_VERSION:-31}}}"
 
-    echo "${YELLOW}--- AUTO_FIX_SELINUX (target v${TARGET_VER}) ---${RESET}"
+    echo "${YELLOW}--- rom_auto_fix_selinux (target v${TARGET_VER}) ---${RESET}"
 
     # secilc in the host PATH?
     if command -v secilc &>/dev/null; then
         local SECILC_RUNNER="secilc"
     else
-        echo "${YELLOW}  [!] secilc not available. Skipping AUTO_FIX_SELINUX.${RESET}"
+        echo "${YELLOW}  [!] secilc not available. Skipping rom_auto_fix_selinux.${RESET}"
         return 0
     fi
 
@@ -595,7 +595,7 @@ AUTO_FIX_SELINUX() {
         [ ! -f "$c" ] && MISSING_CIL+=("${c#$EXTRACTED_FIRM_DIR/}")
     done
     if [ "${#MISSING_CIL[@]}" -gt 0 ]; then
-        echo "${YELLOW}  [!] Required CILs missing, skipping AUTO_FIX_SELINUX:${RESET}"
+        echo "${YELLOW}  [!] Required CILs missing, skipping rom_auto_fix_selinux:${RESET}"
         printf '      - %s\n' "${MISSING_CIL[@]}"
         return 0
     fi
@@ -652,11 +652,11 @@ AUTO_FIX_SELINUX() {
     done
 
     rm -f "$OUTPUT_TMP"
-    echo "${GREEN}  [+] AUTO_FIX_SELINUX: $total lines commented in $iteration iterations.${RESET}"
+    echo "${GREEN}  [+] rom_auto_fix_selinux: $total lines commented in $iteration iterations.${RESET}"
 }
 
 
-REMOVE_LINE() {
+rom_remove_line() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <TARGET_LINE> <TARGET_FILE>"
         return 1
@@ -670,7 +670,7 @@ REMOVE_LINE() {
 }
 
 
-FIX_PROPERTY_CONTEXTS() {
+rom_fix_property_contexts() {
     local EXTRACTED_FIRM_DIR="${1%/}"
 
     local WIFIX_WHITELIST=(
@@ -766,7 +766,7 @@ FIX_PROPERTY_CONTEXTS() {
 }
 
 
-UPDATE_FLOATING_FEATURE() {
+rom_update_floating_feature() {
     local key="$1"
     local value="$2"
     if [[ -z "$value" ]]; then
@@ -797,82 +797,82 @@ UPDATE_FLOATING_FEATURE() {
 }
 
 
-APPLY_FLOATING_FEATURE() {
+rom_apply_floating_feature() {
     echo ""
 	echo "${BLUE}============ Floating Feature ============${RESET}"
     #========== COMMON ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_SEP_CATEGORY" "sep_basic"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_CONFIG_SEP_CATEGORY" "sep_basic"
 
     #========== EDGE ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_EDGE" "panel"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SYSTEMUI_CONFIG_EDGELIGHTING_FRAME_EFFECT" "frame_effect"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_CONFIG_EDGE" "panel"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SYSTEMUI_CONFIG_EDGELIGHTING_FRAME_EFFECT" "frame_effect"
 
     #========== SCREEN RECORDER ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_SCREEN_RECORDER" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_SCREEN_RECORDER" "TRUE"
 	
 	#========== VOICE RECORDER ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_VOICERECORDER_CONFIG_DEF_MODE" "normal,interview,voicememo"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_VOICERECORDER_CONFIG_DEF_MODE" "normal,interview,voicememo"
 
     #========== AUDIO ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_BT_RECORDING" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_STAGE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_STAGE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_VOLUME_MONITOR" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_VOLUME_MONITOR" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_CONFIG_REMOTE_MIC" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_REMOTE_MIC" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_GAIN" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_GAIN" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_BT_RECORDING" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_STAGE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_STAGE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_VOLUME_MONITOR" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_SUPPORT_VOLUME_MONITOR" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_CONFIG_REMOTE_MIC" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_REMOTE_MIC" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_GAIN" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_AUDIO_CONFIG_VOLUMEMONITOR_GAIN" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== SETTINGS ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SETTINGS_SUPPORT_DEFAULT_DOUBLE_TAP_TO_WAKE" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SETTINGS_SUPPORT_FUNCTION_KEY_MENU" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_ELECTRIC_RATED_VALUE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_ELECTRIC_RATED_VALUE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_BRAND_NAME" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_BRAND_NAME" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SETTINGS_SUPPORT_DEFAULT_DOUBLE_TAP_TO_WAKE" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SETTINGS_SUPPORT_FUNCTION_KEY_MENU" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_ELECTRIC_RATED_VALUE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_ELECTRIC_RATED_VALUE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_BRAND_NAME" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_BRAND_NAME" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== REFRESH RATE ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_SUPPORTED_REFRESH_RATE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_SUPPORTED_REFRESH_RATE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_DEFAULT_REFRESH_RATE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_DEFAULT_REFRESH_RATE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_SUPPORTED_REFRESH_RATE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_SUPPORTED_REFRESH_RATE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_DEFAULT_REFRESH_RATE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_HFR_DEFAULT_REFRESH_RATE" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== SYSTEM ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SYSTEM_SUPPORT_ENHANCED_CPU_RESPONSIVENESS" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SYSTEM_SUPPORT_ENHANCED_PROCESSING" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SYSTEM_CONFIG_SIOP_POLICY_FILENAME" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SYSTEM_CONFIG_SIOP_POLICY_FILENAME" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SYSTEM_SUPPORT_ENHANCED_CPU_RESPONSIVENESS" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SYSTEM_SUPPORT_ENHANCED_PROCESSING" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_SYSTEM_CONFIG_SIOP_POLICY_FILENAME" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SYSTEM_CONFIG_SIOP_POLICY_FILENAME" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== LAUNCHER ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LAUNCHER_SUPPORT_CLOCK_LIVE_ICON" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LAUNCHER_CONFIG_ANIMATION_TYPE" "HighEnd"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LAUNCHER_SUPPORT_CLOCK_LIVE_ICON" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LAUNCHER_CONFIG_ANIMATION_TYPE" "HighEnd"
 
     #========== DISPLAY ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_CONFIG_DEFAULT_SCREEN_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_DEFAULT_SCREEN_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_SUPPORT_NATURAL_SCREEN_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_SUPPORT_NATURAL_SCREEN_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LCD_SUPPORT_SCREEN_MODE_TYPE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_SUPPORT_SCREEN_MODE_TYPE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_CONFIG_DEFAULT_SCREEN_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_CONFIG_DEFAULT_SCREEN_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_SUPPORT_NATURAL_SCREEN_MODE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_SUPPORT_NATURAL_SCREEN_MODE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LCD_SUPPORT_SCREEN_MODE_TYPE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LCD_SUPPORT_SCREEN_MODE_TYPE" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== CAMERA ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_STRIDE_OCR_VERSION" "V1"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_PRIVACY_TOGGLE" "TRUE"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_BINNING" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_BINNING" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_MEMORY_USAGE_LEVEL" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_MEMORY_USAGE_LEVEL" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_QRCODE_INTERVAL" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_QRCODE_INTERVAL" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_UW_DISTORTION_CORRECTION" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_UW_DISTORTION_CORRECTION" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_AVATAR_MAX_FACE_NUM" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_AVATAR_MAX_FACE_NUM" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_STANDARD_CROP" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_STANDARD_CROP" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_HIGH_RESOLUTION_MAX_CAPTURE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_HIGH_RESOLUTION_MAX_CAPTURE" {print $3}' "$STOCK_FLOATING_FEATURE")"
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_CAMERA_CONFIG_NIGHT_FRONT_DISPLAY_FLASH_TRANSPARENT" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_NIGHT_FRONT_DISPLAY_FLASH_TRANSPARENT" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_STRIDE_OCR_VERSION" "V1"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_PRIVACY_TOGGLE" "TRUE"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_BINNING" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_BINNING" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_MEMORY_USAGE_LEVEL" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_MEMORY_USAGE_LEVEL" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_QRCODE_INTERVAL" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_QRCODE_INTERVAL" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_UW_DISTORTION_CORRECTION" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_UW_DISTORTION_CORRECTION" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_AVATAR_MAX_FACE_NUM" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_AVATAR_MAX_FACE_NUM" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_STANDARD_CROP" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_CAMID_TELE_STANDARD_CROP" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_HIGH_RESOLUTION_MAX_CAPTURE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_HIGH_RESOLUTION_MAX_CAPTURE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_CAMERA_CONFIG_NIGHT_FRONT_DISPLAY_FLASH_TRANSPARENT" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_CAMERA_CONFIG_NIGHT_FRONT_DISPLAY_FLASH_TRANSPARENT" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== BIOAUTH ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_BIOAUTH_CONFIG_FINGERPRINT_FEATURES" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_BIOAUTH_CONFIG_FINGERPRINT_FEATURES" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_BIOAUTH_CONFIG_FINGERPRINT_FEATURES" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_BIOAUTH_CONFIG_FINGERPRINT_FEATURES" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
     #========== LOCKSCREEN ==========#
-    UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_PUNCHHOLE_VI" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_PUNCHHOLE_VI" {print $3}' "$STOCK_FLOATING_FEATURE")"
+    rom_update_floating_feature "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_PUNCHHOLE_VI" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_PUNCHHOLE_VI" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
 	#========== MANUFACTUREER TYPE ==========#
-	UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_DEVICE_MANUFACTURING_TYPE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_COMMON_CONFIG_DEVICE_MANUFACTURING_TYPE" {print $3}' "$STOCK_FLOATING_FEATURE")"
+	rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_CONFIG_DEVICE_MANUFACTURING_TYPE" "$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_COMMON_CONFIG_DEVICE_MANUFACTURING_TYPE" {print $3}' "$STOCK_FLOATING_FEATURE")"
 
 }
 
 
-REMOVE_ESIM_FILES() {
+rom_remove_esim_files() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -894,7 +894,7 @@ REMOVE_ESIM_FILES() {
 }
 
 
-REMOVE_FABRIC_CRYPTO() {
+rom_remove_fabric_crypto() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -917,7 +917,7 @@ REMOVE_FABRIC_CRYPTO() {
     rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app/KmxService"
 }
 
-JDM_DEBLOAT() {
+rom_jdm_debloat() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -943,7 +943,7 @@ JDM_DEBLOAT() {
     shopt -u nocasematch
 }
 
-APPLY_STOCK_CONFIG() {
+rom_apply_stock_config() {
     echo ""
 	echo "${GREEN}Applying ${RESET}$STOCK_DEVICE ${GREEN}device config.${RESET}"
     if [ "$#" -ne 1 ]; then
@@ -970,13 +970,13 @@ APPLY_STOCK_CONFIG() {
 	export STOCK_SIOP_FILENAME="$(awk -F'[<>]' '$2 == "SEC_FLOATING_FEATURE_SYSTEM_CONFIG_SIOP_POLICY_FILENAME" {print $3}' "$STOCK_FLOATING_FEATURE" | tr -d '\r' | xargs)"
 
 	# FIX SYSTEM_EXT.
-    FIX_SYSTEM_EXT "$EXTRACTED_FIRM_DIR"
+    rom_fix_system_ext "$EXTRACTED_FIRM_DIR"
 
 	# FIX VNDK.
-	FIX_VNDK
+	rom_fix_vndk
 
     # Floating Feature.
-    APPLY_FLOATING_FEATURE
+    rom_apply_floating_feature
 
     # Fix unsupported BPF error for kernels lower than 5.10.
     if [ "$USE_UI_8_TETHERING_APEX" = "true" ]; then
@@ -988,14 +988,14 @@ APPLY_STOCK_CONFIG() {
     cp -af "$DEVICES_DIR/$STOCK_DEVICE/Stock/." "$EXTRACTED_FIRM_DIR/"
 
     # Fix duplicate property-context prefixes (prevents init fatal bootloop).
-    FIX_PROPERTY_CONTEXTS "$EXTRACTED_FIRM_DIR"
+    rom_fix_property_contexts "$EXTRACTED_FIRM_DIR"
 
 }
 
 
 DEBLOAT_APPS=("FactoryCameraFB" "HybridRadio" "CIDManager" "SBrowser" "Facebook_stub_TFN" "FBAppManager_TFN" "SamsungTTSVoice_es_US_l01 " "SamsungCalendar" "KTAuth_Stub" "GameTools_Dream" "Gmail2" "Maps" "Duo" "Velvet" "CarrierDefaultApp" "ccinfo" "Chrome" "ChromeCustomizations" "GameHome" "GameOptimizingService" "WlanTest" "AssistantShell" "HotwordEnrollmentOKGoogleEx4CORTEXM55" "HotwordEnrollmentXGoogleEx4CORTEXM55" "BardShell" "DuoStub" "GoogleCalendarSyncAdapter" "AndroidDeveloperVerifier" "AndroidGlassesCore" "SOAgent77" "YourPhone_Stub" "AndroidAutoStub" "SingleTakeService" "SamsungBilling" "AndroidSystemIntelligence" "GoogleRestore" "SamsungMessages" "SamsungPositioning" "YouTube"  "SearchSelector" "AirGlance" "AirReadingGlass" "SamsungTTS" "WlanTest" "ARCore" "ARDrawing" "ARZone" "BGMProvider" "BixbyWakeup" "BlockchainBasicKit" "Cameralyzer" "DictDiotekForSec" "EasymodeContactsWidget81" "Fast" "FBAppManager_NS" "FunModeSDK" "GearManagerStub" "KidsHome_Installer" "LinkSharing_v11" "LiveDrawing" "MAPSAgent" "MdecService" "MoccaMobile" "Netflix_stub" "Notes40" "ParentalCare" "PhotoTable" "PlayAutoInstallConfig" "SamsungPassAutofill_v1" "SamsungTTSVoice_de_DE_f00" "SamsungTTSVoice_el_GR_f00" "SamsungTTSVoice_en_GB_f00" "SamsungTTSVoice_en_US_f00" "SamsungTTSVoice_en_US_l03" "SamsungTTSVoice_es_ES_f00" "SamsungTTSVoice_es_MX_f00" "SamsungTTSVoice_es_US_f00" "SamsungTTSVoice_fr_FR_f00" "SamsungTTSVoice_hi_IN_f00" "SamsungTTSVoice_it_IT_f00" "SamsungTTSVoice_pl_PL_f00" "SamsungTTSVoice_pt_BR_f00" "SamsungTTSVoice_ru_RU_f00" "SamsungTTSVoice_th_TH_f00" "SamsungTTSVoice_vi_VN_f00" "SamsungTTSVoice_en_IN_f00" "SmartReminder" "SmartSwitchStub" "UnifiedWFC" "UniversalMDMClient" "VideoEditorLite_Dream_N" "VisionIntelligence3.7" "VoiceAccess" "VTCameraSetting" "WebManual" "WifiGuider" "KTAuth" "KTCustomerService" "KTUsimManager" "LGUMiniCustomerCenter" "LGUplusTsmProxy" "SamsungTTSVoice_ko_KR_r00" "SketchBook" "SKTMemberShip_new" "SktUsimService" "TWorld" "AirCommand" "AppUpdateCenter" "AREmoji" "AREmojiEditor" "AuthFramework" "AutoDoodle" "AvatarEmojiSticker" "AvatarEmojiSticker_S" "Bixby" "BixbyInterpreter" "BixbyVisionFramework3.5" "DevGPUDriver-EX2200" "DigitalKey" "Discover" "DiscoverSEP" "EarphoneTypeC" "EasySetup" "FBInstaller_NS" "FBServices" "FotaAgent" "GalleryWidget" "GameDriver-EX2100" "GameDriver-EX2200" "GameDriver-SM8150" "HashTagService" "MultiControlVP6" "LedCoverService" "LinkToWindowsService" "LiveStickers" "MemorySaver_O_Refresh" "MultiControl" "OMCAgent5" "OneDrive_Samsung_v3" "OneStoreService" "SamsungCarKeyFw" "SamsungPass" "SettingsBixby" "SetupIndiaServicesTnC" "SKTFindLostPhone" "SKTHiddenMenu" "SKTMemberShip" "SKTOneStore" "SktUsimService" "SmartEye" "SmartPush" "SmartThingsKit" "SmartTouchCall" "SOAgent7" "SOAgent75" "SolarAudio-service" "SPPPushClient" "sticker" "StickerFaceARAvatar" "StoryService" "SumeNNService" "SVoiceIME" "SwiftkeyIme" "SwiftkeySetting" "SystemUpdate" "TADownloader" "TalkbackSE" "TaPackAuthFw" "TPhoneOnePackage" "TPhoneSetup" "TWorld" "UltraDataSaving_O" "Upday" "UsimRegistrationKOR" "YourPhone_P1_5" "AvatarPicker" "KT114Provider2" "KTHiddenMenu" "KTOneStore" "KTServiceAgent" "KTServiceMenu" "LGUGPSnWPS" "LGUHiddenMenu" "LGUOZStore" "SKTFindLostPhoneApp" "SmartPush_64" "SOAgent76" "TService" "vexfwk_service" "VexScanner" "LiveEffectService" "YourPhone_P1_5" "vexfwk_service" "AutoHotspotMDE" "ShareLive" "RubinVersion38" "SCPMAgent" "IPService")
 
-KICK() {
+rom_kick() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -1027,7 +1027,7 @@ KICK() {
 }
 
 
-DEBLOAT() {
+rom_debloat() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -1036,11 +1036,11 @@ DEBLOAT() {
 
 	local EXTRACTED_FIRM_DIR="$1"
 
-    KICK "$EXTRACTED_FIRM_DIR"
-    REMOVE_ESIM_FILES "$EXTRACTED_FIRM_DIR"
-	REMOVE_FABRIC_CRYPTO "$EXTRACTED_FIRM_DIR"
-    JDM_DEBLOAT "$EXTRACTED_FIRM_DIR"
-    DEODEX "$EXTRACTED_FIRM_DIR"
+    rom_kick "$EXTRACTED_FIRM_DIR"
+    rom_remove_esim_files "$EXTRACTED_FIRM_DIR"
+	rom_remove_fabric_crypto "$EXTRACTED_FIRM_DIR"
+    rom_jdm_debloat "$EXTRACTED_FIRM_DIR"
+    rom_deodex "$EXTRACTED_FIRM_DIR"
     
 	echo "${YELLOW}- Deleting unnecessary files and folders.${RESET}"
     rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/init/boot-image.bprof"
@@ -1061,7 +1061,7 @@ DEBLOAT() {
     
 }
 
-DEODEX() {
+rom_deodex() {
     echo "${YELLOW}- Deodexing ROM (removing oat folders)...${RESET}"
     echo "${YELLOW}- OAT folders to remove:${RESET}"
 
@@ -1088,7 +1088,7 @@ DEODEX() {
     echo "${GREEN}Deodex complete${RESET}"
 }
 
-BUILD_PROP() {
+rom_build_prop() {
     local EXTRACTED_FIRM_DIR="$1"
     local KEY="$2"
     local VALUE="${3:-}"
@@ -1120,7 +1120,7 @@ BUILD_PROP() {
 }
 
 
-DISABLE_ENCRYPTION_PROPS() {
+rom_disable_encryption_props() {
     local EXTRACTED_FIRM_DIR="$1"
     local PROP
 
@@ -1133,7 +1133,7 @@ DISABLE_ENCRYPTION_PROPS() {
 }
 
 
-ENABLE_ZYGOTE_STDIO_KMSG() {
+rom_enable_zygote_stdio() {
     local EXTRACTED_FIRM_DIR="$1"
     [ "${ZYGOTE_STDIO_KMSG:-false}" = "true" ] || return 0
 
@@ -1156,7 +1156,7 @@ ENABLE_ZYGOTE_STDIO_KMSG() {
 }
 
 
-ENABLE_LOGCAT_PERSIST() {
+rom_enable_logcat_persist() {
     local EXTRACTED_FIRM_DIR="$1"
     [ "${LOGCAT_PERSIST:-false}" = "true" ] || return 0
 
@@ -1205,7 +1205,7 @@ EOF
 }
 
 
-APPLY_PROP_FEATURES() {
+rom_apply_prop_features() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -1215,36 +1215,36 @@ APPLY_PROP_FEATURES() {
 	local EXTRACTED_FIRM_DIR="$1"
 
     # Add build.prop features
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "wifi.interface" "wlan0"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "wlan.wfd.hdcp" "disabled"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.hwui.renderer" "opengl"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.hwui.skia_atrace_enabled" "false"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.renderengine.backend" "skiaglthreaded"
-	BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.telephony.sim_slots.count" "2"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.factory.model" "$STOCK_DEVICE"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.surface_flinger.protected_contents" "false"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.audio.voip.enabled" "true"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.vendor.audio.voip" "true"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.audio.recording.voip" "true"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.config.iccc_version" "Disabled"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "dalvik.vm.systemuicompilerfilter" "speed"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.adb.notify" "0"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.surface_flinger.max_frame_buffer_acquired_buffers" "4"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.hwui.use_triple_buffering" "true"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.sf.enable_gl_backpressure" "0"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.sf.disable_backpressure" "1"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "audio.safemedia.bypass" "true"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.expose.aux" "1"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "vendor.camera.aux.packagelist" "com.sec.android.app.camera,com.samsung.android.scan3d"
-	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.show_multiuserui" "1"
-	BUILD_PROP "$EXTRACTED_FIRM_DIR" "fw.max_users" "5"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "wifi.interface" "wlan0"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "wlan.wfd.hdcp" "disabled"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.hwui.renderer" "opengl"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.hwui.skia_atrace_enabled" "false"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.renderengine.backend" "skiaglthreaded"
+	rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.telephony.sim_slots.count" "2"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.factory.model" "$STOCK_DEVICE"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.surface_flinger.protected_contents" "false"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.audio.voip.enabled" "true"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.vendor.audio.voip" "true"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.audio.recording.voip" "true"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.config.iccc_version" "Disabled"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "dalvik.vm.systemuicompilerfilter" "speed"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.adb.notify" "0"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.surface_flinger.max_frame_buffer_acquired_buffers" "4"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.hwui.use_triple_buffering" "true"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.sf.enable_gl_backpressure" "0"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.sf.disable_backpressure" "1"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "audio.safemedia.bypass" "true"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.expose.aux" "1"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "vendor.camera.aux.packagelist" "com.sec.android.app.camera,com.samsung.android.scan3d"
+	rom_build_prop "$EXTRACTED_FIRM_DIR" "fw.show_multiuserui" "1"
+	rom_build_prop "$EXTRACTED_FIRM_DIR" "fw.max_users" "5"
 
     # Build identity
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.build.user" "Luminous418"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.build.host" "Luminous418"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.build.user" "Luminous418"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.build.host" "Luminous418"
 
     # Related to LumiSettings
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.version" "$LUMIROM_VERSION"
+    rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.lumi.version" "$LUMIROM_VERSION"
     
 
     # Related to Updater App
@@ -1252,11 +1252,11 @@ APPLY_PROP_FEATURES() {
     # the old ro.cloudy.* names, so write both: the new ones for LumiFota and
     # the legacy pair for older updater builds that may still be installed.
     if [ "$USE_MODS" = "true" ]; then
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver" "$LUMIROM_VERSION"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver.code" "$LUMIROM_CODE"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver" "$LUMIROM_VERSION"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver.code" "$LUMIROM_CODE"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.cloudy.maintainer" "$LUMIROM_MAINTAINER"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver" "$LUMIROM_VERSION"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.lumi.rom.ver.code" "$LUMIROM_CODE"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver" "$LUMIROM_VERSION"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.cloudy.rom.ver.code" "$LUMIROM_CODE"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.cloudy.maintainer" "$LUMIROM_MAINTAINER"
     fi
 
     # The vendor build.prop overrides the system one at boot, so patch it here
@@ -1267,15 +1267,15 @@ APPLY_PROP_FEATURES() {
         echo "${GREEN}Patched ${RESET}vendor/build.prop debug.renderengine.backend => skiaglthreaded${RESET}"
     fi
 
-    DISABLE_ENCRYPTION_PROPS "$EXTRACTED_FIRM_DIR"
+    rom_disable_encryption_props "$EXTRACTED_FIRM_DIR"
 }
 
-APPEND_DISPLAY_ID() {
+rom_append_display_id() {
     local EXTRACTED_FIRM_DIR="$1"
     local SUFFIX="$2"
 
     if [ -z "$EXTRACTED_FIRM_DIR" ] || [ -z "$SUFFIX" ]; then
-        echo "Usage: APPEND_DISPLAY_ID <EXTRACTED_FIRM_DIR> <text_to_append>"
+        echo "Usage: rom_append_display_id <EXTRACTED_FIRM_DIR> <text_to_append>"
         return 1
     fi
 
@@ -1300,20 +1300,20 @@ APPEND_DISPLAY_ID() {
     done
 }
 
-APPENDING_DISPLAY_ID() {
+rom_set_display_id() {
     if [ -z "$1" ]; then
-        echo "Usage: APPENDING_DISPLAY_ID <EXTRACTED_FIRM_DIR>"
+        echo "Usage: rom_set_display_id <EXTRACTED_FIRM_DIR>"
         return 1
     fi
 
     # Add a name to build ID, doesnt delete the line, it adds at the end
 	local EXTRACTED_FIRM_DIR="$1"
 
-    APPEND_DISPLAY_ID "$1" "LumiROM $LUMIROM_VERSION $BUILD_STATUS Stable"
+    rom_append_display_id "$1" "LumiROM $LUMIROM_VERSION $BUILD_STATUS Stable"
 }
 
 
-REPLACE_OTACERTS() {
+rom_replace_otacerts() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -1322,7 +1322,7 @@ REPLACE_OTACERTS() {
     local EXTRACTED_FIRM_DIR="$1"
 
     local CERT
-    CERT="$(GET_ACTIVE_OTA_CERT)"
+    CERT="$(key_ota_cert)"
     if [ -z "$CERT" ]; then
         echo "${YELLOW}No OTA certificate available, keeping stock otacerts.zip.${RESET}"
         return 0

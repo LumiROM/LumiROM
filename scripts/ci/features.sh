@@ -25,33 +25,33 @@ set -eo pipefail
 case "${1:-}" in
     vendor-patches)
         source scripts/features/LumiROM.sh
-        DISABLE_FBE "$FIRM_DIR"
-        DISABLE_FDE "$FIRM_DIR"
-        DELETE_ICCC "$FIRM_DIR"
-        DEBLOAT_VENDOR "$FIRM_DIR"
-        PATCH_FSTAB_EROFS "$FIRM_DIR"
+        rom_disable_fbe "$FIRM_DIR"
+        rom_disable_fde "$FIRM_DIR"
+        rom_delete_iccc "$FIRM_DIR"
+        rom_debloat_vendor "$FIRM_DIR"
+        rom_patch_fstab_erofs "$FIRM_DIR"
         ;;
     stock-config)
         source scripts/features/LumiROM.sh
-        APPLY_STOCK_CONFIG "$FIRM_DIR"
+        rom_apply_stock_config "$FIRM_DIR"
         ;;
     debloat)
         source scripts/features/LumiROM.sh
-        DEBLOAT_WSM "$FIRM_DIR"
-        DEBLOAT "$FIRM_DIR"
+        rom_debloat_wsm "$FIRM_DIR"
+        rom_debloat "$FIRM_DIR"
         ;;
     props)
         source scripts/features/LumiROM.sh
-        APPLY_PROP_FEATURES "$FIRM_DIR"
+        rom_apply_prop_features "$FIRM_DIR"
         ;;
     mods)
         source scripts/features/Mods.sh
-        ADD_MODS "$FIRM_DIR"
+        mods_add "$FIRM_DIR"
         ;;
     hotspot)
         if [ "${USE_MODS:-true}" = "true" ]; then
             source scripts/features/HotspotFix.sh
-            ADD_SOFTAP_FIX "$FIRM_DIR"
+            hotspot_add_fix "$FIRM_DIR"
         else
             echo "Mods are disabled, skipping hotspot patch"
         fi
@@ -59,37 +59,37 @@ case "${1:-}" in
     lumifota)
         if [ "${USE_MODS:-true}" = "true" ]; then
             source scripts/features/LumiFota.sh
-            ADD_LUMIFOTA "$FIRM_DIR"
+            fota_add "$FIRM_DIR"
         else
             echo "Mods are disabled, skipping LumiFota OTA Updater"
         fi
         ;;
     ai)
         source scripts/features/Galaxy_AI.sh
-        GALAXY_AI "$FIRM_DIR"
+        ai_apply "$FIRM_DIR"
         ;;
     display-id)
         source scripts/features/LumiROM.sh
-        APPENDING_DISPLAY_ID "$FIRM_DIR"
+        rom_set_display_id "$FIRM_DIR"
         ;;
     framework-res)
         source scripts/features/LumiROM.sh
-        INSTALL_FRAMEWORK "FIRMWARE/system/system/framework/framework-res.apk"
+        rom_install_framework "FIRMWARE/system/system/framework/framework-res.apk"
         ;;
     knox)
         source scripts/features/Knox_script.sh
         source scripts/utils/platform_key.sh
         source scripts/features/LumiROM.sh
-        PATCH_SSRM "$WORK_DIR/ssrm"
-        PATCH_KNOX_GUARD "$WORK_DIR/services"
-        PATCH_FLAG_SECURE "$WORK_DIR/services"
-        PATCH_SECURE_FOLDER "$WORK_DIR/services"
-        CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
-        DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
-        PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
-        PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
-        ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
-        ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+        knox_patch_ssrm "$WORK_DIR/ssrm"
+        knox_patch_knox_guard "$WORK_DIR/services"
+        knox_patch_flag_secure "$WORK_DIR/services"
+        knox_patch_secure_folder "$WORK_DIR/services"
+        knox_custom_platform_signature "$WORK_DIR/services" "$(key_cert_hex)"
+        knox_disable_signature_verification "$WORK_DIR/framework"
+        apps_patch_secsettings "$WORK_DIR/SecSettings"
+        apps_patch_setupwizard "$WORK_DIR/SecSetupWizard_Global"
+        apps_add_lumisettings "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+        apps_add_knoxpatch "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
         ;;
     *)
         echo "Usage: $0 <vendor-patches|stock-config|debloat|props|mods|hotspot|lumifota|ai|display-id|framework-res|knox>" >&2

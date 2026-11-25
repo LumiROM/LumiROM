@@ -47,7 +47,7 @@ generate() {
     # Full-ROM manifest (updater/{device}.json) - keeps release history.
     local CURRENT_JSON="/tmp/ota_current.json"
     curl -sf -o "$CURRENT_JSON" "https://raw.githubusercontent.com/LumiROM/updater/main/${DEVICE_CODENAME}.json" || CURRENT_JSON=""
-    GENERATE_OTA_MANIFEST "$ZIP_PATH" "$DOWNLOAD_URL" "${OTA_CHANGELOG:-}" "$CURRENT_JSON" \
+    ota_generate_manifest "$ZIP_PATH" "$DOWNLOAD_URL" "${OTA_CHANGELOG:-}" "$CURRENT_JSON" \
         > "OTA_MANIFESTS/${DEVICE_CODENAME}.json"
     echo "Full-ROM manifest generated for ${DEVICE_CODENAME}."
 
@@ -59,7 +59,7 @@ generate() {
         INC_URL="$DOWNLOAD_URL_INCREMENTAL"
     fi
     if [ -n "$INCREMENTAL_ZIP" ] && [ -f "$INCREMENTAL_ZIP" ]; then
-        GENERATE_OTA_INCREMENTAL_MANIFEST "$INCREMENTAL_ZIP" "$INC_URL" "${OTA_CHANGELOG:-}" \
+        ota_generate_incremental_manifest "$INCREMENTAL_ZIP" "$INC_URL" "${OTA_CHANGELOG:-}" \
             > "OTA_MANIFESTS/${DEVICE_CODENAME}_ota.json"
         echo "OTA-only manifest generated for ${DEVICE_CODENAME}."
     else

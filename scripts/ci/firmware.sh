@@ -32,27 +32,27 @@ case "${1:-}" in
             : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
             : "${TARGET_CSC:?TARGET_CSC is not set}"
             : "${TARGET_IMEI:?TARGET_IMEI is not set}"
-            DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
-            EXTRACT_FIRMWARE "$IMGS_DIR"
-            EXTRACT_SUPER_IMG "$IMGS_DIR"
+            fw_download_firmware "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+            fw_extract_firmware "$IMGS_DIR"
+            fw_extract_super_image "$IMGS_DIR"
         fi
         ;;
     download)
         : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
         : "${TARGET_CSC:?TARGET_CSC is not set}"
         : "${TARGET_IMEI:?TARGET_IMEI is not set}"
-        DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+        fw_download_firmware "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
         ;;
     extract)
-        EXTRACT_FIRMWARE "$IMGS_DIR"
-        EXTRACT_SUPER_IMG "$IMGS_DIR"
+        fw_extract_firmware "$IMGS_DIR"
+        fw_extract_super_image "$IMGS_DIR"
         ;;
     vendor)
-        DOWNLOAD_VENDOR "$IMGS_DIR"
+        fw_download_vendor "$IMGS_DIR"
         ;;
     partitions)
-        PREPARE_PARTITIONS "$IMGS_DIR"
-        EXTRACT_FIRMWARE_IMG "$IMGS_DIR" "$FIRM_DIR"
+        fw_prepare_partitions "$IMGS_DIR"
+        fw_extract_partitions "$IMGS_DIR" "$FIRM_DIR"
         ;;
     *)
         echo "Usage: $0 <base|download|extract|vendor|partitions>" >&2

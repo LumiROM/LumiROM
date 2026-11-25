@@ -41,9 +41,9 @@ OUTPUT_FILE=""
 FILE_CONTEXT_FILE=""
 FS_CONFIG_FILE=""
 
-LOG() { echo "$@"; }
+fs_log() { echo "$@"; }
 
-ROUND_UP_TO_4K()
+fs_round_up_to_4k()
 {
     local ROUNDED
     ROUNDED="$(bc -l <<< "$1 + 4095")"
@@ -51,24 +51,24 @@ ROUND_UP_TO_4K()
     echo "$ROUNDED"
 }
 
-GET_DISK_USAGE()
+fs_get_disk_usage()
 {
     local SIZE
     SIZE="$(du -b -k -s "$1" | cut -f 1)"
     bc -l <<< "$SIZE * 1024"
 }
 
-GET_IMAGE_SIZE()
+fs_get_image_size()
 {
     local FILE="$1"
     if [ ! -f "$FILE" ]; then
-        LOG "  [ERROR] Image not found: $FILE"
+        fs_log "  [ERROR] Image not found: $FILE"
         exit 1
     fi
-    GET_DISK_USAGE "$FILE"
+    fs_get_disk_usage "$FILE"
 }
 
-CALCULATE_SIZE_AND_RESERVED()
+fs_calculate_size_and_reserved()
 {
     local SIZE="$1"
     if [[ "$FS_TYPE" == "erofs" ]]; then
@@ -81,7 +81,7 @@ CALCULATE_SIZE_AND_RESERVED()
     echo "$SIZE"
 }
 
-BUILD_IMAGE_MKFS()
+fs_build_image_mkfs()
 {
     # Built as an array so no second round of shell quoting is needed.
     local -a BUILD_CMD=()
@@ -122,7 +122,7 @@ BUILD_IMAGE_MKFS()
             BUILD_CMD+=("$FILE_CONTEXT_FILE")
             ;;
         *)
-            LOG "  [ERROR] Unsupported file system type: $FS_TYPE"
+            fs_log "  [ERROR] Unsupported file system type: $FS_TYPE"
             exit 1
             ;;
     esac
@@ -130,16 +130,16 @@ BUILD_IMAGE_MKFS()
     "${BUILD_CMD[@]}" || exit 1
 }
 
-PREPARE_SCRIPT()
+fs_prepare_script()
 {
     if [[ "$#" == 0 ]]; then
-        PRINT_USAGE
+        fs_print_usage
         exit 1
     fi
 
     FS_TYPE="$1"
     if [[ "$FS_TYPE" != "erofs" && "$FS_TYPE" != "ext4" ]]; then
-        LOG "  [ERROR] Unsupported file system type: $FS_TYPE"
+        fs_log "  [ERROR] Unsupported file system type: $FS_TYPE"
         exit 1
     fi
 
@@ -158,13 +158,13 @@ PREPARE_SCRIPT()
         elif [[ "$1" == "--inodes" ]] || [[ "$1" == "-i" ]]; then
             shift; INODES="$1"
             if ! [[ "$INODES" =~ ^[+-]?[0-9]+$ ]]; then
-                LOG "  [ERROR] Inodes number not valid: $INODES"
+                fs_log "  [ERROR] Inodes number not valid: $INODES"
                 exit 1
             fi
         elif [[ "$1" == "--output" ]] || [[ "$1" == "-o" ]]; then
             shift; OUTPUT_FILE="$1"
             if [[ "$OUTPUT_FILE" != *".img" ]]; then
-                LOG "  [ERROR] Output file name must have \".img\" extension"
+                fs_log "  [ERROR] Output file name must have \".img\" extension"
                 exit 1
             fi
         elif [[ "$1" == "--partition-name" ]] || [[ "$1" == "-p" ]]; then
@@ -172,14 +172,14 @@ PREPARE_SCRIPT()
         elif [[ "$1" == "--partition-size" ]] || [[ "$1" == "-s" ]]; then
             shift; IMAGE_SIZE="$1"
             if ! [[ "$IMAGE_SIZE" =~ ^[+-]?[0-9]+$ ]]; then
-                LOG "  [ERROR] Partition size not valid: $IMAGE_SIZE"
+                fs_log "  [ERROR] Partition size not valid: $IMAGE_SIZE"
                 exit 1
             fi
         elif [[ "$1" == "--sparse" ]] || [[ "$1" == "-S" ]]; then
             SPARSE=true
         else
-            LOG "  [ERROR] Unknown option: $1"
-            PRINT_USAGE
+            fs_log "  [ERROR] Unknown option: $1"
+            fs_print_usage
             exit 1
         fi
 
@@ -192,10 +192,10 @@ PREPARE_SCRIPT()
 
     INPUT_DIR="$1"
     if [ ! "$INPUT_DIR" ]; then
-        PRINT_USAGE
+        fs_print_usage
         exit 1
     elif [ ! -d "$INPUT_DIR" ]; then
-        LOG "  [ERROR] Folder not found: $INPUT_DIR"
+        fs_log "  [ERROR] Folder not found: $INPUT_DIR"
         exit 1
     fi
 
@@ -218,14 +218,14 @@ PREPARE_SCRIPT()
         if $FORCE; then
             rm -f "$OUTPUT_FILE"
         else
-            LOG "  [ERROR] Output file already exists: $OUTPUT_FILE. Use --force."
+            fs_log "  [ERROR] Output file already exists: $OUTPUT_FILE. Use --force."
             exit 1
         fi
     fi
 
     FILE_CONTEXT_FILE="$1"
     if [ ! "$FILE_CONTEXT_FILE" ] || [ ! -f "$FILE_CONTEXT_FILE" ]; then
-        LOG "  [ERROR] File contexts not found: $FILE_CONTEXT_FILE"
+        fs_log "  [ERROR] File contexts not found: $FILE_CONTEXT_FILE"
         exit 1
     fi
 
@@ -233,12 +233,12 @@ PREPARE_SCRIPT()
 
     FS_CONFIG_FILE="$1"
     if [ ! "$FS_CONFIG_FILE" ] || [ ! -f "$FS_CONFIG_FILE" ]; then
-        LOG "  [ERROR] FS config not found: $FS_CONFIG_FILE"
+        fs_log "  [ERROR] FS config not found: $FS_CONFIG_FILE"
         exit 1
     fi
 }
 
-PRINT_USAGE()
+fs_print_usage()
 {
     echo "Usage: build_fs_image <fs> [options] <dir> <file_contexts> <fs_config>"
     echo "  --avb/--no-avb : Enables/disables AVB signing"
@@ -253,7 +253,7 @@ PRINT_USAGE()
 
 # ===== MAIN =====
 
-PREPARE_SCRIPT "$@"
+fs_prepare_script "$@"
 
 # lost+found: ensure entries exist to avoid build failures
 if ! grep -q -F "lost+found" "$FILE_CONTEXT_FILE"; then
@@ -271,28 +271,28 @@ if ! grep -q -F "lost+found" "$FS_CONFIG_FILE"; then
     fi
 fi
 
-LOG "- Building image: $OUTPUT_FILE ($FS_TYPE)"
+fs_log "- Building image: $OUTPUT_FILE ($FS_TYPE)"
 
 if [ ! "$IMAGE_SIZE" ]; then
-    LOG "  - Partition size not set, detecting minimum size"
+    fs_log "  - Partition size not set, detecting minimum size"
 
     if [[ "$FS_TYPE" == "erofs" ]]; then
-        BUILD_IMAGE_MKFS
-        IMAGE_SIZE="$(GET_IMAGE_SIZE "$OUTPUT_FILE")"
+        fs_build_image_mkfs
+        IMAGE_SIZE="$(fs_get_image_size "$OUTPUT_FILE")"
     else
-        IMAGE_SIZE="$(GET_DISK_USAGE "$INPUT_DIR")"
+        IMAGE_SIZE="$(fs_get_disk_usage "$INPUT_DIR")"
     fi
 
-    LOG "  - Tree size: $IMAGE_SIZE bytes ($(bc -l <<< "scale=0; $IMAGE_SIZE / 1048576") MB)"
+    fs_log "  - Tree size: $IMAGE_SIZE bytes ($(bc -l <<< "scale=0; $IMAGE_SIZE / 1048576") MB)"
 
-    IMAGE_SIZE="$(CALCULATE_SIZE_AND_RESERVED "$IMAGE_SIZE")"
-    IMAGE_SIZE="$(ROUND_UP_TO_4K "$IMAGE_SIZE")"
+    IMAGE_SIZE="$(fs_calculate_size_and_reserved "$IMAGE_SIZE")"
+    IMAGE_SIZE="$(fs_round_up_to_4k "$IMAGE_SIZE")"
 
-    LOG "  - Allocating $IMAGE_SIZE bytes ($(bc -l <<< "scale=0; $IMAGE_SIZE / 1048576") MB)"
+    fs_log "  - Allocating $IMAGE_SIZE bytes ($(bc -l <<< "scale=0; $IMAGE_SIZE / 1048576") MB)"
 fi
 
 if [ ! -f "$OUTPUT_FILE" ]; then
-    BUILD_IMAGE_MKFS
+    fs_build_image_mkfs
 fi
 
 if [ -n "${SUDO_USER:-}" ]; then
@@ -301,5 +301,5 @@ else
     chown -R "$(whoami):$(whoami)" "$OUTPUT_FILE" 2>/dev/null || true
 fi
 
-LOG "- Done: $OUTPUT_FILE"
+fs_log "- Done: $OUTPUT_FILE"
 exit 0

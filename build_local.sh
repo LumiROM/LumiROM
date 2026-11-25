@@ -177,11 +177,11 @@ resolve_target_device() {
     source scripts/firmware/FW.sh
 
     if [ -z "$TARGET_DEVICE" ]; then
-        TARGET_DEVICE=$(GET_BASE_DEVICE "$STOCK_DEVICE") || die "no base device for $STOCK_DEVICE"
+        TARGET_DEVICE=$(fw_get_base_device "$STOCK_DEVICE") || die "no base device for $STOCK_DEVICE"
     fi
 
     source scripts/utils/validation.sh
-    VALIDATION
+    validate_inputs
 }
 
 # =====================================================================
@@ -211,7 +211,7 @@ setup_environment() {
     LUMIROM_ENV_FILE="$(mktemp)"
     export LUMIROM_ENV_FILE
 
-    # Android build-tools (zipalign/apksigner) needed by REBUILD_AND_SIGN_APK.
+    # Android build-tools (zipalign/apksigner) needed by apps_rebuild_and_sign_apk.
     # Ubuntu ships them under /usr/lib/android-sdk/build-tools/debian/ (not in PATH).
     if [ -d "$HOME/Android/Sdk/build-tools" ]; then
         BT_DIR=$(ls -d "$HOME"/Android/Sdk/build-tools/*/ 2>/dev/null | sort -V | tail -1)
@@ -242,7 +242,7 @@ setup_permissions() {
 install_packages() {
     log_section "Installing required packages"
     source scripts/utils/install_packages.sh
-    run INSTALL_PACKAGES
+    run deps_install
 }
 
 setup_directories() {
@@ -254,11 +254,11 @@ setup_directories() {
 check_environment() {
     log_section "Checking the environment"
     source scripts/firmware/local_official.sh
-    # Runs in the current shell: IS_LOCAL_OFFICIAL exports BUILD_STATUS, which
+    # Runs in the current shell: is_local_official exports BUILD_STATUS, which
     # the packaging steps need. Process substitution keeps stdout visible while
     # still writing it to the log.
-    if ! IS_LOCAL_OFFICIAL > >(tee -a "$LOG_FILE") 2>&1; then
-        die "environment check failed (IS_LOCAL_OFFICIAL)"
+    if ! is_local_official > >(tee -a "$LOG_FILE") 2>&1; then
+        die "environment check failed (is_local_official)"
     fi
 }
 
@@ -271,37 +271,37 @@ download_firmware() {
 
     # Check if firmware images are already cached
     log_message "Checking firmware cache..."
-    if CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BUILD_PARTITIONS"; then
+    if fw_check_firmware_images "$IMGS_DIR" "$BUILD_PARTITIONS"; then
         log_message "✓ Firmware cache found. Skipping download..."
     elif try bash scripts/firmware/fw_bucket.sh pull; then
         log_message "✓ Base images pulled from the FW bucket."
     else
         log_message "✗ No firmware cache found. Proceeding with download..."
-        run DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+        run fw_download_firmware "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
     fi
 
     if [[ -f "IMGs/${TARGET_DEVICE}.zip" ]]; then
         log_section "Extracting $TARGET_DEVICE images"
-        run EXTRACT_FIRMWARE "$IMGS_DIR"
-        run EXTRACT_SUPER_IMG "$IMGS_DIR"
+        run fw_extract_firmware "$IMGS_DIR"
+        run fw_extract_super_image "$IMGS_DIR"
     fi
 }
 
 download_vendor() {
     log_message "Checking vendor cache..."
-    if CHECK_VENDOR_IMAGE "$IMGS_DIR"; then
+    if fw_check_vendor_image "$IMGS_DIR"; then
         log_message "✓ Vendor cache found. Skipping download..."
         sleep 1
     else
         log_message "✗ No vendor cache found. Proceeding with download..."
-        run DOWNLOAD_VENDOR "$IMGS_DIR"
+        run fw_download_vendor "$IMGS_DIR"
     fi
 }
 
 prepare_partitions() {
     log_section "Preparing partitions"
-    run PREPARE_PARTITIONS "$IMGS_DIR"
-    run EXTRACT_FIRMWARE_IMG "$IMGS_DIR" "$FIRM_DIR"
+    run fw_prepare_partitions "$IMGS_DIR"
+    run fw_extract_partitions "$IMGS_DIR" "$FIRM_DIR"
 }
 
 # =====================================================================
@@ -310,31 +310,31 @@ prepare_partitions() {
 apply_rom_features() {
     source scripts/features/LumiROM.sh
     log_message "Loading LumiROM functions..."
-    run DISABLE_FBE "$FIRM_DIR"
-    run DISABLE_FDE "$FIRM_DIR"
-    run DELETE_ICCC "$FIRM_DIR"
-    run DEBLOAT_VENDOR "$FIRM_DIR"
-    run DEBLOAT_WSM "$FIRM_DIR"
-    run PATCH_FSTAB_EROFS "$FIRM_DIR"
-    run APPLY_STOCK_CONFIG "$FIRM_DIR"
-    run DEBLOAT "$FIRM_DIR"
-    run APPLY_PROP_FEATURES "$FIRM_DIR"
-    #run ENABLE_ZYGOTE_STDIO_KMSG "$FIRM_DIR"
-    #run ENABLE_LOGCAT_PERSIST "$FIRM_DIR"
+    run rom_disable_fbe "$FIRM_DIR"
+    run rom_disable_fde "$FIRM_DIR"
+    run rom_delete_iccc "$FIRM_DIR"
+    run rom_debloat_vendor "$FIRM_DIR"
+    run rom_debloat_wsm "$FIRM_DIR"
+    run rom_patch_fstab_erofs "$FIRM_DIR"
+    run rom_apply_stock_config "$FIRM_DIR"
+    run rom_debloat "$FIRM_DIR"
+    run rom_apply_prop_features "$FIRM_DIR"
+    #run rom_enable_zygote_stdio "$FIRM_DIR"
+    #run rom_enable_logcat_persist "$FIRM_DIR"
 }
 
 add_mods() {
     log_section "Adding Mods"
     source scripts/features/Mods.sh
-    run ADD_MODS "$FIRM_DIR"
+    run mods_add "$FIRM_DIR"
 
     log_section "Patching hotspot"
     source scripts/features/HotspotFix.sh
-    run ADD_SOFTAP_FIX "$FIRM_DIR"
+    run hotspot_add_fix "$FIRM_DIR"
 
     log_section "Adding LumiFota OTA Updater"
     source scripts/features/LumiFota.sh
-    run ADD_LUMIFOTA "$FIRM_DIR"
+    run fota_add "$FIRM_DIR"
 }
 
 add_galaxy_ai() {
@@ -344,13 +344,13 @@ add_galaxy_ai() {
         log_section "Removing Galaxy AI"
     fi
     source scripts/features/Galaxy_AI.sh
-    run GALAXY_AI "$FIRM_DIR"
+    run ai_apply "$FIRM_DIR"
 }
 
 apply_display_id() {
     log_section "Appending Display ID"
-    run APPENDING_DISPLAY_ID "$FIRM_DIR"
-    run INSTALL_FRAMEWORK "FIRMWARE/system/system/framework/framework-res.apk"
+    run rom_set_display_id "$FIRM_DIR"
+    run rom_install_framework "FIRMWARE/system/system/framework/framework-res.apk"
 }
 
 # =====================================================================
@@ -358,14 +358,14 @@ apply_display_id() {
 # =====================================================================
 decompile_framework() {
     log_section "Patching Knox and Framework"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
-    par DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
     wait_jobs
 }
 
@@ -373,43 +373,43 @@ apply_knox_patches() {
     log_section "Applying Knox and Framework patches"
     source scripts/features/Knox_script.sh
     source scripts/utils/platform_key.sh
-    run PATCH_SSRM "$WORK_DIR/ssrm"
-    run PATCH_KNOX_GUARD "$WORK_DIR/services"
-    run PATCH_FLAG_SECURE "$WORK_DIR/services"
-    run PATCH_SECURE_FOLDER "$WORK_DIR/services"
-    run CUSTOM_PLATFORM_SIGNATURE "$WORK_DIR/services" "$(GET_ACTIVE_CERT_HEX)"
+    run knox_patch_ssrm "$WORK_DIR/ssrm"
+    run knox_patch_knox_guard "$WORK_DIR/services"
+    run knox_patch_flag_secure "$WORK_DIR/services"
+    run knox_patch_secure_folder "$WORK_DIR/services"
+    run knox_custom_platform_signature "$WORK_DIR/services" "$(key_cert_hex)"
     if [ "$KEEP_STOCK_FRAMEWORK" != "true" ]; then
-        run DISABLE_SIGNATURE_VERIFICATION "$WORK_DIR/framework"
+        run knox_disable_signature_verification "$WORK_DIR/framework"
     else
-        log_message "Diagnostic build: skipping DISABLE_SIGNATURE_VERIFICATION (stock framework.jar)"
+        log_message "Diagnostic build: skipping knox_disable_signature_verification (stock framework.jar)"
     fi
-    run PATCH_SECSETTINGS "$WORK_DIR/SecSettings"
-    run PATCH_SETUPWIZARD "$WORK_DIR/SecSetupWizard_Global"
-    run ADD_LUMISETTINGS "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
+    run apps_patch_secsettings "$WORK_DIR/SecSettings"
+    run apps_patch_setupwizard "$WORK_DIR/SecSetupWizard_Global"
+    run apps_add_lumisettings "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
     if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
-        log_message "Diagnostic build: skipping ADD_KNOXPATCH (stock framework.jar)"
+        log_message "Diagnostic build: skipping apps_add_knoxpatch (stock framework.jar)"
     else
-        run ADD_KNOXPATCH "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+        run apps_add_knoxpatch "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
     fi
 }
 
 recompile_framework() {
     log_section "Recompiling Knox and Framework"
-    par RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
-    par RECOMPILE "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par rom_recompile "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par rom_recompile "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
     if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
         log_message "Diagnostic build: using stock framework.jar, knoxsdk.jar and samsungkeystoreutils.jar"
         cp -f "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
         cp -f "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR/knoxsdk.jar"
         cp -f "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR/samsungkeystoreutils.jar"
     else
-        par RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
-        par RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
-        par RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
     fi
-    par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
-    par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
-    par REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
+    par apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
+    par apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
+    par apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk"
     wait_jobs
 
     if [ ! -f "$WORK_DIR/SecSettings_rebuilt.apk" ] || \
@@ -422,7 +422,7 @@ recompile_framework() {
         die "a decompiled artifact failed to recompile (see the log above)"
     fi
 
-    run FIX_FRAMEWORK_MIME "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
+    run rom_fix_framework_mime "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
 
     run cp -fv "$WORK_DIR"/*.jar "FIRMWARE/system/system/framework/"
     if [ "$KEEP_STOCK_FRAMEWORK" != "true" ]; then
@@ -451,8 +451,8 @@ recompile_framework() {
 # =====================================================================
 build_rom() {
     log_section "Building ROM"
-    run REPLACE_OTACERTS "$FIRM_DIR"
-    run BUILD_IMG "$FIRM_DIR" "$OUTPUT_FILESYSTEM" "$OUT_DIR"
+    run rom_replace_otacerts "$FIRM_DIR"
+    run fw_build_images "$FIRM_DIR" "$OUTPUT_FILESYSTEM" "$OUT_DIR"
 }
 
 package_output() {
@@ -460,14 +460,14 @@ package_output() {
 
     if [ "$ZIP_IMG" = "true" ]; then
         log_section "Creating IMG ZIP"
-        run IMG_ZIP_CREATION "$OUT_DIR"
+        run pkg_create_image_zip "$OUT_DIR"
     else
-        run IMG_TO_BROTLI "$OUT_DIR" "TMP"
+        run fw_images_to_brotli "$OUT_DIR" "TMP"
 
         log_section "Creating flashable ZIP"
-        run UPDATE_ZIP_SCRIPT "$FIRM_DIR"
+        run pkg_render_updater_script "$FIRM_DIR"
         inject_camera_cleanup_file "$(pwd)/makerom/META-INF/com/google/android/updater-script"
-        run FLASHABLE_ZIP_CREATION
+        run pkg_create_flashable_zip
 
         if [ -s "$LUMIROM_ENV_FILE" ]; then
             . "$LUMIROM_ENV_FILE"
@@ -478,14 +478,14 @@ package_output() {
         source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" 2>/dev/null | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
-            run SIGN_OTA_ZIP "$OTA_ZIP"
+            run ota_sign_zip "$OTA_ZIP"
         else
             log_message "No flashable zip found to sign, skipping."
         fi
 
         log_section "Saving target files"
         if [ "$SKIP_TARGET_FILES" != "true" ]; then
-            run CREATE_TARGET_FILES "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
+            run pkg_create_target_files "$PWD/TARGET_FILES/LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
         else
             log_message "Skipping target files (--no-target-files)"
         fi
@@ -496,13 +496,13 @@ package_output() {
             fi
             log_section "Building incremental OTA"
             source scripts/package/build_incremental_ota.sh
-            run BUILD_INCREMENTAL_OTA "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
+            run ota_build "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
             INCREMENTAL_ZIP="$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" 2>/dev/null | head -n 1)"
             if [ -n "$INCREMENTAL_ZIP" ]; then
                 inject_camera_cleanup_zip "$INCREMENTAL_ZIP"
 
                 log_section "Signing incremental OTA"
-                run SIGN_OTA_ZIP "$INCREMENTAL_ZIP"
+                run ota_sign_zip "$INCREMENTAL_ZIP"
             fi
         fi
     fi
@@ -549,7 +549,7 @@ main() {
     if [ "$USE_MODS" = "true" ]; then
         add_mods
     fi
-    # GALAXY_AI() handles both paths: it adds the mod when USE_GALAXY_AI=true
+    # ai_apply() handles both paths: it adds the mod when USE_GALAXY_AI=true
     # and removes the stock AI apps when it is false, so it must always run.
     add_galaxy_ai
     apply_display_id

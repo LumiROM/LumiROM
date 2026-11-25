@@ -2,7 +2,7 @@
 
 source scripts/utils/bash_colors.sh
 
-GET_APK_VERSION_CODE() {
+ai_apk_version_code() {
     local APK="$1"
     local VC=""
 
@@ -18,7 +18,7 @@ GET_APK_VERSION_CODE() {
     echo "$VC"
 }
 
-GALAXY_AI() {
+ai_apply() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -37,56 +37,56 @@ GALAXY_AI() {
 
         sed -i '/SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI/d' "$TARGET_FLOATING_FEATURE"
         # Adding the Galaxy AI versioning
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SIP_CONFIG_ONEUI_VERSION" "90000"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_SIP_CONFIG_ONEUI_VERSION" "90000"
         # One UI 9 (S23 S918BXXUAGZIF) does not define AI_PHASE; keep the
         # 8.5-only value commented so it is not injected on Android 17.
-        #UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_PHASE" "20260201"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_VERSION" "20253"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_SUPPORT_AI_AGENT" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_SUPPORT_GENERATIVE_AI" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_CONFIG_FOUNDATION_MODEL" "3B"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_CONFIG_LLM_VERSION" "0.70"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.composition.type" "gpu"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.purgeable_assets" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.config.fha_enable" "true"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.vendor.mtk_tflite_support" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.mtk_tflite.target_gpu" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.storage_manager.enabled" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.vpp.enable" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.videoplayer.vpp" "0"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.aicp.enable" "true"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.vsw.enable" "true"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "debug.hwui.render_dirty_regions" "false"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.videoeditor.support_audio_eraser" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.videoeditor.support_object_eraser" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "com.samsung.android.media.contextanalyzer.core" "cpu"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.hwui.texture_cache_size" "72"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "ro.hwui.layer_cache_size" "48"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.hal3.enabled" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "vendor.camera.hal3.enabled" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.raw.enabled" "1"
-        BUILD_PROP "$EXTRACTED_FIRM_DIR" "persist.sys.camera.raw" "1"
+        #rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_PHASE" "20260201"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_CONFIG_AI_VERSION" "20253"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_SUPPORT_AI_AGENT" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_SUPPORT_GENERATIVE_AI" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_CONFIG_FOUNDATION_MODEL" "3B"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_CONFIG_LLM_VERSION" "0.70"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.composition.type" "gpu"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.purgeable_assets" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.config.fha_enable" "true"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.vendor.mtk_tflite_support" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.mtk_tflite.target_gpu" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.storage_manager.enabled" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.vpp.enable" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.videoplayer.vpp" "0"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.aicp.enable" "true"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.vsw.enable" "true"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "debug.hwui.render_dirty_regions" "false"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.videoeditor.support_audio_eraser" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.videoeditor.support_object_eraser" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "com.samsung.android.media.contextanalyzer.core" "cpu"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.hwui.texture_cache_size" "72"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "ro.hwui.layer_cache_size" "48"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.hal3.enabled" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "vendor.camera.hal3.enabled" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.vendor.camera.raw.enabled" "1"
+        rom_build_prop "$EXTRACTED_FIRM_DIR" "persist.sys.camera.raw" "1"
 
         # Adding AI dependencies
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_OFFLINE_LANGUAGEMODEL" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_PERSONALIZED_DATA_CORE" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SAIV_SUPPORT_AI_REVITAL" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SAIV_CONFIG_AI_REVITAL_VERSION" "1.9,4"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_C2PA" "FALSE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_OFFLINE_LANGUAGEMODEL" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_PERSONALIZED_DATA_CORE" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_SAIV_SUPPORT_AI_REVITAL" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_SAIV_CONFIG_AI_REVITAL_VERSION" "1.9,4"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_C2PA" "FALSE"
 
         # Misc AI things
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_VISION_SUPPORT_AI_MY_FAVORITE_CONTENTS" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_IMAGE_CLIPPER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_OBJECT_ERASER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_REFLECTION_ERASER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SHADOW_ERASER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SMART_LASSO" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SPOT_FIXER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_STYLE_TRANSFER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_SYSTEMUI_SUPPORT_BRIEF_NOTIFICATION" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MEDIA_CONTEXT_ANALYZER" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_MMFW_SUPPORT_TARGET_TRACKING" "TRUE"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MUSIC_ALBUMART_3DAUDIO" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_VISION_SUPPORT_AI_MY_FAVORITE_CONTENTS" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_IMAGE_CLIPPER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_OBJECT_ERASER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_REFLECTION_ERASER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SHADOW_ERASER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SMART_LASSO" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_SPOT_FIXER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_STYLE_TRANSFER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_SYSTEMUI_SUPPORT_BRIEF_NOTIFICATION" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MEDIA_CONTEXT_ANALYZER" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_MMFW_SUPPORT_TARGET_TRACKING" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MUSIC_ALBUMART_3DAUDIO" "TRUE"
 
         local AI_SYS="$AI_DIR/system/system"
         local AI_ENTRY AI_APP_NAME
@@ -129,8 +129,8 @@ GALAXY_AI() {
             mkdir -p "$EXTRACTED_FIRM_DIR/product/priv-app/AiWallpaper"
             cp -rfa "$(pwd)/LumiROM/Mods/Apps/AiWallpaper/"* "$EXTRACTED_FIRM_DIR/product/priv-app/AiWallpaper/"
 
-            UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_GENAI_SUPPORT_TIME_WEATHER_WALLPAPER" "V7"
-            UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_WALLPAPER_STYLE" "VIDEO,GENWEATHER,FLIPSUIT_LOCK"
+            rom_update_floating_feature "SEC_FLOATING_FEATURE_GENAI_SUPPORT_TIME_WEATHER_WALLPAPER" "V7"
+            rom_update_floating_feature "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_WALLPAPER_STYLE" "VIDEO,GENWEATHER,FLIPSUIT_LOCK"
         fi
 
         # Adding Now Brief
@@ -142,14 +142,14 @@ GALAXY_AI() {
         local SS_TARGET_APK="$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk"
         local SS_STOCK_VC=""
         local SS_MOD_VC=""
-        [ -f "$SS_TARGET_APK" ] && SS_STOCK_VC="$(GET_APK_VERSION_CODE "$SS_TARGET_APK")"
+        [ -f "$SS_TARGET_APK" ] && SS_STOCK_VC="$(ai_apk_version_code "$SS_TARGET_APK")"
 
         if [ ! -f "$SS_MOD_APK" ]; then
             aria2c -x 1 -d "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/" -o "SamsungSmartSuggestions.apk" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://huggingface.co/buckets/LuminousJD418/LumiROM/resolve/OneUi9/SamsungSmartSuggestions.apk?download=true" || return 1
         fi
 
         if [ -f "$SS_MOD_APK" ]; then
-            SS_MOD_VC="$(GET_APK_VERSION_CODE "$SS_MOD_APK")"
+            SS_MOD_VC="$(ai_apk_version_code "$SS_MOD_APK")"
             echo "${YELLOW}Replacing SamsungSmartSuggestions (stock ${SS_STOCK_VC:-none} -> mod ${SS_MOD_VC:-unknown})${RESET}"
             rm -f "$SS_TARGET_APK"
             cp -rfa "$AI_DIR/system/system/priv-app/SamsungSmartSuggestions/"* "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamsungSmartSuggestions/"
@@ -162,7 +162,7 @@ GALAXY_AI() {
     else
     	echo
         echo "${RED}The use of Galaxy AI for this build have been disabled by the user${RESET}"
-        UPDATE_FLOATING_FEATURE "SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI" "TRUE"
+        rom_update_floating_feature "SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI" "TRUE"
 
         # The Galaxy AI mod is not applied in this path, but the stock A34
         # firmware already ships several AI components. Remove them so the
@@ -263,7 +263,7 @@ GALAXY_AI() {
             SEC_FLOATING_FEATURE_SYSTEMUI_SUPPORT_BRIEF_NOTIFICATION \
             SEC_FLOATING_FEATURE_MMFW_SUPPORT_MEDIA_CONTEXT_ANALYZER \
             SEC_FLOATING_FEATURE_MMFW_SUPPORT_TARGET_TRACKING; do
-            UPDATE_FLOATING_FEATURE "$AI_FEATURE" "FALSE"
+            rom_update_floating_feature "$AI_FEATURE" "FALSE"
         done
 
         # These keys hold model/version strings; remove them instead of

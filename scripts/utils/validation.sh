@@ -2,7 +2,7 @@
 
 source scripts/utils/bash_colors.sh
 
-VALIDATION() {
+validate_inputs() {
     SUPPORTED_DEVICES=(LumiROM/Devices/*)
 
     # STOCK_DEVICE

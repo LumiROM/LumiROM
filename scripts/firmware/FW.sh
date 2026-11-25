@@ -7,7 +7,7 @@ if [ -f "scripts/utils/logging.sh" ]; then
     source scripts/utils/logging.sh
 fi
 
-GET_BASE_DEVICE() {
+fw_get_base_device() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <STOCK_DEVICE>"
         return 1
@@ -25,7 +25,7 @@ GET_BASE_DEVICE() {
     esac
 }
 
-CHECK_FIRMWARE_IMAGES() {
+fw_check_firmware_images() {
     if [ "$#" -lt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR> <PARTITION_LIST>"
         return 1
@@ -68,7 +68,7 @@ CHECK_FIRMWARE_IMAGES() {
     fi
 }
 
-CLEAR_FIRMWARE_CACHE() {
+fw_clear_firmware_cache() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR>"
         return 1
@@ -81,7 +81,7 @@ CLEAR_FIRMWARE_CACHE() {
     echo "${GREEN}Cache cleared.${RESET}"
 }
 
-CHECK_VENDOR_IMAGE() {
+fw_check_vendor_image() {
     if [ "$#" -lt 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR>"
         return 1
@@ -102,7 +102,7 @@ CHECK_VENDOR_IMAGE() {
     fi
 }
 
-DOWNLOAD_FIRMWARE() {
+fw_download_firmware() {
     if [ "$#" -lt 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <MODEL> <CSC> <IMEI> <DOWNLOAD_DIRECTORY> [VERSION]"
         return 1
@@ -160,7 +160,7 @@ DOWNLOAD_FIRMWARE() {
         rm -rf "$DOWN_DIR"
 }
 
-DOWNLOAD_VENDOR() {
+fw_download_vendor() {
     if [ "$#" -lt 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DOWNLOAD_DIRECTORY>"
         return 1
@@ -175,7 +175,7 @@ DOWNLOAD_VENDOR() {
     find "$DOWN_DIR" -name "*.aria2" -exec rm -f {} +
 }
 
-EXTRACT_FIRMWARE() {
+fw_extract_firmware() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -240,7 +240,7 @@ EXTRACT_FIRMWARE() {
     echo "Firmware Extraction complete."
 }
 
-EXTRACT_SUPER_IMG() {
+fw_extract_super_image() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -271,7 +271,7 @@ EXTRACT_SUPER_IMG() {
 }
 
 
-PREPARE_PARTITIONS() {
+fw_prepare_partitions() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -316,7 +316,7 @@ PREPARE_PARTITIONS() {
 }
 
 
-EXTRACT_FIRMWARE_IMG() {
+fw_extract_partitions() {
     echo ""
 	if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <IMG_DIRECTORY> <FIRMWARE_DIRECTORY>"
@@ -381,7 +381,7 @@ EXTRACT_FIRMWARE_IMG() {
     sudo chown -R $USER:$USER "$FIRM_DIR/config/"
     sudo chmod -R 755 "$FIRM_DIR/config/"
 }
-GEN_FS_CONFIG() {
+fw_gen_fs_config() {
     local EXTRACTED_FIRM_DIR="${1%/}"
 
     for ROOT in "$EXTRACTED_FIRM_DIR"/*; do
@@ -440,7 +440,7 @@ GEN_FS_CONFIG() {
 
             local CAPS=""
             local CAP
-            CAP=$(GET_FILE_CAPABILITIES "$ROOT/$REL_PATH") || true
+            CAP=$(fw_get_file_capabilities "$ROOT/$REL_PATH") || true
             [[ -n "$CAP" ]] && CAPS=" $CAP"
 
             echo "  ${GREEN}[+]${RESET} Adding: $ENTRY ($UID_GID_MODE${CAPS})"
@@ -454,7 +454,7 @@ GEN_FS_CONFIG() {
     done
 }
 
-GET_FILE_CAPABILITIES() {
+fw_get_file_capabilities() {
     command -v getfattr &>/dev/null || { echo ""; return 1; }
     command -v od &>/dev/null || { echo ""; return 1; }
 
@@ -478,7 +478,7 @@ GET_FILE_CAPABILITIES() {
     echo "capabilities=0x${CAP}"
 }
 
-GEN_FILE_CONTEXTS() {
+fw_gen_file_contexts() {
     local EXTRACTED_FIRM_DIR="${1%/}"
 
     for ROOT in "$EXTRACTED_FIRM_DIR"/*; do
@@ -563,7 +563,7 @@ GEN_FILE_CONTEXTS() {
     done
 }
 
-BUILD_IMG() {
+fw_build_images() {
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR> <FILE_SYSTEM> <OUT_DIR>"
         return 1
@@ -590,10 +590,10 @@ BUILD_IMG() {
     fi
 
 
-    AUTO_FIX_SELINUX "$EXTRACTED_FIRM_DIR"
+    rom_auto_fix_selinux "$EXTRACTED_FIRM_DIR"
 
-    GEN_FS_CONFIG "$EXTRACTED_FIRM_DIR"
-	GEN_FILE_CONTEXTS "$EXTRACTED_FIRM_DIR"
+    fw_gen_fs_config "$EXTRACTED_FIRM_DIR"
+	fw_gen_file_contexts "$EXTRACTED_FIRM_DIR"
 
     local -a BUILD_PIDS=()
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
@@ -650,7 +650,7 @@ BUILD_IMG() {
     done
 }
 
-IMG_TO_BROTLI() {
+fw_images_to_brotli() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <IMG_DIR> <TMP_DIR>"
         return 1

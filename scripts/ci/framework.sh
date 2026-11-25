@@ -28,14 +28,14 @@ decompile() {
     source scripts/features/LumiROM.sh
     local -a PIDS=()
 
-    DECOMPILE "$APKTOOL" "$FW_DIR/ssrm.jar" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "$FW_DIR/services.jar" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "$FW_DIR/framework.jar" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "$FW_DIR/knoxsdk.jar" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "$FW_DIR/samsungkeystoreutils.jar" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" & PIDS+=("$!")
-    DECOMPILE "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FW_DIR/ssrm.jar" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FW_DIR/services.jar" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FW_DIR/framework.jar" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FW_DIR/knoxsdk.jar" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FW_DIR/samsungkeystoreutils.jar" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" & PIDS+=("$!")
 
     if ! wait_jobs "${PIDS[@]}"; then
         echo "ERROR: one or more apktool decompiles failed" >&2
@@ -48,14 +48,14 @@ recompile() {
     local APKTOOL_FRAMEWORK="$HOME/.local/share/apktool/framework"
     local -a PIDS=()
 
-    RECOMPILE "$APKTOOL" "$WORK_DIR/ssrm" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    RECOMPILE "$APKTOOL" "$WORK_DIR/services" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    RECOMPILE "$APKTOOL" "$WORK_DIR/framework" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    RECOMPILE "$APKTOOL" "$WORK_DIR/knoxsdk" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    RECOMPILE "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettings" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettings_rebuilt.apk" & PIDS+=("$!")
-    REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" & PIDS+=("$!")
-    REBUILD_AND_SIGN_APK "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" & PIDS+=("$!")
+    rom_recompile "$APKTOOL" "$WORK_DIR/ssrm" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    rom_recompile "$APKTOOL" "$WORK_DIR/services" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    rom_recompile "$APKTOOL" "$WORK_DIR/framework" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettings" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettings_rebuilt.apk" & PIDS+=("$!")
+    apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" & PIDS+=("$!")
+    apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" & PIDS+=("$!")
 
     if ! wait_jobs "${PIDS[@]}"; then
         echo "ERROR: one or more apktool builds failed (see the log above). Aborting." >&2
@@ -81,7 +81,7 @@ recompile() {
         exit 1
     fi
 
-    FIX_FRAMEWORK_MIME "$FW_DIR/framework.jar" "$WORK_DIR/framework.jar"
+    rom_fix_framework_mime "$FW_DIR/framework.jar" "$WORK_DIR/framework.jar"
 
     cp -fv "$WORK_DIR"/*.jar "$FW_DIR/"
 

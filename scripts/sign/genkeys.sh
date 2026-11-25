@@ -2,7 +2,7 @@
 
 source "$(pwd)/scripts/utils/bash_colors.sh"
 
-GEN_KEYS() {
+gen_keys() {
     local MODE="${1:-platform}"
     local OUTPUT_DIR="${2:-$HOME/.lumi/keys}"
 

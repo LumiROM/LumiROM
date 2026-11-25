@@ -43,7 +43,7 @@ BASE_MODEL="${BASE_MODEL:-${TARGET_DEVICE:-SM-A346B}}"
 BASE_CSC="${BASE_CSC:-${TARGET_CSC:-EUX}}"
 BASE_IMEI="${BASE_IMEI:-${TARGET_IMEI:-353117555323497}}"
 BASE_PARTITIONS="${BASE_PARTITIONS:-system,product,odm,system_ext}"
-# PREPARE_PARTITIONS keeps only the partitions listed here.
+# fw_prepare_partitions keeps only the partitions listed here.
 export BUILD_PARTITIONS="${BUILD_PARTITIONS:-product,vendor,odm,system_ext,system}"
 IMGS_DIR="${IMGS_DIR:-$REPO_ROOT/IMGs}"
 FIRM_DIR="${FIRM_DIR:-$REPO_ROOT/FIRMWARE}"
@@ -185,7 +185,7 @@ cmd_pull() {
     done
     rm -f "$manifest"
 
-    # PREPARE_PARTITIONS prunes IMGs/, so the marker goes to FIRM_DIR (the
+    # fw_prepare_partitions prunes IMGs/, so the marker goes to FIRM_DIR (the
     # build reads it there to fill build_info.txt).
     mkdir -p "$FIRM_DIR"
     {
@@ -289,15 +289,15 @@ cmd_mirror() {
         return 0
     fi
 
-    # DOWNLOAD_FIRMWARE writes into $FIRM_DIR/$MODEL and then moves the zip to
+    # fw_download_firmware writes into $FIRM_DIR/$MODEL and then moves the zip to
     # $IMGS_DIR; both must exist (the workflows create them, a bare run does not).
     mkdir -p "$IMGS_DIR" "$FIRM_DIR"
 
     source scripts/firmware/FW.sh
-    DOWNLOAD_FIRMWARE "$BASE_MODEL" "$BASE_CSC" "$BASE_IMEI" "$FIRM_DIR" "$remote"
-    EXTRACT_FIRMWARE "$IMGS_DIR"
-    EXTRACT_SUPER_IMG "$IMGS_DIR"
-    PREPARE_PARTITIONS "$IMGS_DIR"
+    fw_download_firmware "$BASE_MODEL" "$BASE_CSC" "$BASE_IMEI" "$FIRM_DIR" "$remote"
+    fw_extract_firmware "$IMGS_DIR"
+    fw_extract_super_image "$IMGS_DIR"
+    fw_prepare_partitions "$IMGS_DIR"
 
     cmd_push "$remote"
     emit_version "$remote"

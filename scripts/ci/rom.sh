@@ -28,15 +28,15 @@ case "$ACTION" in
     build)
         source scripts/firmware/FW.sh
         source scripts/features/LumiROM.sh
-        REPLACE_OTACERTS "$FIRM_DIR"
-        BUILD_IMG "$FIRM_DIR" "${OUTPUT_FILESYSTEM:-erofs}" "$OUT_DIR"
+        rom_replace_otacerts "$FIRM_DIR"
+        fw_build_images "$FIRM_DIR" "${OUTPUT_FILESYSTEM:-erofs}" "$OUT_DIR"
         if [ "${ZIP_IMG:-false}" != "true" ]; then
-            IMG_TO_BROTLI "$OUT_DIR" "TMP"
+            fw_images_to_brotli "$OUT_DIR" "TMP"
         fi
         ;;
     updater-script)
         source scripts/package/zip_creation.sh
-        UPDATE_ZIP_SCRIPT "$FIRM_DIR"
+        pkg_render_updater_script "$FIRM_DIR"
         ;;
     inject-camera-cleanup)
         source scripts/package/updater_script.sh
@@ -47,17 +47,17 @@ case "$ACTION" in
         ;;
     flashable-zip)
         source scripts/package/zip_creation.sh
-        FLASHABLE_ZIP_CREATION
+        pkg_create_flashable_zip
         ;;
     img-zip)
         source scripts/package/zip_creation.sh
-        IMG_ZIP_CREATION "$OUT_DIR"
+        pkg_create_image_zip "$OUT_DIR"
         ;;
     sign)
         source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
-            SIGN_OTA_ZIP "$OTA_ZIP"
+            ota_sign_zip "$OTA_ZIP"
         else
             echo "No flashable zip found to sign, skipping."
         fi
@@ -66,7 +66,7 @@ case "$ACTION" in
         : "${LUMIROM_VERSION:?LUMIROM_VERSION is not set}"
         source scripts/package/zip_creation.sh
         TARGET_NAME="LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
-        CREATE_TARGET_FILES "$PWD/$TARGET_NAME"
+        pkg_create_target_files "$PWD/$TARGET_NAME"
         if [ -n "${HF_TOKEN:-}" ] && [ -n "${HF_USER:-}" ]; then
             python3 scripts/package/upload_hf.py "$PWD/$TARGET_NAME" \
                 "$LUMIROM_VERSION/$STOCK_DEVICE/$TARGET_NAME" \
