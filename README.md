@@ -226,6 +226,9 @@ bash scripts/firmware/cache_manager.sh list      # List all images with sizes
 bash scripts/firmware/cache_manager.sh clear     # Clear cached images
 ```
 
+> [!TIP]
+> The base firmware (Galaxy A34) is identical for every supported device, so I keep it unpacked in a public Hugging Face bucket. If your `.env` has `HF_USER` set, a local build pulls the images from there in a couple of minutes instead of downloading ~8.3 GB from Samsung; otherwise it falls back to Samsung automatically. Maintainers can refresh the bucket with `bash scripts/firmware/fw_bucket.sh mirror` (it also runs weekly in Actions as `Firmware mirror`).
+
 > [!IMPORTANT]
 > If you're building locally, the script logs everything it does. If something fails, please report the error to me via GitHub issues or on my [Telegram channel](https://t.me/LumiROMs), attaching the LOGS folder.
 

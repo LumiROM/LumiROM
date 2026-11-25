@@ -111,6 +111,12 @@ FLASHABLE_ZIP_CREATION() {
         ANDROID_VERSION="$(grep "^ro.build.version.release=" "$BUILD_PROP" | cut -d "=" -f 2)"
         SECURITY_PATCH="$(grep "^ro.build.version.security_patch=" "$BUILD_PROP" | cut -d "=" -f 2)"
 
+        # Base (Galaxy A34) firmware the images were unpacked from, when known.
+        BASE_FW_VERSION=""
+        if [ -f "$IMGS_DIR/base_firmware_version.txt" ]; then
+            BASE_FW_VERSION="$(sed -n 's/^version=//p' "$IMGS_DIR/base_firmware_version.txt" | head -n 1)"
+        fi
+
         {
             echo "device=$DEVICE_CODENAME"
             echo "device_model=$STOCK_DEVICE"
@@ -123,6 +129,7 @@ FLASHABLE_ZIP_CREATION() {
             echo "security_patch=$SECURITY_PATCH"
             echo "build_fingerprint=$FINGERPRINT"
             echo "kernel_version=${KERNEL_VERSION:-}"
+            echo "base_firmware_version=${BASE_FW_VERSION}"
             echo "partition_layout=a-only"
             echo "timestamp=$TIMESTAMP"
             echo "status=$BUILD_STATUS"

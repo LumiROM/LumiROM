@@ -154,7 +154,7 @@ DOWNLOAD_FIRMWARE() {
         local file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
         echo "Firmware Size: ${file_size} MB"
 
-        mv "${DOWN_DIR}"/${MODEL}_*_fac.zip "IMGs/${MODEL}.zip"
+        mv "${DOWN_DIR}"/${MODEL}_*_fac.zip "${IMGS_DIR:-IMGs}/${MODEL}.zip"
         # Remove the whole download dir (it used to be left behind as
         # $FIRM_DIR/$MODEL, which later got treated as a phantom partition).
         rm -rf "$DOWN_DIR"

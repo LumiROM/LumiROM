@@ -22,6 +22,21 @@ source scripts/firmware/FW.sh
 source "$DEVICES_DIR/$STOCK_DEVICE/config"
 
 case "${1:-}" in
+    base)
+        # Preferred path: the base images already extracted and published in the
+        # FW bucket (public). Falls back to Samsung when the bucket is cold.
+        if bash scripts/firmware/fw_bucket.sh pull; then
+            echo "Base firmware restored from the FW bucket."
+        else
+            echo "FW bucket unavailable, downloading the base firmware from Samsung."
+            : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
+            : "${TARGET_CSC:?TARGET_CSC is not set}"
+            : "${TARGET_IMEI:?TARGET_IMEI is not set}"
+            DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+            EXTRACT_FIRMWARE "$IMGS_DIR"
+            EXTRACT_SUPER_IMG "$IMGS_DIR"
+        fi
+        ;;
     download)
         : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
         : "${TARGET_CSC:?TARGET_CSC is not set}"
@@ -40,7 +55,7 @@ case "${1:-}" in
         EXTRACT_FIRMWARE_IMG "$IMGS_DIR" "$FIRM_DIR"
         ;;
     *)
-        echo "Usage: $0 <download|extract|vendor|partitions>" >&2
+        echo "Usage: $0 <base|download|extract|vendor|partitions>" >&2
         exit 1
         ;;
 esac

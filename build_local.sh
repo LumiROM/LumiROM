@@ -273,6 +273,8 @@ download_firmware() {
     log_message "Checking firmware cache..."
     if CHECK_FIRMWARE_IMAGES "$IMGS_DIR" "$BUILD_PARTITIONS"; then
         log_message "✓ Firmware cache found. Skipping download..."
+    elif try bash scripts/firmware/fw_bucket.sh pull; then
+        log_message "✓ Base images pulled from the FW bucket."
     else
         log_message "✗ No firmware cache found. Proceeding with download..."
         run DOWNLOAD_FIRMWARE "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"

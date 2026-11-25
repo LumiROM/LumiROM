@@ -138,11 +138,11 @@ jobs:
         source scripts/features/LumiROM.sh
         IS_OFFICIAL
 
-    - name: Download firmware
-      run: bash scripts/ci/firmware.sh download
-
-    - name: Extract firmware
-      run: bash scripts/ci/firmware.sh extract
+    - name: Fetch base firmware
+      env:
+        HF_USER: ${{ vars.HF_USER }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: bash scripts/ci/firmware.sh base
 
     - name: Download vendor for ${{ github.event.inputs.STOCK_DEVICE }}
       run: bash scripts/ci/firmware.sh vendor
