@@ -112,10 +112,15 @@ FLASHABLE_ZIP_CREATION() {
         SECURITY_PATCH="$(grep "^ro.build.version.security_patch=" "$BUILD_PROP" | cut -d "=" -f 2)"
 
         # Base (Galaxy A34) firmware the images were unpacked from, when known.
+        # PREPARE_PARTITIONS prunes IMGs/, so the marker lives in FIRM_DIR; the
+        # IMGS_DIR lookup keeps builds made before that change working.
         BASE_FW_VERSION=""
-        if [ -f "$IMGS_DIR/base_firmware_version.txt" ]; then
-            BASE_FW_VERSION="$(sed -n 's/^version=//p' "$IMGS_DIR/base_firmware_version.txt" | head -n 1)"
-        fi
+        for BASE_FW_MARKER in "$FIRM_DIR/base_firmware_version.txt" "$IMGS_DIR/base_firmware_version.txt"; do
+            if [ -f "$BASE_FW_MARKER" ]; then
+                BASE_FW_VERSION="$(sed -n 's/^version=//p' "$BASE_FW_MARKER" | head -n 1)"
+                break
+            fi
+        done
 
         {
             echo "device=$DEVICE_CODENAME"

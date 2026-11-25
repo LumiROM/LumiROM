@@ -185,10 +185,13 @@ cmd_pull() {
     done
     rm -f "$manifest"
 
+    # PREPARE_PARTITIONS prunes IMGs/, so the marker goes to FIRM_DIR (the
+    # build reads it there to fill build_info.txt).
+    mkdir -p "$FIRM_DIR"
     {
         echo "version=$version"
         echo "model=$BASE_MODEL"
-    } > "$IMGS_DIR/base_firmware_version.txt"
+    } > "$FIRM_DIR/base_firmware_version.txt"
 
     echo "Base images ready: $version"
     return 0
@@ -285,6 +288,10 @@ cmd_mirror() {
         emit_version "$remote"
         return 0
     fi
+
+    # DOWNLOAD_FIRMWARE writes into $FIRM_DIR/$MODEL and then moves the zip to
+    # $IMGS_DIR; both must exist (the workflows create them, a bare run does not).
+    mkdir -p "$IMGS_DIR" "$FIRM_DIR"
 
     source scripts/firmware/FW.sh
     DOWNLOAD_FIRMWARE "$BASE_MODEL" "$BASE_CSC" "$BASE_IMEI" "$FIRM_DIR" "$remote"
