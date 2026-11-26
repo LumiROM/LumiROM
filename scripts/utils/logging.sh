@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_LOGGING_LOADED:-}" ] && return 0
+LUMIROM_LOGGING_LOADED=1
+
 # --- LumiROM Logging System ---
 # This script provides centralized logging functions for build_local.sh
 # All logs are saved to the LOGS directory with timestamps

@@ -174,20 +174,43 @@ run_wizard() {
 #  Device resolution and validation
 # =====================================================================
 resolve_target_device() {
-    source scripts/firmware/FW.sh
-
     if [ -z "$TARGET_DEVICE" ]; then
         TARGET_DEVICE=$(fw_get_base_device "$STOCK_DEVICE") || die "no base device for $STOCK_DEVICE"
     fi
 
-    source scripts/utils/validation.sh
     validate_inputs
+
+    # Device config (STOCK_SUPER_SIZE, CACHE_PARTITION_SIZE, ...), loaded once
+    # the inputs are known to be valid.
+    source "$DEVICES_DIR/$STOCK_DEVICE/config"
 }
 
 # =====================================================================
 #  System environment variables
 # =====================================================================
-setup_environment() {
+
+# Loads every library the pipeline needs. Doing it once here means a step can
+# never pull a module in halfway through a build, and it documents the
+# dependencies at the top of the file.
+load_modules() {
+    source scripts/firmware/FW.sh
+    source scripts/utils/validation.sh
+    source scripts/utils/install_packages.sh
+    source scripts/firmware/local_official.sh
+    source scripts/features/LumiROM.sh
+    source scripts/features/Mods.sh
+    source scripts/features/HotspotFix.sh
+    source scripts/features/LumiFota.sh
+    source scripts/features/Galaxy_AI.sh
+    source scripts/features/Knox_script.sh
+    source scripts/package/zip_creation.sh
+    source scripts/package/sign_ota.sh
+    source scripts/package/build_incremental_ota.sh
+}
+
+# Paths and flags. Must run before load_modules (DEVICES_DIR) and before the
+# modules that read these variables at load time.
+setup_paths() {
     if [ -z "${LUMIROM_VERSION:-}" ]; then
         die "LUMIROM_VERSION is not set. Add it to .env (LUMIROM_VERSION=<version>) or export it before running this script."
     fi
@@ -220,9 +243,9 @@ setup_environment() {
     if [ -d /usr/lib/android-sdk/build-tools/debian ]; then
         export PATH="/usr/lib/android-sdk/build-tools/debian:$PATH"
     fi
+}
 
-    # --- Load Logging System ---
-    source scripts/utils/logging.sh
+setup_logging() {
     initialize_logs "$STOCK_DEVICE" "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$LUMIROM_VERSION" "$USE_MODS" "$USE_GALAXY_AI" "$USE_UI_8_TETHERING_APEX" "$OUTPUT_FILESYSTEM" "$LUMIROM_MAINTAINER"
 }
 
@@ -241,7 +264,6 @@ setup_permissions() {
 
 install_packages() {
     log_section "Installing required packages"
-    source scripts/utils/install_packages.sh
     run deps_install
 }
 
@@ -253,7 +275,6 @@ setup_directories() {
 
 check_environment() {
     log_section "Checking the environment"
-    source scripts/firmware/local_official.sh
     # Runs in the current shell: is_local_official exports BUILD_STATUS, which
     # the packaging steps need. Process substitution keeps stdout visible while
     # still writing it to the log.
@@ -267,7 +288,6 @@ check_environment() {
 # =====================================================================
 download_firmware() {
     log_section "Downloading Firmware"
-    source "$DEVICES_DIR/$STOCK_DEVICE/config"
 
     # Check if firmware images are already cached
     log_message "Checking firmware cache..."
@@ -308,8 +328,7 @@ prepare_partitions() {
 #  LumiROM features applied to the firmware
 # =====================================================================
 apply_rom_features() {
-    source scripts/features/LumiROM.sh
-    log_message "Loading LumiROM functions..."
+    log_message "Applying LumiROM features..."
     run rom_disable_fbe "$FIRM_DIR"
     run rom_disable_fde "$FIRM_DIR"
     run rom_delete_iccc "$FIRM_DIR"
@@ -325,15 +344,12 @@ apply_rom_features() {
 
 add_mods() {
     log_section "Adding Mods"
-    source scripts/features/Mods.sh
     run mods_add "$FIRM_DIR"
 
     log_section "Patching hotspot"
-    source scripts/features/HotspotFix.sh
     run hotspot_add_fix "$FIRM_DIR"
 
     log_section "Adding LumiFota OTA Updater"
-    source scripts/features/LumiFota.sh
     run fota_add "$FIRM_DIR"
 }
 
@@ -343,7 +359,6 @@ add_galaxy_ai() {
     else
         log_section "Removing Galaxy AI"
     fi
-    source scripts/features/Galaxy_AI.sh
     run ai_apply "$FIRM_DIR"
 }
 
@@ -371,8 +386,6 @@ decompile_framework() {
 
 apply_knox_patches() {
     log_section "Applying Knox and Framework patches"
-    source scripts/features/Knox_script.sh
-    source scripts/utils/platform_key.sh
     run knox_patch_ssrm "$WORK_DIR/ssrm"
     run knox_patch_knox_guard "$WORK_DIR/services"
     run knox_patch_flag_secure "$WORK_DIR/services"
@@ -456,8 +469,6 @@ build_rom() {
 }
 
 package_output() {
-    source scripts/package/zip_creation.sh
-
     if [ "$ZIP_IMG" = "true" ]; then
         log_section "Creating IMG ZIP"
         run pkg_create_image_zip "$OUT_DIR"
@@ -475,7 +486,6 @@ package_output() {
         fi
 
         log_section "Signing OTA package"
-        source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" 2>/dev/null | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
             run ota_sign_zip "$OTA_ZIP"
@@ -495,7 +505,6 @@ package_output() {
                 log_message "[!] Target files skipped: this version won't be available as a base for a future incremental OTA."
             fi
             log_section "Building incremental OTA"
-            source scripts/package/build_incremental_ota.sh
             run ota_build "$PWD/TARGET_FILES/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip" "$OUT_DIR"
             INCREMENTAL_ZIP="$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" 2>/dev/null | head -n 1)"
             if [ -n "$INCREMENTAL_ZIP" ]; then
@@ -536,8 +545,10 @@ main() {
     set_defaults
     parse_args "$@"
     run_wizard
+    setup_paths
+    load_modules
     resolve_target_device
-    setup_environment
+    setup_logging
     setup_permissions
     install_packages
     setup_directories

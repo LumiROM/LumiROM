@@ -14,6 +14,8 @@
 
 set -eo pipefail
 
+source scripts/package/generate_ota_manifest.sh
+
 ACTION="${1:-}"
 
 generate() {
@@ -41,7 +43,6 @@ generate() {
         return 0
     fi
 
-    source scripts/package/generate_ota_manifest.sh
     mkdir -p OTA_MANIFESTS
 
     # Full-ROM manifest (updater/{device}.json) - keeps release history.

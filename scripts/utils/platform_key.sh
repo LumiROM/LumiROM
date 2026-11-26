@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_PLATFORM_KEY_LOADED:-}" ] && return 0
+LUMIROM_PLATFORM_KEY_LOADED=1
+
 source "$(pwd)/scripts/utils/bash_colors.sh"
 
 key_active_cert() {

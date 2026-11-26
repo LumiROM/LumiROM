@@ -14,6 +14,8 @@ set -eo pipefail
 : "${WORK_DIR:?WORK_DIR is not set}"
 : "${APKTOOL:?APKTOOL is not set}"
 
+source scripts/features/LumiROM.sh
+
 FW_DIR="FIRMWARE/system/system/framework"
 # Runs the pending background jobs and fails if any of them failed.
 wait_jobs() {
@@ -25,7 +27,6 @@ wait_jobs() {
 }
 
 decompile() {
-    source scripts/features/LumiROM.sh
     local -a PIDS=()
 
     rom_decompile "$APKTOOL" "$FW_DIR/ssrm.jar" "$WORK_DIR" & PIDS+=("$!")
@@ -44,7 +45,6 @@ decompile() {
 }
 
 recompile() {
-    source scripts/features/LumiROM.sh
     local APKTOOL_FRAMEWORK="$HOME/.local/share/apktool/framework"
     local -a PIDS=()
 

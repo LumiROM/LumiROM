@@ -16,6 +16,9 @@ set -eo pipefail
 
 : "${GITHUB_ENV:?GITHUB_ENV is not set; run this from GitHub Actions}"
 
+source scripts/package/build_incremental_ota.sh
+source scripts/package/sign_ota.sh
+
 ACTION="${1:-}"
 
 case "$ACTION" in
@@ -32,12 +35,10 @@ case "$ACTION" in
         ;;
     build)
         : "${OUT_DIR:?OUT_DIR is not set}"
-        source scripts/package/build_incremental_ota.sh
         ota_build "$PWD/prev-target-files.zip" "$OUT_DIR"
         ;;
     inject-cleanup)
         : "${FOLDER_NAME:?FOLDER_NAME is not set}"
-        source scripts/package/updater_script.sh
         INC_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" | head -n 1)
         if [ -z "$INC_ZIP" ]; then
             echo "No incremental zip found, skipping."
@@ -47,7 +48,6 @@ case "$ACTION" in
         echo "SamsungCamera cleanup present in the incremental OTA."
         ;;
     sign)
-        source scripts/package/sign_ota.sh
         ota_sign_incremental
         ;;
     *)

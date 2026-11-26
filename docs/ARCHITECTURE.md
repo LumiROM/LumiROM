@@ -135,6 +135,12 @@ so a module function can never shadow an orchestration helper.
 and keeps the legacy entry point working. Add a feature to the module that owns
 its topic.
 
+**Modules.** `build_local.sh` loads every library in `load_modules()` (after the
+paths exist, before the first step), so a step never pulls a module in halfway
+through a build. `bash_colors`, `logging`, `platform_key` and `AppPatches` carry
+include guards, so sourcing them again is a no-op; `bash_colors.sh` used to be
+loaded about fifteen times per local build.
+
 **Errors.** `build_local.sh` runs `set -uo pipefail` and wraps every step in
 `run` (aborts on failure, reading `PIPESTATUS`), `par`/`wait_jobs` for parallel
 work, and `try` for optional steps. `scripts/ci/*.sh` use `set -eo pipefail`, the

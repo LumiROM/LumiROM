@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_APP_PATCHES_LOADED:-}" ] && return 0
+LUMIROM_APP_PATCHES_LOADED=1
+
 export LC_ALL=C
 
 source scripts/utils/bash_colors.sh

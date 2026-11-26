@@ -22,12 +22,15 @@ set -eo pipefail
 : "${OUT_DIR:?OUT_DIR is not set}"
 : "${GITHUB_ENV:?GITHUB_ENV is not set; run this from GitHub Actions}"
 
+source scripts/firmware/FW.sh
+source scripts/features/LumiROM.sh
+source scripts/package/zip_creation.sh
+source scripts/package/sign_ota.sh
+
 ACTION="${1:-}"
 
 case "$ACTION" in
     build)
-        source scripts/firmware/FW.sh
-        source scripts/features/LumiROM.sh
         rom_replace_otacerts "$FIRM_DIR"
         fw_build_images "$FIRM_DIR" "${OUTPUT_FILESYSTEM:-erofs}" "$OUT_DIR"
         if [ "${ZIP_IMG:-false}" != "true" ]; then
@@ -35,26 +38,21 @@ case "$ACTION" in
         fi
         ;;
     updater-script)
-        source scripts/package/zip_creation.sh
         pkg_render_updater_script "$FIRM_DIR"
         ;;
     inject-camera-cleanup)
-        source scripts/package/updater_script.sh
         SCRIPT="$PWD/makerom/META-INF/com/google/android/updater-script"
         if inject_camera_cleanup_file "$SCRIPT"; then
             echo "SamsungCamera cleanup present in the full OTA updater-script."
         fi
         ;;
     flashable-zip)
-        source scripts/package/zip_creation.sh
         pkg_create_flashable_zip
         ;;
     img-zip)
-        source scripts/package/zip_creation.sh
         pkg_create_image_zip "$OUT_DIR"
         ;;
     sign)
-        source scripts/package/sign_ota.sh
         OTA_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*.zip" ! -name "*INCREMENTAL*" | head -n 1)
         if [ -n "$OTA_ZIP" ]; then
             ota_sign_zip "$OTA_ZIP"
@@ -64,7 +62,6 @@ case "$ACTION" in
         ;;
     target-files)
         : "${LUMIROM_VERSION:?LUMIROM_VERSION is not set}"
-        source scripts/package/zip_creation.sh
         TARGET_NAME="LumiROM_TARGET_${LUMIROM_VERSION}_${STOCK_DEVICE}.zip"
         pkg_create_target_files "$PWD/$TARGET_NAME"
         if [ -n "${HF_TOKEN:-}" ] && [ -n "${HF_USER:-}" ]; then

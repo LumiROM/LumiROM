@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_COLORS_LOADED:-}" ] && return 0
+LUMIROM_COLORS_LOADED=1
+
 # Recopiled by Lumi
 ESC=$(printf '\033')
 

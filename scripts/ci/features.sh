@@ -22,9 +22,17 @@ set -eo pipefail
 : "${FIRM_DIR:?FIRM_DIR is not set}"
 : "${WORK_DIR:?WORK_DIR is not set}"
 
+# Every feature library this dispatcher can run. The shared pieces (colors,
+# platform keys, AppPatches) come in through LumiROM.sh and are guarded.
+source scripts/features/LumiROM.sh
+source scripts/features/Mods.sh
+source scripts/features/HotspotFix.sh
+source scripts/features/LumiFota.sh
+source scripts/features/Galaxy_AI.sh
+source scripts/features/Knox_script.sh
+
 case "${1:-}" in
     vendor-patches)
-        source scripts/features/LumiROM.sh
         rom_disable_fbe "$FIRM_DIR"
         rom_disable_fde "$FIRM_DIR"
         rom_delete_iccc "$FIRM_DIR"
@@ -32,25 +40,20 @@ case "${1:-}" in
         rom_patch_fstab_erofs "$FIRM_DIR"
         ;;
     stock-config)
-        source scripts/features/LumiROM.sh
         rom_apply_stock_config "$FIRM_DIR"
         ;;
     debloat)
-        source scripts/features/LumiROM.sh
         rom_debloat_wsm "$FIRM_DIR"
         rom_debloat "$FIRM_DIR"
         ;;
     props)
-        source scripts/features/LumiROM.sh
         rom_apply_prop_features "$FIRM_DIR"
         ;;
     mods)
-        source scripts/features/Mods.sh
         mods_add "$FIRM_DIR"
         ;;
     hotspot)
         if [ "${USE_MODS:-true}" = "true" ]; then
-            source scripts/features/HotspotFix.sh
             hotspot_add_fix "$FIRM_DIR"
         else
             echo "Mods are disabled, skipping hotspot patch"
@@ -58,28 +61,21 @@ case "${1:-}" in
         ;;
     lumifota)
         if [ "${USE_MODS:-true}" = "true" ]; then
-            source scripts/features/LumiFota.sh
             fota_add "$FIRM_DIR"
         else
             echo "Mods are disabled, skipping LumiFota OTA Updater"
         fi
         ;;
     ai)
-        source scripts/features/Galaxy_AI.sh
         ai_apply "$FIRM_DIR"
         ;;
     display-id)
-        source scripts/features/LumiROM.sh
         rom_set_display_id "$FIRM_DIR"
         ;;
     framework-res)
-        source scripts/features/LumiROM.sh
         rom_install_framework "FIRMWARE/system/system/framework/framework-res.apk"
         ;;
     knox)
-        source scripts/features/Knox_script.sh
-        source scripts/utils/platform_key.sh
-        source scripts/features/LumiROM.sh
         knox_patch_ssrm "$WORK_DIR/ssrm"
         knox_patch_knox_guard "$WORK_DIR/services"
         knox_patch_flag_secure "$WORK_DIR/services"
