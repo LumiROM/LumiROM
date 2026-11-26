@@ -14,7 +14,10 @@
 
 set -eo pipefail
 
-: "${GITHUB_ENV:?GITHUB_ENV is not set; run this from GitHub Actions}"
+if [ -z "${GITHUB_ENV:-}" ] && [ -z "${LUMIROM_ENV_FILE:-}" ]; then
+    echo "ERROR: neither GITHUB_ENV nor LUMIROM_ENV_FILE is set" >&2
+    exit 1
+fi
 
 source scripts/package/build_incremental_ota.sh
 source scripts/package/sign_ota.sh
@@ -35,7 +38,7 @@ case "$ACTION" in
         ;;
     build)
         : "${OUT_DIR:?OUT_DIR is not set}"
-        ota_build "$PWD/prev-target-files.zip" "$OUT_DIR"
+        ota_build "${INCREMENTAL_SOURCE_ZIP:-$PWD/prev-target-files.zip}" "$OUT_DIR"
         ;;
     inject-cleanup)
         : "${FOLDER_NAME:?FOLDER_NAME is not set}"

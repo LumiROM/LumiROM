@@ -62,11 +62,13 @@ the vendor image and the boot image are per device.
 | `.github/workflows/firmware-mirror.yml` | Weekly check that keeps the FW bucket current. |
 | `scripts/tui/` | Textual UI: form → argv → embedded terminal, over the same CLI. |
 
-The workflows are deliberately dumb: each step calls one script under
-`scripts/ci/`, so CI and local builds run the same code, and the step list lives
-once in `build-rom.yml` (a `workflow_call` with a device JSON). `build_local.sh`
-keeps its own step wrappers because it threads logging (`run`, `die`,
-`wait_jobs`) through the pipeline.
+The workflows are deliberately dumb: each step calls
+`bash scripts/ci/steps.sh <name>`, which maps the name to one script under
+`scripts/ci/`. That table is the single ordered list of pipeline steps;
+`build_local.sh` walks the same names in-process (threading logging through
+`run`/`die`), and `scripts/dev/check_pipeline_steps.py` fails the lint when the
+workflow or the local list drift from it. The step list itself lives once in
+`build-rom.yml` (a `workflow_call` with a device JSON).
 
 The TUI is a third entry point but not a third implementation: `state.py` turns
 the form into the same argv `build_local.sh` accepts, reads the device list from
@@ -77,7 +79,7 @@ the CLI validates again before building, so the shell stays the authority.
 
 ```
 build_local.sh              local orchestration
-scripts/ci/                 one script per workflow step (env, firmware, features, rom, ota, manifests)
+scripts/ci/                 pipeline steps (steps.sh is the ordered list) and their scripts
 scripts/firmware/           Samsung download, extraction, image building, FW bucket mirror
 scripts/features/           LumiROM (rom/*.sh), Mods, HotspotFix, Galaxy AI, LumiFota, Knox, AppPatches
 scripts/package/            updater-script rendering, zip creation, signing, OTA manifests

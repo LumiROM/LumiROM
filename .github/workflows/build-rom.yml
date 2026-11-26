@@ -138,83 +138,83 @@ jobs:
         # The bucket is public and owned by the project: no HF_USER needed, so
         # forks get the fast path too. The token is only used when present.
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      run: bash scripts/ci/firmware.sh base
+      run: bash scripts/ci/steps.sh firmware-base
 
     - name: Download vendor for ${{ matrix.device }}
-      run: bash scripts/ci/firmware.sh vendor
+      run: bash scripts/ci/steps.sh firmware-vendor
 
     - name: Preparing partitions
-      run: bash scripts/ci/firmware.sh partitions
+      run: bash scripts/ci/steps.sh firmware-partitions
 
     - name: Apply vendor patches
-      run: bash scripts/ci/features.sh vendor-patches
+      run: bash scripts/ci/steps.sh features-vendor
 
     - name: Apply stock config
-      run: bash scripts/ci/features.sh stock-config
+      run: bash scripts/ci/steps.sh features-stock
 
     - name: Debloat ROM
-      run: bash scripts/ci/features.sh debloat
+      run: bash scripts/ci/steps.sh features-debloat
 
     - name: Apply prop features
-      run: bash scripts/ci/features.sh props
+      run: bash scripts/ci/steps.sh features-props
 
     - name: Adding mods
-      run: bash scripts/ci/features.sh mods
+      run: bash scripts/ci/steps.sh features-mods
 
     - name: Patching hotspot
       env:
         PLATFORM_PK8: ${{ secrets.PLATFORM_PK8 }}
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
-      run: bash scripts/ci/features.sh hotspot
+      run: bash scripts/ci/steps.sh features-hotspot
 
     - name: Adding LumiFota OTA Updater
       env:
         BUILD_STATUS: ${{ env.BUILD_STATUS }}
         PLATFORM_PK8: ${{ secrets.PLATFORM_PK8 }}
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
-      run: bash scripts/ci/features.sh lumifota
+      run: bash scripts/ci/steps.sh features-fota
 
     - name: Configuring Galaxy AI
-      run: bash scripts/ci/features.sh ai
+      run: bash scripts/ci/steps.sh features-ai
 
     - name: Update Build ID
-      run: bash scripts/ci/features.sh display-id
+      run: bash scripts/ci/steps.sh features-display
 
     - name: Install stock framework-res
-      run: bash scripts/ci/features.sh framework-res
+      run: bash scripts/ci/steps.sh features-framework-res
 
     - name: Decompile framework jars
-      run: bash scripts/ci/framework.sh decompile
+      run: bash scripts/ci/steps.sh framework-decompile
 
     - name: Patch Knox
       env:
         BUILD_STATUS: ${{ env.BUILD_STATUS }}
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
-      run: bash scripts/ci/features.sh knox
+      run: bash scripts/ci/steps.sh features-knox
 
     - name: Recompile framework
       env:
         PLATFORM_PK8: ${{ secrets.PLATFORM_PK8 }}
         PLATFORM_CERT: ${{ secrets.PLATFORM_CERT }}
-      run: bash scripts/ci/framework.sh recompile
+      run: bash scripts/ci/steps.sh framework-recompile
 
     - name: Build ROM
       env:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
-      run: bash scripts/ci/rom.sh build
+      run: bash scripts/ci/steps.sh rom-build
 
     - name: Update updater-script
       if: ${{ !inputs.zip_img }}
-      run: bash scripts/ci/rom.sh updater-script
+      run: bash scripts/ci/steps.sh rom-updater-script
 
     - name: Inject SamsungCamera cleanup (full OTA)
       if: ${{ !inputs.zip_img }}
-      run: bash scripts/ci/rom.sh inject-camera-cleanup
+      run: bash scripts/ci/steps.sh rom-inject-cleanup
 
     - name: Prepare flashable zip
       if: ${{ !inputs.zip_img }}
-      run: bash scripts/ci/rom.sh flashable-zip
+      run: bash scripts/ci/steps.sh rom-flashable
 
     - name: Sign OTA package
       if: ${{ !inputs.zip_img }}
@@ -222,33 +222,33 @@ jobs:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
         OTA_SIGN_REQUIRED: ${{ steps.ota-cap.outputs.can_ota }}
-      run: bash scripts/ci/rom.sh sign
+      run: bash scripts/ci/steps.sh rom-sign
 
     - name: Prepare IMG zip
       if: ${{ inputs.zip_img }}
-      run: bash scripts/ci/rom.sh img-zip
+      run: bash scripts/ci/steps.sh rom-img-zip
 
     - name: Save target files
       if: ${{ !inputs.zip_img && inputs.target_files && steps.ota-cap.outputs.can_ota == 'true' }}
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         HF_USER: ${{ vars.HF_USER }}
-      run: bash scripts/ci/rom.sh target-files
+      run: bash scripts/ci/steps.sh rom-target-files
 
     - name: Download previous target files
       if: ${{ inputs.incremental_from != '' && steps.ota-cap.outputs.can_ota == 'true' }}
       env:
         HF_USER: ${{ vars.HF_USER }}
         INCREMENTAL_FROM: ${{ inputs.incremental_from }}
-      run: bash scripts/ci/incremental.sh fetch-source
+      run: bash scripts/ci/steps.sh ota-fetch-source
 
     - name: Build incremental OTA
       if: ${{ inputs.incremental_from != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
-      run: bash scripts/ci/incremental.sh build
+      run: bash scripts/ci/steps.sh ota-build
 
     - name: Inject SamsungCamera cleanup (incremental OTA)
       if: ${{ inputs.incremental_from != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
-      run: bash scripts/ci/incremental.sh inject-cleanup
+      run: bash scripts/ci/steps.sh ota-inject-cleanup
 
     - name: Sign incremental OTA
       if: ${{ inputs.incremental_from != '' && env.INCREMENTAL_SOURCE_AVAILABLE != 'false' && steps.ota-cap.outputs.can_ota == 'true' }}
@@ -256,7 +256,7 @@ jobs:
         OTA_PK8: ${{ secrets.OTA_PK8 }}
         OTA_CERT: ${{ secrets.OTA_CERT }}
         OTA_SIGN_REQUIRED: ${{ steps.ota-cap.outputs.can_ota }}
-      run: bash scripts/ci/incremental.sh sign
+      run: bash scripts/ci/steps.sh ota-sign
 
     - name: Upload ROM to ${{ inputs.destination }}
       env:

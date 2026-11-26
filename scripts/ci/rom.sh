@@ -20,7 +20,10 @@ set -eo pipefail
 : "${STOCK_DEVICE:?STOCK_DEVICE is not set}"
 : "${FIRM_DIR:?FIRM_DIR is not set}"
 : "${OUT_DIR:?OUT_DIR is not set}"
-: "${GITHUB_ENV:?GITHUB_ENV is not set; run this from GitHub Actions}"
+if [ -z "${GITHUB_ENV:-}" ] && [ -z "${LUMIROM_ENV_FILE:-}" ]; then
+    echo "ERROR: neither GITHUB_ENV nor LUMIROM_ENV_FILE is set" >&2
+    exit 1
+fi
 
 source scripts/firmware/FW.sh
 source scripts/features/LumiROM.sh

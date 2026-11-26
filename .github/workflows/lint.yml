@@ -68,6 +68,11 @@ jobs:
         fi
         python3 scripts/dev/check_function_refs.py
 
+    - name: pipeline steps
+      # scripts/ci/steps.sh is the single ordered list; fail if the workflow or
+      # build_local.sh disagree with it.
+      run: python3 scripts/dev/check_pipeline_steps.py
+
     - name: sed patches apply
       run: bash scripts/dev/test_sed_patches.sh
 

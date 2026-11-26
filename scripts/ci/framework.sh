@@ -50,9 +50,16 @@ recompile() {
 
     rom_recompile "$APKTOOL" "$WORK_DIR/ssrm" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
     rom_recompile "$APKTOOL" "$WORK_DIR/services" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    rom_recompile "$APKTOOL" "$WORK_DIR/framework" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
-    rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    if [ "${KEEP_STOCK_FRAMEWORK:-false}" = "true" ]; then
+        echo "Diagnostic build: using the stock framework.jar, knoxsdk.jar and samsungkeystoreutils.jar"
+        cp -f "$FW_DIR/framework.jar" "$WORK_DIR/framework.jar"
+        cp -f "$FW_DIR/knoxsdk.jar" "$WORK_DIR/knoxsdk.jar"
+        cp -f "$FW_DIR/samsungkeystoreutils.jar" "$WORK_DIR/samsungkeystoreutils.jar"
+    else
+        rom_recompile "$APKTOOL" "$WORK_DIR/framework" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+        rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+        rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "$FW_DIR" "$WORK_DIR" & PIDS+=("$!")
+    fi
     apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettings" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettings_rebuilt.apk" & PIDS+=("$!")
     apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" & PIDS+=("$!")
     apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSetupWizard_Global" "$APKTOOL_FRAMEWORK" "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" & PIDS+=("$!")
@@ -85,14 +92,16 @@ recompile() {
 
     cp -fv "$WORK_DIR"/*.jar "$FW_DIR/"
 
-    echo "Removing stale boot-framework artifacts (framework.jar changed)"
-    rm -f "$FW_DIR/boot-framework.vdex"
-    local ARCH
-    for ARCH in arm arm64; do
-        rm -f "$FW_DIR/$ARCH/boot-framework.art" \
-              "$FW_DIR/$ARCH/boot-framework.oat" \
-              "$FW_DIR/$ARCH/boot-framework.vdex"
-    done
+    if [ "${KEEP_STOCK_FRAMEWORK:-false}" != "true" ]; then
+        echo "Removing stale boot-framework artifacts (framework.jar changed)"
+        rm -f "$FW_DIR/boot-framework.vdex"
+        local ARCH
+        for ARCH in arm arm64; do
+            rm -f "$FW_DIR/$ARCH/boot-framework.art" \
+                  "$FW_DIR/$ARCH/boot-framework.oat" \
+                  "$FW_DIR/$ARCH/boot-framework.vdex"
+        done
+    fi
 
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
         cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" \

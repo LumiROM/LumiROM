@@ -20,7 +20,6 @@
 set -eo pipefail
 
 : "${FIRM_DIR:?FIRM_DIR is not set}"
-: "${WORK_DIR:?WORK_DIR is not set}"
 
 # Every feature library this dispatcher can run. The shared pieces (colors,
 # platform keys, AppPatches) come in through LumiROM.sh and are guarded.
@@ -76,16 +75,23 @@ case "${1:-}" in
         rom_install_framework "$FIRM_DIR/system/system/framework/framework-res.apk"
         ;;
     knox)
+        : "${WORK_DIR:?WORK_DIR is not set}"
         knox_patch_ssrm "$WORK_DIR/ssrm"
         knox_patch_knox_guard "$WORK_DIR/services"
         knox_patch_flag_secure "$WORK_DIR/services"
         knox_patch_secure_folder "$WORK_DIR/services"
         knox_custom_platform_signature "$WORK_DIR/services" "$(key_cert_hex)"
-        knox_disable_signature_verification "$WORK_DIR/framework"
+        if [ "${KEEP_STOCK_FRAMEWORK:-false}" = "true" ]; then
+            echo "Diagnostic build: skipping signature verification and KnoxPatch (stock framework.jar)"
+        else
+            knox_disable_signature_verification "$WORK_DIR/framework"
+        fi
         apps_patch_secsettings "$WORK_DIR/SecSettings"
         apps_patch_setupwizard "$WORK_DIR/SecSetupWizard_Global"
         apps_add_lumisettings "$WORK_DIR/SecSettings" "$WORK_DIR/framework" "$WORK_DIR/services" "$WORK_DIR/SecSettingsIntelligence"
-        apps_add_knoxpatch "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+        if [ "${KEEP_STOCK_FRAMEWORK:-false}" != "true" ]; then
+            apps_add_knoxpatch "$WORK_DIR/framework" "$WORK_DIR/knoxsdk" "$WORK_DIR/samsungkeystoreutils"
+        fi
         ;;
     *)
         echo "Usage: $0 <vendor-patches|stock-config|debloat|props|mods|hotspot|lumifota|ai|display-id|framework-res|knox>" >&2
