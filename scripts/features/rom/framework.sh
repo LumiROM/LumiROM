@@ -13,7 +13,8 @@ rom_decompile() {
     local APKTOOL="$1"
     local FILE="$2"
     local DECOMPILE_DIR="$3"
-    local BASENAME="$(basename "${FILE%.*}")"
+    local BASENAME
+    BASENAME="$(basename "${FILE%.*}")"
     local OUT="$DECOMPILE_DIR/$BASENAME"
 
     echo "${YELLOW}Decompiling:${RESET} $FILE"
@@ -31,7 +32,6 @@ rom_recompile() {
 	local APKTOOL="$1"
 	local DECOMPILED_DIR="$2"
     local FRAMEWORK_DIR="$3"
-    local RECOMPILE_DIR="$4"
 
     local org_file_name
     org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
@@ -97,8 +97,10 @@ rom_hex_patch() {
     fi
 
     local FILE="$1"
-    local FROM="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
-    local TO="$(echo "$3" | tr '[:upper:]' '[:lower:]')"
+    local FROM
+    FROM="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
+    local TO
+    TO="$(echo "$3" | tr '[:upper:]' '[:lower:]')"
 
     [ ! -f "$FILE" ] && { echo "File not found: $FILE"; return 1; }
 

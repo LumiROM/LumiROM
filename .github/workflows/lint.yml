@@ -1,8 +1,8 @@
 name: Lint
 
-# Cheap checks that catch real breakage (syntax, quoting) before a 45-minute
-# build does. Warnings are not enforced: the codebase still has ~95 of them
-# (mostly `local x=$(cmd)` and variables used by sourced scripts).
+# Cheap checks that catch real breakage (syntax, quoting, workflow expressions)
+# before a 30-minute build does. Linters are pinned so CI matches what the
+# codebase was verified against.
 
 on:
   push:
@@ -21,11 +21,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
-    - name: Install shellcheck
+    - name: Install linters
       run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y shellcheck
+        curl -fsSL -o /tmp/sc.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.x86_64.tar.xz
+        tar -xJf /tmp/sc.tar.xz -C /tmp
+        sudo install /tmp/shellcheck-v0.10.0/shellcheck /usr/local/bin/shellcheck
+
+        curl -fsSL -o /tmp/al.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+        tar -xzf /tmp/al.tar.gz -C /tmp actionlint
+        sudo install /tmp/actionlint /usr/local/bin/actionlint
+
         shellcheck --version | head -2
+        actionlint --version | head -1
 
     - name: bash syntax
       run: |
@@ -35,8 +42,14 @@ jobs:
         done < <(git ls-files '*.sh')
         exit "$fail"
 
-    - name: shellcheck (errors only)
-      run: shellcheck --severity=error $(git ls-files '*.sh')
+    - name: shellcheck (warnings)
+      run: |
+        # bin/ holds vendored tools with their own style.
+        mapfile -t files < <(git ls-files '*.sh' | grep -v '^bin/')
+        shellcheck --severity=warning "${files[@]}"
+
+    - name: actionlint
+      run: actionlint .github/workflows/*.yml
 
     - name: python syntax
       run: |
@@ -65,7 +78,3 @@ jobs:
           version="$(python3 scripts/utils/kernel_version.py "$img")" || exit 1
           echo "$(basename "$(dirname "$img")"): $version"
         done
-
-    - name: workflow yaml
-      run: |
-        python3 -c "import glob, yaml; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')]; print('workflows OK')"

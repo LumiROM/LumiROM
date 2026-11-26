@@ -1,4 +1,5 @@
 # shellcheck shell=sh
+# shellcheck disable=SC2034  # read by mod_apply with grep, not by the shell
 SKIPUNZIP=1
 
 # ODM init rules are shared by devices with the same 4.14 platform:

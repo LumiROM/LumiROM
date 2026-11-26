@@ -24,14 +24,16 @@ mkdir -p "$LOGS_DIR"
 # log_message: Print message with timestamp to console and log file
 log_message() {
     local message="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] $message" | tee -a "$LOG_FILE"
 }
 
 # log_error: Print error message to console, log file, and error log
 log_error() {
     local message="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] ERROR: $message" | tee -a "$LOG_FILE" "$ERROR_LOG"
 }
 
@@ -81,7 +83,8 @@ initialize_logs() {
 finalize_logs() {
     local start_time="$1"
     
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local elapsed=$((end_time - start_time))
     local hours=$((elapsed / 3600))
     local mins=$(((elapsed % 3600) / 60))

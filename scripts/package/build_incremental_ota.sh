@@ -162,8 +162,10 @@ ota_build() {
     (
     local SOURCE_ZIP="$1"
     local IMG_DIR="$2"
-    local IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
-    local TEMPLATE_DIR="$(pwd)/template"
+    local IMG2SDAT_BIN
+    IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
+    local TEMPLATE_DIR
+    TEMPLATE_DIR="$(pwd)/template"
 
     for DEP in unzip zip 7z brotli sha1sum od date simg2img img2simg; do
         if ! command -v "$DEP" >/dev/null 2>&1; then
@@ -233,6 +235,7 @@ ota_build() {
     SOURCE_VERSION="$(grep "^version=" <<< "$SOURCE_BUILD_INFO" | cut -d "=" -f 2-)"
     local SOURCE_SHORT="${SOURCE_VERSION%%-*}"
 
+    # shellcheck source=/dev/null
     source "$DEVICES_DIR/$STOCK_DEVICE/config" 2>/dev/null || true
     CACHE_PARTITION_SIZE="${CACHE_PARTITION_SIZE:-268435456}"
 
@@ -319,7 +322,7 @@ ota_build() {
                 echo "${RED}Block diff failed for $PARTITION:${RESET}" >&2
                 tail -n 5 "$DIFF_LOG" >&2
                 echo "${YELLOW}Block diff not possible for $PARTITION, falling back to full patch...${RESET}"
-                rm -rf "$INCR_DIR/$PARTITION"
+                rm -rf "${INCR_DIR:?}/${PARTITION:?}"
                 if ! "$IMG2SDAT_BIN" -o "$INCR_DIR" "$f" 2> "$DIFF_LOG"; then
                     echo "${RED}Full conversion failed for $PARTITION:${RESET}" >&2
                     tail -n 5 "$DIFF_LOG" >&2

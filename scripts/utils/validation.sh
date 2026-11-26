@@ -11,7 +11,16 @@ validate_inputs() {
         exit 1
     fi
 
-    if [[ ! " ${SUPPORTED_DEVICES[*]} " =~ " LumiROM/Devices/$STOCK_DEVICE " ]]; then
+    local DEVICE_SUPPORTED=0
+    local SUPPORTED
+    for SUPPORTED in "${SUPPORTED_DEVICES[@]}"; do
+        if [ "$SUPPORTED" = "LumiROM/Devices/$STOCK_DEVICE" ]; then
+            DEVICE_SUPPORTED=1
+            break
+        fi
+    done
+
+    if [ "$DEVICE_SUPPORTED" -eq 0 ]; then
         echo "${RED}Error:${RESET} STOCK_DEVICE must be supported by the script. Check ${BLUE}LumiROM/Devices${RESET} for supported devices."
         exit 1
     fi

@@ -19,6 +19,7 @@ set -eo pipefail
 : "${DEVICES_DIR:?DEVICES_DIR is not set}"
 
 source scripts/firmware/FW.sh
+# shellcheck source=/dev/null
 source "$DEVICES_DIR/$STOCK_DEVICE/config"
 
 case "${1:-}" in

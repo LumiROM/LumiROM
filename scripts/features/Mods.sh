@@ -20,12 +20,12 @@ mods_add() {
 
     echo "${BLUE}============ Mods Installation ============${RESET}"
 
-    local MODS_DIR="$(pwd)/LumiROM/Mods"
-    local MOD_ORDER
+    local MODS_DIR
+    MODS_DIR="$(pwd)/LumiROM/Mods"
     local MOD_DIR
     local MOD_COUNT=0
 
-    while IFS=$'\t' read -r MOD_ORDER MOD_DIR; do
+    while IFS=$'\t' read -r _ MOD_DIR; do
         [ -z "$MOD_DIR" ] && continue
         mod_apply "$MOD_DIR" || return 1
         MOD_COUNT=$((MOD_COUNT + 1))

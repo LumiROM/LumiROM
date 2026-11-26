@@ -29,7 +29,6 @@ ai_apply() {
 
     local EXTRACTED_FIRM_DIR="$1"
     local AI_DIR="./LumiROM/Mods/Galaxy_AI"
-    local STOCK_FLOATING_FEATURE="$DEVICES_DIR/$STOCK_DEVICE/floating_feature.xml"
     local TARGET_FLOATING_FEATURE="$EXTRACTED_FIRM_DIR/system/system/etc/floating_feature.xml"
 
     if [ "$USE_GALAXY_AI" = "true" ]; then

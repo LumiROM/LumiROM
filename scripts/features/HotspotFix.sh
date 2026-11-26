@@ -45,8 +45,16 @@ hotspot_build_patched_jar() {
         return 1
     }
 
-    local SMALI
-    SMALI="$(ls "$SMALI_OUT"/smali*/com/android/server/wifi/WifiNative.smali 2>/dev/null | grep -v '\$' | head -1)"
+    local SMALI=""
+    local CANDIDATE
+    for CANDIDATE in "$SMALI_OUT"/smali*/com/android/server/wifi/WifiNative.smali; do
+        [ -f "$CANDIDATE" ] || continue
+        case "$CANDIDATE" in
+            *'$'*) continue ;;
+        esac
+        SMALI="$CANDIDATE"
+        break
+    done
     if [ -z "$SMALI" ]; then
         echo "${RED} - WifiNative.smali not found inside apex${RESET}"
         return 1
@@ -341,7 +349,8 @@ hotspot_patch_payload() {
     debugfs -w -R "sif /javalib/service-wifi.jar uid 1000" "$PAYLOAD_IMG" >/dev/null 2>&1
     debugfs -w -R "sif /javalib/service-wifi.jar gid 1000" "$PAYLOAD_IMG" >/dev/null 2>&1
 
-    local LABEL_FILE="$(dirname "$PATCHED_JAR")/selinux.label"
+    local LABEL_FILE
+    LABEL_FILE="$(dirname "$PATCHED_JAR")/selinux.label"
     printf 'u:object_r:system_file:s0\0' > "$LABEL_FILE"
     debugfs -w -R "ea_set -f $LABEL_FILE /javalib/service-wifi.jar security.selinux" \
         "$PAYLOAD_IMG" >/dev/null 2>&1

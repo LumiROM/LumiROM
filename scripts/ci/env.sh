@@ -15,6 +15,8 @@
 
 set -eo pipefail
 
+source scripts/utils/config.sh
+
 : "${GITHUB_ENV:?GITHUB_ENV is not set; run this from GitHub Actions}"
 : "${STOCK_DEVICE:?STOCK_DEVICE is not set}"
 : "${LUMIROM_VERSION:?LUMIROM_VERSION is not set (repository variable)}"
@@ -42,5 +44,5 @@ set -eo pipefail
     echo "DEVICES_DIR=$PWD/LumiROM/Devices"
     echo "APKTOOL=$PWD/bin/apktool/apktool.jar"
     echo "VNDKS_COLLECTION=$PWD/LumiROM/vndks"
-    echo "BUILD_PARTITIONS=product,vendor,odm,system_ext,system"
+    echo "BUILD_PARTITIONS=$LUMIROM_BUILD_PARTITIONS"
 } >> "$GITHUB_ENV"

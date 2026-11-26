@@ -151,7 +151,8 @@ fw_download_firmware() {
         find "$DOWN_DIR" -type f -name "*.zip.enc*" -delete
 
         # --- Show Firmware Info ---
-        local file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
+        local file_size
+        file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
         echo "Firmware Size: ${file_size} MB"
 
         mv "${DOWN_DIR}"/${MODEL}_*_fac.zip "${IMGS_DIR:-IMGs}/${MODEL}.zip"
@@ -348,14 +349,14 @@ fw_extract_partitions() {
                     IMG_SIZE=$(stat -c%s -- "$imgfile")
                     echo "$imgfile Detected ${BLUE}ext4${RESET}. Size: $IMG_SIZE bytes."
                     echo "${YELLOW}Extracting $imgfile in $FIRM_DIR/$partition${RESET}"
-                    sudo python3 $(pwd)/bin/py_scripts/imgextractor.py "$imgfile" "$FIRM_DIR" > /dev/null 2>&1
+                    sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR" > /dev/null 2>&1
                     ;;
                 EROFS)
                     echo ""
                     IMG_SIZE=$(stat -c%s -- "$imgfile")
                     echo "$imgfile Detected ${BLUE}$fstype${RESET}. Size: $IMG_SIZE bytes."
                     echo "${YELLOW}Extracting $imgfile in $FIRM_DIR/$partition${RESET}"
-                    $(pwd)/bin/erofs-utils/extract.erofs -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+                    "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
                     ;;
                 *)
                     echo "[$imgfile] Unknown filesystem type ($fstype), skipping"
@@ -395,7 +396,8 @@ fw_gen_fs_config() {
         echo "${YELLOW}--- Synchronizing $PARTITION ---${RESET}"
 
         if [[ "$PARTITION" == "vendor" ]]; then
-            local TMP_CLEAN=$(mktemp)
+            local TMP_CLEAN
+            TMP_CLEAN=$(mktemp)
             awk '{
                 if (NF < 4) next;
                 # strip leading "/" from the path (mkfs does it too), keep the root as-is
@@ -421,7 +423,8 @@ fw_gen_fs_config() {
         local FIND_CMD="find"
         if sudo -n true 2>/dev/null; then FIND_CMD="sudo find"; fi
 
-        local TMP_EXISTING=$(mktemp)
+        local TMP_EXISTING
+        TMP_EXISTING=$(mktemp)
         awk '{print $1}' "$FS_CONFIG" > "$TMP_EXISTING"
 
         local ADDED=0
@@ -493,30 +496,37 @@ fw_gen_file_contexts() {
 
         # *_exec types declared in the policy (for new binaries)
         local TARGET_VER="${SELINUX_TARGET_VER:-31}"
-        local TMP_EXEC_TYPES=$(mktemp)
-        find "$EXTRACTED_FIRM_DIR" -name "*.cil" -not -name "*_genfs_*" \( \
-            -path "*/mapping/${TARGET_VER}.*" -o -not -path "*/mapping/*" \) -type f 2>/dev/null \
-            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
+        local TMP_EXEC_TYPES
+        TMP_EXEC_TYPES=$(mktemp)
+        { find "$EXTRACTED_FIRM_DIR" -name "*.cil" -not -name "*_genfs_*" \( \
+            -path "*/mapping/${TARGET_VER}.*" -o -not -path "*/mapping/*" \) -type f \
+            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + ; } 2>/dev/null \
+            | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
 
         # Lookup: unescaped path -> context
-        local TMP_LOOKUP=$(mktemp)
+        local TMP_LOOKUP
+        TMP_LOOKUP=$(mktemp)
         sed -e 's/\\\././g' -e 's/\\\+/+/g' -e 's/\\\[/[/g' -e 's/\\\]/]/g' -e 's/\\\*/*/g' \
             "$FILE_CONTEXTS" | awk '{print $1 "\t" $2}' > "$TMP_LOOKUP"
 
         # Anchored (full-match) patterns for the coverage test
-        local TMP_PATTERNS=$(mktemp)
+        local TMP_PATTERNS
+        TMP_PATTERNS=$(mktemp)
         awk '{print "^" $1 "$"}' "$FILE_CONTEXTS" > "$TMP_PATTERNS"
 
         # All tree paths
         local FIND_CMD="find"
         if sudo -n true 2>/dev/null; then FIND_CMD="sudo find"; fi
-        local TMP_ALL=$(mktemp)
+        local TMP_ALL
+        TMP_ALL=$(mktemp)
         $FIND_CMD "$ROOT" -mindepth 1 \( -type f -o -type d \) -printf "/$PARTITION/%P\n" | sort -u > "$TMP_ALL"
 
         # Uncovered = all - those matching any anchored pattern
-        local TMP_COVERED=$(mktemp)
+        local TMP_COVERED
+        TMP_COVERED=$(mktemp)
         grep -E -f "$TMP_PATTERNS" "$TMP_ALL" 2>/dev/null > "$TMP_COVERED" || true
-        local TMP_UNCOVERED=$(mktemp)
+        local TMP_UNCOVERED
+        TMP_UNCOVERED=$(mktemp)
         grep -vxF -f "$TMP_COVERED" "$TMP_ALL" > "$TMP_UNCOVERED" || true
 
         local ADDED=0
@@ -572,11 +582,14 @@ fw_build_images() {
     local EXTRACTED_FIRM_DIR="$1"
     local FILE_SYSTEM="$2"
 	local OUT_DIR="$3"
-    local DEVICE_CONFIG="$(pwd)/LumiROM/Devices/${STOCK_DEVICE}/config"
-    local OP_LIST="$(pwd)/makerom/dynamic_partitions_op_list"
+    local DEVICE_CONFIG
+    DEVICE_CONFIG="$(pwd)/LumiROM/Devices/${STOCK_DEVICE}/config"
+    local OP_LIST
+    OP_LIST="$(pwd)/makerom/dynamic_partitions_op_list"
 
     if [[ -f "$DEVICE_CONFIG" ]]; then
-        local SUPER_SIZE=$(grep "STOCK_SUPER_SIZE" "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
+        local SUPER_SIZE
+        SUPER_SIZE=$(grep "STOCK_SUPER_SIZE" "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
         
         # Update the super size on the list according to the device
         if [[ -n "$SUPER_SIZE" && -f "$OP_LIST" ]]; then
@@ -643,7 +656,8 @@ fw_build_images() {
         PARTITION="$(basename "$PART")"
         local OUT_IMG="$OUT_DIR/${PARTITION}.img"
         if [[ -f "$OUT_IMG" && -f "$OP_LIST" ]]; then
-            local ACTUAL_SIZE=$(stat -c%s "$OUT_IMG")
+            local ACTUAL_SIZE
+            ACTUAL_SIZE=$(stat -c%s "$OUT_IMG")
             echo "${GREEN}Updating size of $PARTITION in op_list: $ACTUAL_SIZE bytes${RESET}"
             sed -i "s/^resize $PARTITION .*/resize $PARTITION $ACTUAL_SIZE/" "$OP_LIST"
         fi
@@ -658,7 +672,8 @@ fw_images_to_brotli() {
 
     local IMG_DIR="$1"
     local TMP_DIR="$2"
-    local IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
+    local IMG2SDAT_BIN
+    IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
 
     mkdir -p "$TMP_DIR"
 
@@ -721,7 +736,7 @@ fw_images_to_brotli() {
         PIDS+=("$!")
 
         # Limit concurrent jobs
-        while [ $(jobs -r | wc -l) -ge "$JOBS" ]; do
+        while [ "$(jobs -r | wc -l)" -ge "$JOBS" ]; do
             sleep 1
         done
     done

@@ -21,6 +21,8 @@ if [ -f .env ]; then
     source .env
 fi
 
+source scripts/utils/config.sh
+
 # =====================================================================
 #  Default configuration
 # =====================================================================
@@ -182,6 +184,7 @@ resolve_target_device() {
 
     # Device config (STOCK_SUPER_SIZE, CACHE_PARTITION_SIZE, ...), loaded once
     # the inputs are known to be valid.
+    # shellcheck source=/dev/null
     source "$DEVICES_DIR/$STOCK_DEVICE/config"
 }
 
@@ -224,7 +227,7 @@ setup_paths() {
     export DEVICES_DIR="$PWD/LumiROM/Devices"
     export APKTOOL="$PWD/bin/apktool/apktool.jar"
     export VNDKS_COLLECTION="$PWD/LumiROM/vndks"
-    export BUILD_PARTITIONS="product,vendor,odm,system_ext,system"
+    export BUILD_PARTITIONS="$LUMIROM_BUILD_PARTITIONS"
     export SKIP_TARGET_FILES
     export KEEP_STOCK_FRAMEWORK
 
@@ -365,7 +368,7 @@ add_galaxy_ai() {
 apply_display_id() {
     log_section "Appending Display ID"
     run rom_set_display_id "$FIRM_DIR"
-    run rom_install_framework "FIRMWARE/system/system/framework/framework-res.apk"
+    run rom_install_framework "$FIRM_DIR/system/system/framework/framework-res.apk"
 }
 
 # =====================================================================
@@ -373,14 +376,14 @@ apply_display_id() {
 # =====================================================================
 decompile_framework() {
     log_section "Patching Knox and Framework"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/ssrm.jar" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/services.jar" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
-    par rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/framework/ssrm.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/framework/services.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/framework/framework.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/framework/knoxsdk.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR"
+    par rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR"
     wait_jobs
 }
 
@@ -408,17 +411,17 @@ apply_knox_patches() {
 
 recompile_framework() {
     log_section "Recompiling Knox and Framework"
-    par rom_recompile "$APKTOOL" "$WORK_DIR/ssrm" "FIRMWARE/system/system/framework" "$WORK_DIR"
-    par rom_recompile "$APKTOOL" "$WORK_DIR/services" "FIRMWARE/system/system/framework" "$WORK_DIR"
+    par rom_recompile "$APKTOOL" "$WORK_DIR/ssrm" "$FIRM_DIR/system/system/framework" "$WORK_DIR"
+    par rom_recompile "$APKTOOL" "$WORK_DIR/services" "$FIRM_DIR/system/system/framework" "$WORK_DIR"
     if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
         log_message "Diagnostic build: using stock framework.jar, knoxsdk.jar and samsungkeystoreutils.jar"
-        cp -f "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
-        cp -f "FIRMWARE/system/system/framework/knoxsdk.jar" "$WORK_DIR/knoxsdk.jar"
-        cp -f "FIRMWARE/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR/samsungkeystoreutils.jar"
+        cp -f "$FIRM_DIR/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
+        cp -f "$FIRM_DIR/system/system/framework/knoxsdk.jar" "$WORK_DIR/knoxsdk.jar"
+        cp -f "$FIRM_DIR/system/system/framework/samsungkeystoreutils.jar" "$WORK_DIR/samsungkeystoreutils.jar"
     else
-        par rom_recompile "$APKTOOL" "$WORK_DIR/framework" "FIRMWARE/system/system/framework" "$WORK_DIR"
-        par rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "FIRMWARE/system/system/framework" "$WORK_DIR"
-        par rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "FIRMWARE/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/framework" "$FIRM_DIR/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/knoxsdk" "$FIRM_DIR/system/system/framework" "$WORK_DIR"
+        par rom_recompile "$APKTOOL" "$WORK_DIR/samsungkeystoreutils" "$FIRM_DIR/system/system/framework" "$WORK_DIR"
     fi
     par apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettings" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettings_rebuilt.apk"
     par apps_rebuild_and_sign_apk "$APKTOOL" "$WORK_DIR/SecSettingsIntelligence" "$HOME/.local/share/apktool/framework" "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk"
@@ -435,27 +438,27 @@ recompile_framework() {
         die "a decompiled artifact failed to recompile (see the log above)"
     fi
 
-    run rom_fix_framework_mime "FIRMWARE/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
+    run rom_fix_framework_mime "$FIRM_DIR/system/system/framework/framework.jar" "$WORK_DIR/framework.jar"
 
-    run cp -fv "$WORK_DIR"/*.jar "FIRMWARE/system/system/framework/"
+    run cp -fv "$WORK_DIR"/*.jar "$FIRM_DIR/system/system/framework/"
     if [ "$KEEP_STOCK_FRAMEWORK" != "true" ]; then
         log_message "Removing stale boot-framework artifacts (framework.jar changed)"
-        rm -f "FIRMWARE/system/system/framework/boot-framework.vdex"
+        rm -f "$FIRM_DIR/system/system/framework/boot-framework.vdex"
         local ARCH
         for ARCH in arm arm64; do
-            rm -f "FIRMWARE/system/system/framework/$ARCH/boot-framework.art" \
-                  "FIRMWARE/system/system/framework/$ARCH/boot-framework.oat" \
-                  "FIRMWARE/system/system/framework/$ARCH/boot-framework.vdex"
+            rm -f "$FIRM_DIR/system/system/framework/$ARCH/boot-framework.art" \
+                  "$FIRM_DIR/system/system/framework/$ARCH/boot-framework.oat" \
+                  "$FIRM_DIR/system/system/framework/$ARCH/boot-framework.vdex"
         done
     fi
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
-        run cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
+        run cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" "$FIRM_DIR/system/system/priv-app/SecSettings/SecSettings.apk"
     fi
     if [ -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ]; then
-        run cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
+        run cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" "$FIRM_DIR/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
     fi
     if [ -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ]; then
-        run cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
+        run cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" "$FIRM_DIR/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
     fi
 }
 
@@ -481,6 +484,7 @@ package_output() {
         run pkg_create_flashable_zip
 
         if [ -s "$LUMIROM_ENV_FILE" ]; then
+            # shellcheck source=/dev/null
             . "$LUMIROM_ENV_FILE"
             export FOLDER_NAME
         fi

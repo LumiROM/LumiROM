@@ -25,7 +25,8 @@ rom_patch_fstab_erofs() {
     local partitions="system system_ext vendor product odm"
 
     for target in "${fstab_files[@]}"; do
-        local fstab_name=$(basename "$target")
+        local fstab_name
+        fstab_name=$(basename "$target")
         echo "${CYAN}Processing:${RESET} /vendor/etc/$fstab_name"
         
         for part in $partitions; do
@@ -191,7 +192,8 @@ rom_fix_property_contexts() {
     local NAMES=("plat" "system_ext" "product" "vendor")
 
     # Collect active lines: prefix<TAB>priority<TAB>name<TAB>line_number<TAB>field_count
-    local TMP_ALL=$(mktemp)
+    local TMP_ALL
+    TMP_ALL=$(mktemp)
     local i
     for ((i=0; i<4; i++)); do
         local f="${FILES[$i]}"
@@ -201,7 +203,8 @@ rom_fix_property_contexts() {
     done
 
     # Duplicate prefixes = prefixes appearing more than once
-    local TMP_DUPES=$(mktemp)
+    local TMP_DUPES
+    TMP_DUPES=$(mktemp)
     awk -F'\t' '
         { n=$1; if (!(n in c)) { order[++o]=n } c[n]++ }
         END { for (i=1;i<=o;i++) if (c[order[i]]>1) print order[i] }
@@ -236,14 +239,16 @@ rom_fix_property_contexts() {
                 # In the kept file keep only the most specific (max field count) entry
                 local best
                 best=$(awk -F'\t' -v p="$prefix" -v n="$name" '$1==p && $3==n {print $5 "\t" $4}' "$TMP_ALL" | sort -k1,1nr -k2,2n | head -1 | cut -f2)
-                local TMP_OUT=$(mktemp)
+                local TMP_OUT
+                TMP_OUT=$(mktemp)
                 awk -v p="$prefix" -v b="$best" '!/^#/ && $1==p && NR!=b {next} {print}' "$f" > "$TMP_OUT"
                 cp "$TMP_OUT" "$f" 2>/dev/null || echo "    [!] could not rewrite $name (permission)"
                 rm -f "$TMP_OUT"
             else
                 # Remove the prefix entirely from lower-priority files
                 if awk -v p="$prefix" '!/^#/ && $1==p {found=1; exit} END {exit !found}' "$f"; then
-                    local TMP_OUT2=$(mktemp)
+                    local TMP_OUT2
+                    TMP_OUT2=$(mktemp)
                     awk -v p="$prefix" '!/^#/ && $1==p {next} {print}' "$f" > "$TMP_OUT2"
                     cp "$TMP_OUT2" "$f" 2>/dev/null || echo "    [!] could not rewrite $name (permission)"
                     rm -f "$TMP_OUT2"

@@ -64,7 +64,6 @@ render_updater_script() {
 
     local LINE OUT=""
     local SKIPPING="" BLOCK
-    local -a MISSING=()
 
     while IFS= read -r LINE || [ -n "$LINE" ]; do
         if [[ "$LINE" =~ ^#@IF[[:space:]]+([A-Z][A-Z0-9_]*)$ ]]; then

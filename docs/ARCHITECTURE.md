@@ -56,13 +56,15 @@ the vendor image and the boot image are per device.
 | Entry point | What it is |
 |---|---|
 | `build_local.sh` | CLI build. Loads `.env`, validates, runs the whole pipeline in one process. |
+| `.github/workflows/build-rom.yml` | The reusable pipeline (all 40 steps), called by both entry points. |
 | `.github/workflows/OneUi9.yml` | "LumiROM Tools": one device chosen by the user (the documented path for forks). |
-| `.github/workflows/OneUi9-Matrix.yml` | Same steps for all five devices at once (maintainer). |
+| `.github/workflows/OneUi9-Matrix.yml` | All five devices at once (maintainer). Both callers only forward inputs. |
 | `.github/workflows/firmware-mirror.yml` | Weekly check that keeps the FW bucket current. |
 | `scripts/tui/` | Text UI that wraps `build_local.sh`. |
 
 The workflows are deliberately dumb: each step calls one script under
-`scripts/ci/`, so CI and local builds run the same code. `build_local.sh` keeps
+`scripts/ci/`, so CI and local builds run the same code, and the step list lives
+once in `build-rom.yml` (a `workflow_call` with a device JSON). `build_local.sh` keeps
 its own step wrappers because it threads logging (`run`, `die`, `wait_jobs`)
 through the pipeline.
 
@@ -74,7 +76,7 @@ scripts/ci/                 one script per workflow step (env, firmware, feature
 scripts/firmware/           Samsung download, extraction, image building, FW bucket mirror
 scripts/features/           LumiROM (rom/*.sh), Mods, HotspotFix, Galaxy AI, LumiFota, Knox, AppPatches
 scripts/package/            updater-script rendering, zip creation, signing, OTA manifests
-scripts/utils/              logging, install_packages, mod_utils, platform keys, validation
+scripts/utils/              config (shared defaults), logging, install_packages, mod_utils, keys, validation
 scripts/build_fs_image.sh   erofs/ext4 image builder (sorted fs_config/file_contexts)
 bin/                        vendored tools: apktool, lpunpack, erofs-utils, img2sdat, avb, MergeOTA
 LumiROM/Devices/<model>/    per-device config + boot.img

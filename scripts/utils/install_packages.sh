@@ -7,7 +7,8 @@ deps_detect_os() {
         . /etc/os-release
     fi
 
-    local MATCH=" $(printf '%s %s' "${ID:-}" "${ID_LIKE:-}") "
+    local MATCH
+    MATCH=" $(printf '%s %s' "${ID:-}" "${ID_LIKE:-}") "
     MATCH="$(printf '%s' "$MATCH" | tr '[:upper:]' '[:lower:]')"
 
     case "$MATCH" in

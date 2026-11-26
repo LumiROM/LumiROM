@@ -12,6 +12,7 @@ source scripts/utils/platform_key.sh
 source scripts/features/AppPatches.sh
 
 for _rom_part in encryption fstab props debloat framework display misc; do
+    # shellcheck source=/dev/null
     source "scripts/features/rom/${_rom_part}.sh"
 done
 unset _rom_part

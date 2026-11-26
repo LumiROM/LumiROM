@@ -59,7 +59,7 @@ ota_release_json() {
     local BUILD_INFO
     BUILD_INFO="$(unzip -p "$ZIP_PATH" "build_info.txt")" || return 1
 
-    local DEVICE VERSION VERSION_CODE BUILD_DATE ANDROID_VERSION ONEUI_VERSION
+    local DEVICE VERSION VERSION_CODE BUILD_DATE ANDROID_VERSION
     local SECURITY_PATCH FINGERPRINT DEVICE_MODEL KERNEL_VERSION PARTITION_LAYOUT
 
     DEVICE="$(grep "^device=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"

@@ -16,7 +16,7 @@ set -eo pipefail
 
 source scripts/features/LumiROM.sh
 
-FW_DIR="FIRMWARE/system/system/framework"
+FW_DIR="$FIRM_DIR/system/system/framework"
 # Runs the pending background jobs and fails if any of them failed.
 wait_jobs() {
     local pid failed=0
@@ -34,9 +34,9 @@ decompile() {
     rom_decompile "$APKTOOL" "$FW_DIR/framework.jar" "$WORK_DIR" & PIDS+=("$!")
     rom_decompile "$APKTOOL" "$FW_DIR/knoxsdk.jar" "$WORK_DIR" & PIDS+=("$!")
     rom_decompile "$APKTOOL" "$FW_DIR/samsungkeystoreutils.jar" "$WORK_DIR" & PIDS+=("$!")
-    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" & PIDS+=("$!")
-    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" & PIDS+=("$!")
-    rom_decompile "$APKTOOL" "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSettings/SecSettings.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "$WORK_DIR" & PIDS+=("$!")
+    rom_decompile "$APKTOOL" "$FIRM_DIR/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" "$WORK_DIR" & PIDS+=("$!")
 
     if ! wait_jobs "${PIDS[@]}"; then
         echo "ERROR: one or more apktool decompiles failed" >&2
@@ -96,15 +96,15 @@ recompile() {
 
     if [ -f "$WORK_DIR/SecSettings_rebuilt.apk" ]; then
         cp -fv "$WORK_DIR/SecSettings_rebuilt.apk" \
-            "FIRMWARE/system/system/priv-app/SecSettings/SecSettings.apk"
+            "$FIRM_DIR/system/system/priv-app/SecSettings/SecSettings.apk"
     fi
     if [ -f "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" ]; then
         cp -fv "$WORK_DIR/SecSettingsIntelligence_rebuilt.apk" \
-            "FIRMWARE/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
+            "$FIRM_DIR/system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
     fi
     if [ -f "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" ]; then
         cp -fv "$WORK_DIR/SecSetupWizard_Global_rebuilt.apk" \
-            "FIRMWARE/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
+            "$FIRM_DIR/system/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
     fi
 }
 

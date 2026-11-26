@@ -97,6 +97,7 @@ pkg_create_flashable_zip() {
             echo "DEVICE_CODENAME=$DEVICE_CODENAME" >> "$GITHUB_ENV"
         fi
 
+        # shellcheck source=/dev/null
         source "$DEVICES_DIR/$STOCK_DEVICE/config" 2>/dev/null || true
 
         BUILD_PROP="$FIRM_DIR/system/system/build.prop"
@@ -176,7 +177,7 @@ pkg_create_flashable_zip() {
         ZIP_FILE="LumiROM_${LUMIROM_VERSION}-${BUILD_DATE}_${BUILD_STATUS}_${DEVICE_CODENAME}.zip"
         [ -f "$ZIP_FILE" ] && rm "$ZIP_FILE"
 
-        cd "$MAKEROM_DIR"
+        cd "$MAKEROM_DIR" || return 1
 
         # ZIP the rom with mixed compression levels (Multithreaded 7z)
         echo "${YELLOW}Adding large/compressed files (Store)...${RESET}"
@@ -287,7 +288,8 @@ pkg_create_target_files() {
     cp "$OUT_DIR"/*.map "$WORK_DIR_TF"/ 2>/dev/null || true
     cp "$OUT_DIR/build_info.txt" "$WORK_DIR_TF"/
 
-    local SPECIFIC_BOOT="$(pwd)/LumiROM/Devices/$STOCK_DEVICE/boot.img"
+    local SPECIFIC_BOOT
+    SPECIFIC_BOOT="$(pwd)/LumiROM/Devices/$STOCK_DEVICE/boot.img"
     [ -f "$SPECIFIC_BOOT" ] && cp "$SPECIFIC_BOOT" "$WORK_DIR_TF"/
 
     mkdir -p "$(dirname "$OUTPUT_ZIP")"

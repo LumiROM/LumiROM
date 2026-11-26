@@ -73,7 +73,7 @@ case "${1:-}" in
         rom_set_display_id "$FIRM_DIR"
         ;;
     framework-res)
-        rom_install_framework "FIRMWARE/system/system/framework/framework-res.apk"
+        rom_install_framework "$FIRM_DIR/system/system/framework/framework-res.apk"
         ;;
     knox)
         knox_patch_ssrm "$WORK_DIR/ssrm"

@@ -66,7 +66,8 @@ apps_patch_secsettings() {
     )
 
     for PATCH in "${PATCHES[@]}"; do
-        local PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
+        local PATCH_FILE
+        PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
         if [ ! -f "$PATCH_FILE" ]; then
             echo "${RED}Patch not found: $PATCH_FILE${RESET}"
             return 1
@@ -77,10 +78,11 @@ apps_patch_secsettings() {
             return 1
         fi
     done
-    find "$SECSETTINGS_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
+    find "$SECSETTINGS_DIR" \( -name '*.orig' -o -name '*.rej' \) -delete
 
     # Copy the ROM logo into the decompiled SecSettings tree.
-    local LOGO_SRC="$(pwd)/LumiROM/Mods/SecSettings/res/drawable/logo.png"
+    local LOGO_SRC
+    LOGO_SRC="$(pwd)/LumiROM/Mods/SecSettings/res/drawable/logo.png"
     if [ -f "$LOGO_SRC" ]; then
         mkdir -p "$SECSETTINGS_DIR/res/drawable"
         cp -f "$LOGO_SRC" "$SECSETTINGS_DIR/res/drawable/logo.png"
@@ -166,7 +168,8 @@ apps_patch_setupwizard() {
     )
 
     for PATCH in "${PATCHES[@]}"; do
-        local PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
+        local PATCH_FILE
+        PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
         if [ ! -f "$PATCH_FILE" ]; then
             echo "${RED}Patch not found: $PATCH_FILE${RESET}"
             return 1
@@ -177,7 +180,7 @@ apps_patch_setupwizard() {
             return 1
         fi
     done
-    find "$SW_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
+    find "$SW_DIR" \( -name '*.orig' -o -name '*.rej' \) -delete
 
     echo "${GREEN}SetupWizard patched.${RESET}"
 }
@@ -234,7 +237,8 @@ apps_add_lumisettings() {
     local FRAMEWORK_DIR="$2"
     local SERVICES_DIR="$3"
     local INTELLIGENCE_DIR="$4"
-    local MOD_DIR="$(pwd)/LumiROM/Mods/LumiSettings"
+    local MOD_DIR
+    MOD_DIR="$(pwd)/LumiROM/Mods/LumiSettings"
 
     local DIR
     for DIR in "$SECSETTINGS_DIR" "$FRAMEWORK_DIR" "$SERVICES_DIR" "$INTELLIGENCE_DIR"; do
@@ -312,7 +316,8 @@ apps_add_knoxpatch() {
     local FRAMEWORK_DIR="$1"
     local KNOXSDK_DIR="$2"
     local SKSU_DIR="$3"
-    local MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
+    local MOD_DIR
+    MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
 
     if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
         echo "${YELLOW} - Skipping KnoxPatch (diagnostic stock framework build)${RESET}"

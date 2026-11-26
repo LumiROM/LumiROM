@@ -5,7 +5,8 @@ source scripts/utils/bash_colors.sh
 knox_replace_smali_method() {
     local FILE="$1"
     local METHOD_NAME="$2"
-    local NEW_BODY=$(echo "$3" | tail -n +2)
+    local NEW_BODY
+    NEW_BODY=$(echo "$3" | tail -n +2)
 
     echo "- Patching: $FILE"
     echo "  Method: $METHOD_NAME"
@@ -147,7 +148,8 @@ knox_custom_platform_signature() {
 
     local SERVICES_DIR="$1"
     local CERT_HEX="$2"
-    local PATCH_FILE="$(pwd)/scripts/patches/0001-Allow-custom-platform-signature.patch"
+    local PATCH_FILE
+    PATCH_FILE="$(pwd)/scripts/patches/0001-Allow-custom-platform-signature.patch"
 
     if [ ! -f "$PATCH_FILE" ]; then
         echo "${RED}Patch not found: $PATCH_FILE${RESET}"
@@ -163,7 +165,7 @@ knox_custom_platform_signature() {
         echo "${RED}Failed to apply custom platform signature patch.${RESET}"
         return 1
     fi
-    find "$SERVICES_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
+    find "$SERVICES_DIR" \( -name '*.orig' -o -name '*.rej' \) -delete
 
     local TARGET_FILE="$SERVICES_DIR/smali_classes2/com/android/server/pm/InstallPackageHelper.smali"
 
