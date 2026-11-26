@@ -1,3 +1,10 @@
+"""Textual interface for ``build_local.sh``.
+
+Form on the right, embedded terminal on the left, output files at the bottom.
+The form maps one-to-one to :class:`scripts.tui.state.BuildConfig`; this module
+only wires widgets to it, it does not build anything itself.
+"""
+
 from __future__ import annotations
 
 import time

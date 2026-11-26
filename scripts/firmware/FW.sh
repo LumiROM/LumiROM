@@ -13,16 +13,30 @@ fw_get_base_device() {
         return 1
     fi
 
-    # The Galaxy A34 firmware is the base for every supported device.
-    case "$1" in
-        SM-A325F|SM-A325M|SM-M325F|SM-A225F|SM-A225M|SM-E225F|SM-M225F)
-            echo "SM-A346B"
-            ;;
-        *)
-            echo "${RED}Error:${RESET} No base device found for $1." >&2
-            return 1
-            ;;
-    esac
+    local DEVICE="$1"
+    local BASE_CONF="LumiROM/Devices/base.conf"
+
+    # A device is supported when it has a config directory; the base firmware
+    # (shared by all of them) lives in base.conf, which the TUI reads too.
+    if [ ! -f "LumiROM/Devices/$DEVICE/config" ]; then
+        echo "${RED}Error:${RESET} No base device found for $DEVICE (LumiROM/Devices/$DEVICE/config is missing)." >&2
+        return 1
+    fi
+
+    if [ ! -f "$BASE_CONF" ]; then
+        echo "${RED}Error:${RESET} $BASE_CONF is missing." >&2
+        return 1
+    fi
+
+    local BASE_DEVICE
+    BASE_DEVICE="$(sed -n 's/^BASE_DEVICE=//p' "$BASE_CONF" | head -n 1)"
+
+    if [ -z "$BASE_DEVICE" ]; then
+        echo "${RED}Error:${RESET} $BASE_CONF does not set BASE_DEVICE." >&2
+        return 1
+    fi
+
+    echo "$BASE_DEVICE"
 }
 
 fw_check_firmware_images() {

@@ -60,13 +60,18 @@ the vendor image and the boot image are per device.
 | `.github/workflows/OneUi9.yml` | "LumiROM Tools": one device chosen by the user (the documented path for forks). |
 | `.github/workflows/OneUi9-Matrix.yml` | All five devices at once (maintainer). Both callers only forward inputs. |
 | `.github/workflows/firmware-mirror.yml` | Weekly check that keeps the FW bucket current. |
-| `scripts/tui/` | Text UI that wraps `build_local.sh`. |
+| `scripts/tui/` | Textual UI: form → argv → embedded terminal, over the same CLI. |
 
 The workflows are deliberately dumb: each step calls one script under
 `scripts/ci/`, so CI and local builds run the same code, and the step list lives
-once in `build-rom.yml` (a `workflow_call` with a device JSON). `build_local.sh` keeps
-its own step wrappers because it threads logging (`run`, `die`, `wait_jobs`)
-through the pipeline.
+once in `build-rom.yml` (a `workflow_call` with a device JSON). `build_local.sh`
+keeps its own step wrappers because it threads logging (`run`, `die`,
+`wait_jobs`) through the pipeline.
+
+The TUI is a third entry point but not a third implementation: `state.py` turns
+the form into the same argv `build_local.sh` accepts, reads the device list from
+`LumiROM/Devices/` and the base firmware from `LumiROM/Devices/base.conf`, and
+the CLI validates again before building, so the shell stays the authority.
 
 ## Directory layout
 
@@ -89,8 +94,9 @@ template/                   recovery template: update-binary and updater-script 
 ## Concepts
 
 **Base vs target device.** `TARGET_DEVICE` (SM-A346B) is the firmware source;
-`STOCK_DEVICE` is the phone being built. `fw_get_base_device` maps one to the
-other.
+`STOCK_DEVICE` is the phone being built. `fw_get_base_device` resolves it from
+`LumiROM/Devices/base.conf` once it has checked that the device has a config
+directory, and the TUI reads the same file.
 
 **Image cache.** `IMGs/*.img` are the extracted base images. When all of them
 exist, the firmware download and extraction are skipped. This is what

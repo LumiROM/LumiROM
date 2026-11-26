@@ -97,8 +97,12 @@ pkg_create_flashable_zip() {
             echo "DEVICE_CODENAME=$DEVICE_CODENAME" >> "$GITHUB_ENV"
         fi
 
-        # shellcheck source=/dev/null
-        source "$DEVICES_DIR/$STOCK_DEVICE/config" 2>/dev/null || true
+        if [ -f "$DEVICES_DIR/$STOCK_DEVICE/config" ]; then
+            # shellcheck source=/dev/null
+            source "$DEVICES_DIR/$STOCK_DEVICE/config"
+        else
+            echo "${YELLOW}Warning: no device config for $STOCK_DEVICE; super size and cache size may be wrong${RESET}"
+        fi
 
         BUILD_PROP="$FIRM_DIR/system/system/build.prop"
         if [ -z "$FINGERPRINT" ]; then
@@ -179,13 +183,28 @@ pkg_create_flashable_zip() {
 
         cd "$MAKEROM_DIR" || return 1
 
-        # ZIP the rom with mixed compression levels (Multithreaded 7z)
+        # ZIP the rom with mixed compression levels (Multithreaded 7z). A failure
+        # here used to be ignored, which left a payload-less zip that still got
+        # signed and published, so both calls are fatal and the result is checked.
         echo "${YELLOW}Adding large/compressed files (Store)...${RESET}"
-        7z a -mx=0 -mmt=4 "$ZIP_FILE" ./*.new.dat.br ./*.patch.dat 2>/dev/null || true
-        
+        7z a -bso0 -bsp0 -mx=0 -mmt=4 "$ZIP_FILE" ./*.new.dat.br ./*.patch.dat || return 1
+
         echo "${YELLOW}Adding scripts and compressible data (Compress)...${RESET}"
-        7z a -mx=6 -mmt=4 "$ZIP_FILE" ./boot.img ./META-INF ./build_info.txt ./dynamic_partitions_op_list ./*.transfer.list 2>/dev/null || true
-        
+        7z a -bso0 -bsp0 -mx=6 -mmt=4 "$ZIP_FILE" ./boot.img ./META-INF ./build_info.txt ./dynamic_partitions_op_list ./*.transfer.list || return 1
+
+        local EXPECTED_DATS ACTUAL_DATS REQUIRED
+        EXPECTED_DATS=$(find . -maxdepth 1 -name '*.new.dat.br' | wc -l)
+        ACTUAL_DATS=$(7z l -ba "$ZIP_FILE" | awk '{print $NF}' | grep -c '\.new\.dat\.br$' || true)
+        if [ "$EXPECTED_DATS" -ne "${ACTUAL_DATS:-0}" ]; then
+            echo "${RED}Error: $ZIP_FILE has ${ACTUAL_DATS:-0}/$EXPECTED_DATS partition payloads${RESET}" >&2
+            return 1
+        fi
+        for REQUIRED in boot.img build_info.txt dynamic_partitions_op_list; do
+            if ! 7z l -ba "$ZIP_FILE" | awk '{print $NF}' | grep -qx "$REQUIRED"; then
+                echo "${RED}Error: $ZIP_FILE is missing $REQUIRED${RESET}" >&2
+                return 1
+            fi
+        done
 
         mkdir -p "../ROM/${FOLDER_NAME}"
         mv "$ZIP_FILE" "../ROM/${FOLDER_NAME}"
@@ -285,7 +304,9 @@ pkg_create_target_files() {
     WORK_DIR_TF="$(mktemp -d -p "$(pwd)/TMP")"
 
     cp "$OUT_DIR"/*.img "$WORK_DIR_TF"/
-    cp "$OUT_DIR"/*.map "$WORK_DIR_TF"/ 2>/dev/null || true
+    if ! cp "$OUT_DIR"/*.map "$WORK_DIR_TF"/ 2>/dev/null; then
+        echo "${YELLOW}Warning: no block maps in $OUT_DIR; this target-files zip cannot be used as the source of an incremental OTA${RESET}"
+    fi
     cp "$OUT_DIR/build_info.txt" "$WORK_DIR_TF"/
 
     local SPECIFIC_BOOT

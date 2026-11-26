@@ -14,6 +14,7 @@ validate_inputs() {
     local DEVICE_SUPPORTED=0
     local SUPPORTED
     for SUPPORTED in "${SUPPORTED_DEVICES[@]}"; do
+        [ -d "$SUPPORTED" ] || continue
         if [ "$SUPPORTED" = "LumiROM/Devices/$STOCK_DEVICE" ]; then
             DEVICE_SUPPORTED=1
             break

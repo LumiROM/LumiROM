@@ -235,8 +235,12 @@ ota_build() {
     SOURCE_VERSION="$(grep "^version=" <<< "$SOURCE_BUILD_INFO" | cut -d "=" -f 2-)"
     local SOURCE_SHORT="${SOURCE_VERSION%%-*}"
 
-    # shellcheck source=/dev/null
-    source "$DEVICES_DIR/$STOCK_DEVICE/config" 2>/dev/null || true
+    if [ -f "$DEVICES_DIR/$STOCK_DEVICE/config" ]; then
+        # shellcheck source=/dev/null
+        source "$DEVICES_DIR/$STOCK_DEVICE/config"
+    else
+        echo "${YELLOW}Warning: no device config for $STOCK_DEVICE; partition sizes may be wrong${RESET}"
+    fi
     CACHE_PARTITION_SIZE="${CACHE_PARTITION_SIZE:-268435456}"
 
     local FINGERPRINT
@@ -418,9 +422,17 @@ ota_build() {
     echo "${BLUE}Creating incremental ZIP package...${RESET}"
     (
         cd "$STAGE" || exit 1
-        7z a -tzip -mx=0 -mmt=4 "$OUTPUT_ZIP" ./*.new.dat.br ./*.patch.dat >/dev/null 2>&1 || true
-        7z a -tzip -mx=3 -mmt=4 "$OUTPUT_ZIP" -r . -x!*.new.dat.br -x!*.patch.dat >/dev/null 2>&1
+        7z a -tzip -bso0 -bsp0 -mx=0 -mmt=4 "$OUTPUT_ZIP" ./*.new.dat.br ./*.patch.dat || exit 1
+        7z a -tzip -bso0 -bsp0 -mx=3 -mmt=4 "$OUTPUT_ZIP" -r . -x!*.new.dat.br -x!*.patch.dat || exit 1
     ) || exit 1
+
+    local EXPECTED_DATS ACTUAL_DATS
+    EXPECTED_DATS=$(find "$STAGE" -maxdepth 1 -name '*.new.dat.br' | wc -l)
+    ACTUAL_DATS=$(7z l -ba "$OUTPUT_ZIP" | awk '{print $NF}' | grep -c '\.new\.dat\.br$' || true)
+    if [ "$EXPECTED_DATS" -ne "${ACTUAL_DATS:-0}" ]; then
+        echo "${RED}Error: $OUTPUT_ZIP has ${ACTUAL_DATS:-0}/$EXPECTED_DATS partition payloads${RESET}" >&2
+        exit 1
+    fi
 
     echo "${GREEN}Incremental OTA created: $OUTPUT_ZIP${RESET}"
     )
