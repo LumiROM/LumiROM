@@ -137,6 +137,11 @@ pkg_create_flashable_zip() {
                 break
             fi
         done
+        # A build served from the IMGs cache never pulls from the bucket, so
+        # fall back to the base firmware's own PDA (Samsung stores it there).
+        if [ -z "$BASE_FW_VERSION" ]; then
+            BASE_FW_VERSION="$(grep -m1 '^ro.build.PDA=' "$BUILD_PROP" | cut -d "=" -f 2)"
+        fi
 
         echo "Kernel version: ${KERNEL_VERSION:-unknown}"
 
