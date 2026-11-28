@@ -1,8 +1,13 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_PLATFORM_KEY_LOADED:-}" ] && return 0
+LUMIROM_PLATFORM_KEY_LOADED=1
+
 source "$(pwd)/scripts/utils/bash_colors.sh"
 
-GET_ACTIVE_PLATFORM_CERT() {
+key_active_cert() {
     if [ -n "${PLATFORM_CERT:-}" ]; then
         printf '%s' "${PLATFORM_CERT:-}"
     elif [ -f "$HOME/.lumi/keys/platform.x509.pem" ]; then
@@ -12,7 +17,7 @@ GET_ACTIVE_PLATFORM_CERT() {
     fi
 }
 
-GET_ACTIVE_PLATFORM_KEY_SOURCE() {
+key_active_source() {
     if [ -n "${PLATFORM_CERT:-}" ]; then
         echo "PLATFORM_CERT (env/secret)"
     elif [ -f "$HOME/.lumi/keys/platform.x509.pem" ]; then
@@ -22,16 +27,16 @@ GET_ACTIVE_PLATFORM_KEY_SOURCE() {
     fi
 }
 
-GET_ACTIVE_CERT_HASH() {
-    GET_ACTIVE_PLATFORM_CERT | sed "/CERTIFICATE/d" | tr -d "\n" | base64 -d | sha256sum | cut -d ' ' -f 1
+key_cert_hash() {
+    key_active_cert | sed "/CERTIFICATE/d" | tr -d "\n" | base64 -d | sha256sum | cut -d ' ' -f 1
 }
 
-IS_CUSTOM_PLATFORM_KEY() {
+key_is_custom() {
     local TESTKEY_HASH
     TESTKEY_HASH="$(sed "/CERTIFICATE/d" "$(pwd)/scripts/keys/testkey.x509.pem" | tr -d "\n" | base64 -d | sha256sum | cut -d ' ' -f 1)"
 
     local ACTIVE_HASH
-    ACTIVE_HASH="$(GET_ACTIVE_CERT_HASH)"
+    ACTIVE_HASH="$(key_cert_hash)"
 
     if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "$TESTKEY_HASH" ]; then
         return 0
@@ -39,11 +44,11 @@ IS_CUSTOM_PLATFORM_KEY() {
 
     return 1
 }
-GET_ACTIVE_CERT_HEX() {
-    GET_ACTIVE_PLATFORM_CERT | sed "/CERTIFICATE/d" | tr -d "\n" | base64 -d | xxd -p -c 0
+key_cert_hex() {
+    key_active_cert | sed "/CERTIFICATE/d" | tr -d "\n" | base64 -d | xxd -p -c 0
 }
 
-GET_ACTIVE_KEY_FILES() {
+key_files() {
     local KEY_DIR
 
     if [ -n "${PLATFORM_PK8:-}" ] && [ -n "${PLATFORM_CERT:-}" ]; then
@@ -61,7 +66,7 @@ GET_ACTIVE_KEY_FILES() {
     echo "$KEY_DIR"
 }
 
-GET_ACTIVE_OTA_KEY_FILES() {
+key_ota_files() {
     local KEY_DIR=""
 
     if [ -n "${OTA_PK8:-}" ] && [ -n "${OTA_CERT:-}" ]; then
@@ -77,7 +82,7 @@ GET_ACTIVE_OTA_KEY_FILES() {
     echo "$KEY_DIR"
 }
 
-GET_ACTIVE_OTA_CERT() {
+key_ota_cert() {
     if [ -n "${OTA_CERT:-}" ]; then
         printf '%s' "${OTA_CERT:-}"
     elif [ -f "$HOME/.lumi/keys/ota.x509.pem" ]; then

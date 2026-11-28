@@ -95,14 +95,14 @@ for DEVICE in "${DEVICES[@]}"; do
     fi
 
     echo "${YELLOW} - Signing ${FILE_NAME}${RESET}"
-    if ! SIGN_OTA_ZIP "$LOCAL"; then
+    if ! ota_sign_zip "$LOCAL"; then
         echo "${RED} - Signing failed, skipping.${RESET}"
         FAILED+=("$DEVICE")
         continue
     fi
 
     OUT_JSON="$OUT_DIR/${DEVICE}_ota.json"
-    GENERATE_OTA_INCREMENTAL_MANIFEST "$LOCAL" "$URL" "$CHANGELOG" > "$OUT_JSON" || {
+    ota_generate_incremental_manifest "$LOCAL" "$URL" "$CHANGELOG" > "$OUT_JSON" || {
         echo "${RED} - Manifest generation failed, skipping.${RESET}"
         FAILED+=("$DEVICE")
         continue

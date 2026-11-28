@@ -7,25 +7,39 @@ if [ -f "scripts/utils/logging.sh" ]; then
     source scripts/utils/logging.sh
 fi
 
-GET_BASE_DEVICE() {
+fw_get_base_device() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <STOCK_DEVICE>"
         return 1
     fi
 
-    # The Galaxy A34 firmware is the base for every supported device.
-    case "$1" in
-        SM-A325F|SM-A325M|SM-M325F|SM-A225F|SM-A225M|SM-E225F|SM-M225F)
-            echo "SM-A346B"
-            ;;
-        *)
-            echo "${RED}Error:${RESET} No base device found for $1." >&2
-            return 1
-            ;;
-    esac
+    local DEVICE="$1"
+    local BASE_CONF="LumiROM/Devices/base.conf"
+
+    # A device is supported when it has a config directory; the base firmware
+    # (shared by all of them) lives in base.conf, which the TUI reads too.
+    if [ ! -f "LumiROM/Devices/$DEVICE/config" ]; then
+        echo "${RED}Error:${RESET} No base device found for $DEVICE (LumiROM/Devices/$DEVICE/config is missing)." >&2
+        return 1
+    fi
+
+    if [ ! -f "$BASE_CONF" ]; then
+        echo "${RED}Error:${RESET} $BASE_CONF is missing." >&2
+        return 1
+    fi
+
+    local BASE_DEVICE
+    BASE_DEVICE="$(sed -n 's/^BASE_DEVICE=//p' "$BASE_CONF" | head -n 1)"
+
+    if [ -z "$BASE_DEVICE" ]; then
+        echo "${RED}Error:${RESET} $BASE_CONF does not set BASE_DEVICE." >&2
+        return 1
+    fi
+
+    echo "$BASE_DEVICE"
 }
 
-CHECK_FIRMWARE_IMAGES() {
+fw_check_firmware_images() {
     if [ "$#" -lt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR> <PARTITION_LIST>"
         return 1
@@ -68,7 +82,7 @@ CHECK_FIRMWARE_IMAGES() {
     fi
 }
 
-CLEAR_FIRMWARE_CACHE() {
+fw_clear_firmware_cache() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR>"
         return 1
@@ -81,7 +95,7 @@ CLEAR_FIRMWARE_CACHE() {
     echo "${GREEN}Cache cleared.${RESET}"
 }
 
-CHECK_VENDOR_IMAGE() {
+fw_check_vendor_image() {
     if [ "$#" -lt 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIR>"
         return 1
@@ -102,7 +116,7 @@ CHECK_VENDOR_IMAGE() {
     fi
 }
 
-DOWNLOAD_FIRMWARE() {
+fw_download_firmware() {
     if [ "$#" -lt 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <MODEL> <CSC> <IMEI> <DOWNLOAD_DIRECTORY> [VERSION]"
         return 1
@@ -136,7 +150,7 @@ DOWNLOAD_FIRMWARE() {
             fi
 
             echo "- ✅ Latest version found: $VERSION"
-            if [ -n "$GITHUB_ENV" ]; then
+            if [ -n "${GITHUB_ENV:-}" ]; then
                 echo "VERSION=$VERSION" >> "$GITHUB_ENV"
             fi
         fi
@@ -151,16 +165,17 @@ DOWNLOAD_FIRMWARE() {
         find "$DOWN_DIR" -type f -name "*.zip.enc*" -delete
 
         # --- Show Firmware Info ---
-        local file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
+        local file_size
+        file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
         echo "Firmware Size: ${file_size} MB"
 
-        mv "${DOWN_DIR}"/${MODEL}_*_fac.zip "IMGs/${MODEL}.zip"
+        mv "${DOWN_DIR}"/${MODEL}_*_fac.zip "${IMGS_DIR:-IMGs}/${MODEL}.zip"
         # Remove the whole download dir (it used to be left behind as
         # $FIRM_DIR/$MODEL, which later got treated as a phantom partition).
         rm -rf "$DOWN_DIR"
 }
 
-DOWNLOAD_VENDOR() {
+fw_download_vendor() {
     if [ "$#" -lt 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DOWNLOAD_DIRECTORY>"
         return 1
@@ -172,11 +187,10 @@ DOWNLOAD_VENDOR() {
     aria2c -x 16 -k 1M -d "$DOWN_DIR" -o "vendor.img" --allow-overwrite=true --auto-file-renaming=false --console-log-level=error "https://github.com/LumiROM/VendorsForMTKG80/releases/download/${STOCK_DEVICE}_latest/vendor.img" || return 1
     
     # Cleanup any leftover .aria2 control files
-    wait
     find "$DOWN_DIR" -name "*.aria2" -exec rm -f {} +
 }
 
-EXTRACT_FIRMWARE() {
+fw_extract_firmware() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -241,7 +255,7 @@ EXTRACT_FIRMWARE() {
     echo "Firmware Extraction complete."
 }
 
-EXTRACT_SUPER_IMG() {
+fw_extract_super_image() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -272,7 +286,7 @@ EXTRACT_SUPER_IMG() {
 }
 
 
-PREPARE_PARTITIONS() {
+fw_prepare_partitions() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -317,7 +331,7 @@ PREPARE_PARTITIONS() {
 }
 
 
-EXTRACT_FIRMWARE_IMG() {
+fw_extract_partitions() {
     echo ""
 	if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <IMG_DIRECTORY> <FIRMWARE_DIRECTORY>"
@@ -328,6 +342,7 @@ EXTRACT_FIRMWARE_IMG() {
 	local FIRM_DIR="$2"
 
 	echo "${YELLOW}Extracting images from $IMG_DIR${RESET}"
+    local -a EXTRACT_PIDS=()
     for imgfile in "$IMG_DIR"/*.img; do
         [ -e "$imgfile" ] || continue
 
@@ -348,30 +363,40 @@ EXTRACT_FIRMWARE_IMG() {
                     IMG_SIZE=$(stat -c%s -- "$imgfile")
                     echo "$imgfile Detected ${BLUE}ext4${RESET}. Size: $IMG_SIZE bytes."
                     echo "${YELLOW}Extracting $imgfile in $FIRM_DIR/$partition${RESET}"
-                    sudo python3 $(pwd)/bin/py_scripts/imgextractor.py "$imgfile" "$FIRM_DIR" > /dev/null 2>&1
+                    sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR" > /dev/null 2>&1
                     ;;
                 EROFS)
                     echo ""
                     IMG_SIZE=$(stat -c%s -- "$imgfile")
                     echo "$imgfile Detected ${BLUE}$fstype${RESET}. Size: $IMG_SIZE bytes."
                     echo "${YELLOW}Extracting $imgfile in $FIRM_DIR/$partition${RESET}"
-                    $(pwd)/bin/erofs-utils/extract.erofs -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+                    "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
                     ;;
                 *)
                     echo "[$imgfile] Unknown filesystem type ($fstype), skipping"
                     ;;
             esac
         ) &
+        EXTRACT_PIDS+=("$!")
     done
 
-    wait
+    # Check every extraction: `wait` alone returns 0 and would hide a
+    # partition that silently failed to extract.
+    local PID FAILED=0
+    for PID in "${EXTRACT_PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to extract${RESET}" >&2
+        return 1
+    fi
 
     # Correct owner and permissions of extracted ext4 partitions
     sudo chown -R $USER:$USER "$FIRM_DIR/vendor/"
     sudo chown -R $USER:$USER "$FIRM_DIR/config/"
     sudo chmod -R 755 "$FIRM_DIR/config/"
 }
-GEN_FS_CONFIG() {
+fw_gen_fs_config() {
     local EXTRACTED_FIRM_DIR="${1%/}"
 
     for ROOT in "$EXTRACTED_FIRM_DIR"/*; do
@@ -385,7 +410,8 @@ GEN_FS_CONFIG() {
         echo "${YELLOW}--- Synchronizing $PARTITION ---${RESET}"
 
         if [[ "$PARTITION" == "vendor" ]]; then
-            local TMP_CLEAN=$(mktemp)
+            local TMP_CLEAN
+            TMP_CLEAN=$(mktemp)
             awk '{
                 if (NF < 4) next;
                 # strip leading "/" from the path (mkfs does it too), keep the root as-is
@@ -411,7 +437,8 @@ GEN_FS_CONFIG() {
         local FIND_CMD="find"
         if sudo -n true 2>/dev/null; then FIND_CMD="sudo find"; fi
 
-        local TMP_EXISTING=$(mktemp)
+        local TMP_EXISTING
+        TMP_EXISTING=$(mktemp)
         awk '{print $1}' "$FS_CONFIG" > "$TMP_EXISTING"
 
         local ADDED=0
@@ -430,7 +457,7 @@ GEN_FS_CONFIG() {
 
             local CAPS=""
             local CAP
-            CAP=$(GET_FILE_CAPABILITIES "$ROOT/$REL_PATH") || true
+            CAP=$(fw_get_file_capabilities "$ROOT/$REL_PATH") || true
             [[ -n "$CAP" ]] && CAPS=" $CAP"
 
             echo "  ${GREEN}[+]${RESET} Adding: $ENTRY ($UID_GID_MODE${CAPS})"
@@ -444,7 +471,7 @@ GEN_FS_CONFIG() {
     done
 }
 
-GET_FILE_CAPABILITIES() {
+fw_get_file_capabilities() {
     command -v getfattr &>/dev/null || { echo ""; return 1; }
     command -v od &>/dev/null || { echo ""; return 1; }
 
@@ -468,7 +495,7 @@ GET_FILE_CAPABILITIES() {
     echo "capabilities=0x${CAP}"
 }
 
-GEN_FILE_CONTEXTS() {
+fw_gen_file_contexts() {
     local EXTRACTED_FIRM_DIR="${1%/}"
 
     for ROOT in "$EXTRACTED_FIRM_DIR"/*; do
@@ -483,30 +510,37 @@ GEN_FILE_CONTEXTS() {
 
         # *_exec types declared in the policy (for new binaries)
         local TARGET_VER="${SELINUX_TARGET_VER:-31}"
-        local TMP_EXEC_TYPES=$(mktemp)
-        find "$EXTRACTED_FIRM_DIR" -name "*.cil" -not -name "*_genfs_*" \( \
-            -path "*/mapping/${TARGET_VER}.*" -o -not -path "*/mapping/*" \) -type f 2>/dev/null \
-            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + 2>/dev/null | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
+        local TMP_EXEC_TYPES
+        TMP_EXEC_TYPES=$(mktemp)
+        { find "$EXTRACTED_FIRM_DIR" -name "*.cil" -not -name "*_genfs_*" \( \
+            -path "*/mapping/${TARGET_VER}.*" -o -not -path "*/mapping/*" \) -type f \
+            -exec grep -hoP '^\(\s*type\s+\K[a-zA-Z0-9_-]+' {} + ; } 2>/dev/null \
+            | grep "_exec$" | sort -u > "$TMP_EXEC_TYPES"
 
         # Lookup: unescaped path -> context
-        local TMP_LOOKUP=$(mktemp)
+        local TMP_LOOKUP
+        TMP_LOOKUP=$(mktemp)
         sed -e 's/\\\././g' -e 's/\\\+/+/g' -e 's/\\\[/[/g' -e 's/\\\]/]/g' -e 's/\\\*/*/g' \
             "$FILE_CONTEXTS" | awk '{print $1 "\t" $2}' > "$TMP_LOOKUP"
 
         # Anchored (full-match) patterns for the coverage test
-        local TMP_PATTERNS=$(mktemp)
+        local TMP_PATTERNS
+        TMP_PATTERNS=$(mktemp)
         awk '{print "^" $1 "$"}' "$FILE_CONTEXTS" > "$TMP_PATTERNS"
 
         # All tree paths
         local FIND_CMD="find"
         if sudo -n true 2>/dev/null; then FIND_CMD="sudo find"; fi
-        local TMP_ALL=$(mktemp)
+        local TMP_ALL
+        TMP_ALL=$(mktemp)
         $FIND_CMD "$ROOT" -mindepth 1 \( -type f -o -type d \) -printf "/$PARTITION/%P\n" | sort -u > "$TMP_ALL"
 
         # Uncovered = all - those matching any anchored pattern
-        local TMP_COVERED=$(mktemp)
+        local TMP_COVERED
+        TMP_COVERED=$(mktemp)
         grep -E -f "$TMP_PATTERNS" "$TMP_ALL" 2>/dev/null > "$TMP_COVERED" || true
-        local TMP_UNCOVERED=$(mktemp)
+        local TMP_UNCOVERED
+        TMP_UNCOVERED=$(mktemp)
         grep -vxF -f "$TMP_COVERED" "$TMP_ALL" > "$TMP_UNCOVERED" || true
 
         local ADDED=0
@@ -553,7 +587,7 @@ GEN_FILE_CONTEXTS() {
     done
 }
 
-BUILD_IMG() {
+fw_build_images() {
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR> <FILE_SYSTEM> <OUT_DIR>"
         return 1
@@ -562,11 +596,14 @@ BUILD_IMG() {
     local EXTRACTED_FIRM_DIR="$1"
     local FILE_SYSTEM="$2"
 	local OUT_DIR="$3"
-    local DEVICE_CONFIG="$(pwd)/LumiROM/Devices/${STOCK_DEVICE}/config"
-    local OP_LIST="$(pwd)/makerom/dynamic_partitions_op_list"
+    local DEVICE_CONFIG
+    DEVICE_CONFIG="$(pwd)/LumiROM/Devices/${STOCK_DEVICE}/config"
+    local OP_LIST
+    OP_LIST="$(pwd)/makerom/dynamic_partitions_op_list"
 
     if [[ -f "$DEVICE_CONFIG" ]]; then
-        local SUPER_SIZE=$(grep "STOCK_SUPER_SIZE" "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
+        local SUPER_SIZE
+        SUPER_SIZE=$(grep "STOCK_SUPER_SIZE" "$DEVICE_CONFIG" | cut -d'=' -f2 | tr -d '[:space:]')
         
         # Update the super size on the list according to the device
         if [[ -n "$SUPER_SIZE" && -f "$OP_LIST" ]]; then
@@ -580,11 +617,12 @@ BUILD_IMG() {
     fi
 
 
-    AUTO_FIX_SELINUX "$EXTRACTED_FIRM_DIR"
+    rom_auto_fix_selinux "$EXTRACTED_FIRM_DIR"
 
-    GEN_FS_CONFIG "$EXTRACTED_FIRM_DIR"
-	GEN_FILE_CONTEXTS "$EXTRACTED_FIRM_DIR"
+    fw_gen_fs_config "$EXTRACTED_FIRM_DIR"
+	fw_gen_file_contexts "$EXTRACTED_FIRM_DIR"
 
+    local -a BUILD_PIDS=()
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
         [[ -d "$PART" ]] || continue    
         PARTITION="$(basename "$PART")"
@@ -612,9 +650,19 @@ BUILD_IMG() {
                 "$SRC_DIR" "$FILE_CONTEXTS" "$FS_CONFIG"
             touch "$OUT_DIR/$PARTITION.map"
         ) &
+        BUILD_PIDS+=("$!")
     done
 
-    wait
+    # Wait for every partition and fail if any image failed to build; `wait`
+    # with no arguments always returns 0 and would hide those failures.
+    local PID FAILED=0
+    for PID in "${BUILD_PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partition images failed to build${RESET}" >&2
+        return 1
+    fi
 
     # Updates the list sequentially to avoid race conditions
     for PART in "$EXTRACTED_FIRM_DIR"/*; do
@@ -622,14 +670,15 @@ BUILD_IMG() {
         PARTITION="$(basename "$PART")"
         local OUT_IMG="$OUT_DIR/${PARTITION}.img"
         if [[ -f "$OUT_IMG" && -f "$OP_LIST" ]]; then
-            local ACTUAL_SIZE=$(stat -c%s "$OUT_IMG")
+            local ACTUAL_SIZE
+            ACTUAL_SIZE=$(stat -c%s "$OUT_IMG")
             echo "${GREEN}Updating size of $PARTITION in op_list: $ACTUAL_SIZE bytes${RESET}"
             sed -i "s/^resize $PARTITION .*/resize $PARTITION $ACTUAL_SIZE/" "$OP_LIST"
         fi
     done
 }
 
-IMG_TO_BROTLI() {
+fw_images_to_brotli() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <IMG_DIR> <TMP_DIR>"
         return 1
@@ -637,7 +686,8 @@ IMG_TO_BROTLI() {
 
     local IMG_DIR="$1"
     local TMP_DIR="$2"
-    local IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
+    local IMG2SDAT_BIN
+    IMG2SDAT_BIN="$(pwd)/bin/img2sdat/img2sdat"
 
     mkdir -p "$TMP_DIR"
 
@@ -652,25 +702,38 @@ IMG_TO_BROTLI() {
     # This is for compressing to .new.dat
     echo "${BLUE}=== Converting IMG to SDAT ===${RESET}"
 
+    local -a PIDS=()
     for f in "$IMG_DIR"/*.img; do
         [[ -f "$f" ]] || continue
         PARTITION="$(basename "$f" .img)"
 
         (
             echo "${GREEN}Converting $PARTITION.img...${RESET}"
-            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1
+            "$IMG2SDAT_BIN" -o "$TMP_DIR" "$f" > /dev/null 2>&1 || {
+                echo "${RED}Error: img2sdat failed for $PARTITION${RESET}" >&2
+                exit 1
+            }
             touch "$TMP_DIR/$PARTITION.patch.dat"
             echo "${GREEN}Created patch.dat for $PARTITION${RESET}"
         ) &
+        PIDS+=("$!")
     done
 
-    wait
+    local PID FAILED=0
+    for PID in "${PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to convert${RESET}" >&2
+        return 1
+    fi
 
     # Compress it to .new.dat.br to make later a .zip file
     echo ""
     echo "${BLUE}=== Compressing DAT files with Brotli (Parallel) ===${RESET}"
 
     local JOBS=4 # Set to match vCPUs
+    PIDS=()
     for DAT in "$TMP_DIR"/*.new.dat; do
         [[ -f "$DAT" ]] || continue
         PARTITION="$(basename "$DAT" .new.dat)"
@@ -678,17 +741,28 @@ IMG_TO_BROTLI() {
 
         (
             echo "${YELLOW}Compressing $PARTITION.new.dat...${RESET}"
-            brotli -f -q 1 --output="$OUT_FILE" "$DAT"
+            brotli -f -q 1 --output="$OUT_FILE" "$DAT" || {
+                echo "${RED}Error: brotli failed for $PARTITION${RESET}" >&2
+                exit 1
+            }
             echo "${GREEN}Finished $PARTITION.new.dat.br${RESET}"
         ) &
+        PIDS+=("$!")
 
         # Limit concurrent jobs
-        while [ $(jobs -r | wc -l) -ge "$JOBS" ]; do
+        while [ "$(jobs -r | wc -l)" -ge "$JOBS" ]; do
             sleep 1
         done
     done
 
-    wait
+    FAILED=0
+    for PID in "${PIDS[@]}"; do
+        wait "$PID" || FAILED=1
+    done
+    if [ "$FAILED" -ne 0 ]; then
+        echo "${RED}Error: one or more partitions failed to compress${RESET}" >&2
+        return 1
+    fi
     echo ""
     echo "${GREEN}All partitions converted and compressed successfully.${RESET}"
 }

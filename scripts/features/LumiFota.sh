@@ -4,7 +4,7 @@ source scripts/utils/bash_colors.sh
 
 source scripts/utils/platform_key.sh
 
-SIGN_WITH_PLATFORM_KEY() {
+fota_sign_with_platform_key() {
     echo "" >&2
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <APK>" >&2
@@ -21,7 +21,7 @@ SIGN_WITH_PLATFORM_KEY() {
         return 1
     fi
 
-    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
+    KEY_DIR="$(key_files)"
     PK8="$KEY_DIR/platform.pk8"
     CERT="$KEY_DIR/platform.x509.pem"
 
@@ -43,7 +43,7 @@ SIGN_WITH_PLATFORM_KEY() {
     echo "$OUT"
 }
 
-ADD_LUMIFOTA() {
+fota_add() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
         return 1
@@ -60,7 +60,7 @@ ADD_LUMIFOTA() {
     echo "${YELLOW} - Adding LumiFota${RESET}"
     sudo cp -rfa "$UPDATER_DIR/system/system/." "$EXTRACTED_FIRM_DIR/system/system/"
     local SIGNED_APK
-    SIGNED_APK="$(SIGN_WITH_PLATFORM_KEY "$UPDATER_DIR/system/system/priv-app/LumiFota/LumiFota.apk")" || return 1
+    SIGNED_APK="$(fota_sign_with_platform_key "$UPDATER_DIR/system/system/priv-app/LumiFota/LumiFota.apk")" || return 1
     if [ -n "$SIGNED_APK" ] && [ -f "$SIGNED_APK" ]; then
         sudo cp -f "$SIGNED_APK" "$EXTRACTED_FIRM_DIR/system/system/priv-app/LumiFota/LumiFota.apk"
         rm -f "$SIGNED_APK"

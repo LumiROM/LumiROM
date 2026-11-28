@@ -13,7 +13,7 @@ MAINTAINER_AVATAR="${MAINTAINER_AVATAR:-https://avatars.githubusercontent.com/u/
 MAINTAINER_TELEGRAM="${MAINTAINER_TELEGRAM:-https://t.me/LumiROMs}"
 MAINTAINER_DONATE="${MAINTAINER_DONATE:-https://buymeacoffee.com/luminous418}"
 
-GET_DEVICE_DISPLAY_NAME() {
+ota_device_display_name() {
     case "$1" in
         a32|a32m) echo "Samsung Galaxy A32 4G" ;;
         a22) echo "Samsung Galaxy A22 4G" ;;
@@ -24,13 +24,13 @@ GET_DEVICE_DISPLAY_NAME() {
 }
 
 # Builds the "maintainer" block shared by both the ROM and OTA manifests.
-_BUILD_MAINTAINER_JSON() {
+ota_maintainer_json() {
     local DEVICE="$1"
     jq -n \
         --arg rom_name "$ROM_NAME" \
         --arg name "$MAINTAINER_NAME" \
         --arg handle "$MAINTAINER_HANDLE" \
-        --arg device "$(GET_DEVICE_DISPLAY_NAME "$DEVICE")" \
+        --arg device "$(ota_device_display_name "$DEVICE")" \
         --arg codename "$DEVICE" \
         --arg avatar "$MAINTAINER_AVATAR" \
         --arg telegram "$MAINTAINER_TELEGRAM" \
@@ -51,7 +51,7 @@ _BUILD_MAINTAINER_JSON() {
 
 # Builds a single "release" entry from a flashable ZIP (full or incremental).
 # The ZIP must contain a build_info.txt with the standard key=value fields.
-_BUILD_RELEASE_JSON() {
+ota_release_json() {
     local ZIP_PATH="$1"
     local DOWNLOAD_URL="$2"
     local CHANGELOG="$3"
@@ -59,7 +59,7 @@ _BUILD_RELEASE_JSON() {
     local BUILD_INFO
     BUILD_INFO="$(unzip -p "$ZIP_PATH" "build_info.txt")" || return 1
 
-    local DEVICE VERSION VERSION_CODE BUILD_DATE ANDROID_VERSION ONEUI_VERSION
+    local DEVICE VERSION VERSION_CODE BUILD_DATE ANDROID_VERSION
     local SECURITY_PATCH FINGERPRINT DEVICE_MODEL KERNEL_VERSION PARTITION_LAYOUT
 
     DEVICE="$(grep "^device=" <<< "$BUILD_INFO" | cut -d "=" -f 2-)"
@@ -134,8 +134,8 @@ _BUILD_RELEASE_JSON() {
 
 # Builds the full-ROM manifest ({device}.json in the LumiROM/updater repo).
 # New releases are prepended to the existing history, newest first.
-# Usage: GENERATE_OTA_MANIFEST <ROM_ZIP> <DOWNLOAD_URL> <CHANGELOG> [EXISTING_JSON]
-GENERATE_OTA_MANIFEST() {
+# Usage: ota_generate_manifest <ROM_ZIP> <DOWNLOAD_URL> <CHANGELOG> [EXISTING_JSON]
+ota_generate_manifest() {
     if [ "$#" -lt 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <ROM_ZIP> <DOWNLOAD_URL> <CHANGELOG> [EXISTING_JSON]" >&2
         echo "       CHANGELOG entries are separated by ;" >&2
@@ -154,7 +154,7 @@ GENERATE_OTA_MANIFEST() {
     fi
 
     local RELEASE
-    RELEASE="$(_BUILD_RELEASE_JSON "$ROM_ZIP" "$DOWNLOAD_URL" "$CHANGELOG")" || {
+    RELEASE="$(ota_release_json "$ROM_ZIP" "$DOWNLOAD_URL" "$CHANGELOG")" || {
         echo "${RED}Error:${RESET} build_info.txt not found inside $ROM_ZIP" >&2
         return 1
     }
@@ -163,7 +163,7 @@ GENERATE_OTA_MANIFEST() {
     DEVICE="$(grep "^device=" <<< "$(unzip -p "$ROM_ZIP" "build_info.txt")" | cut -d "=" -f 2-)"
 
     local BASE
-    BASE="$(_BUILD_MAINTAINER_JSON "$DEVICE")"
+    BASE="$(ota_maintainer_json "$DEVICE")"
 
     if [ -n "$EXISTING_JSON" ] && jq -e ".releases" "$EXISTING_JSON" >/dev/null 2>&1; then
         # Replace any previous entry for the same version so re-running the
@@ -180,8 +180,8 @@ GENERATE_OTA_MANIFEST() {
 # Builds the OTA-only manifest (ota/{device}.json in the LumiROM/updater repo).
 # This manifest is replaced on every build: it always points to the newest
 # incremental package only.
-# Usage: GENERATE_OTA_INCREMENTAL_MANIFEST <INC_ZIP> <INC_URL> <CHANGELOG>
-GENERATE_OTA_INCREMENTAL_MANIFEST() {
+# Usage: ota_generate_incremental_manifest <INC_ZIP> <INC_URL> <CHANGELOG>
+ota_generate_incremental_manifest() {
     if [ "$#" -lt 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <INCREMENTAL_ZIP> <INCREMENTAL_URL> <CHANGELOG>" >&2
         echo "       CHANGELOG entries are separated by ;" >&2
@@ -199,12 +199,12 @@ GENERATE_OTA_INCREMENTAL_MANIFEST() {
     fi
 
     local RELEASE BASE DEVICE
-    RELEASE="$(_BUILD_RELEASE_JSON "$INC_ZIP" "$INC_URL" "$CHANGELOG")" || {
+    RELEASE="$(ota_release_json "$INC_ZIP" "$INC_URL" "$CHANGELOG")" || {
         echo "${RED}Error:${RESET} build_info.txt not found inside $INC_ZIP" >&2
         return 1
     }
     DEVICE="$(grep "^device=" <<< "$(unzip -p "$INC_ZIP" "build_info.txt")" | cut -d "=" -f 2-)"
-    BASE="$(_BUILD_MAINTAINER_JSON "$DEVICE")"
+    BASE="$(ota_maintainer_json "$DEVICE")"
 
     jq -n --argjson base "$BASE" --argjson release "$RELEASE" \
         '$base + { releases: [$release] }'

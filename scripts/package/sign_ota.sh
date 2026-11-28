@@ -6,8 +6,8 @@ source "$(pwd)/scripts/utils/platform_key.sh"
 # Signs a flashable zip as an OTA package using signapk with the -w flag, which
 # embeds META-INF/com/android/otacert (the certificate that Recovery will later
 # accept for this package). The signed zip replaces the original file.
-# Usage: SIGN_OTA_ZIP <OTA_ZIP>
-SIGN_OTA_ZIP() {
+# Usage: ota_sign_zip <OTA_ZIP>
+ota_sign_zip() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <OTA_ZIP>"
         return 1
@@ -40,10 +40,16 @@ SIGN_OTA_ZIP() {
     fi
 
     local KEY_DIR
-    KEY_DIR="$(GET_ACTIVE_OTA_KEY_FILES)"
+    KEY_DIR="$(key_ota_files)"
     if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/ota.pk8" ] || [ ! -f "$KEY_DIR/ota.x509.pem" ]; then
-        echo "${RED}No OTA signing key available, skipping signature.${RESET}"
-        return 1
+        # A fork without the OTA secrets still gets a usable (unsigned) ROM;
+        # official runs set OTA_SIGN_REQUIRED=true and fail instead.
+        if [ "${OTA_SIGN_REQUIRED:-false}" = "true" ]; then
+            echo "${RED}No OTA signing key available and OTA_SIGN_REQUIRED=true.${RESET}"
+            return 1
+        fi
+        echo "${YELLOW}No OTA signing key available: the package stays unsigned.${RESET}"
+        return 0
     fi
 
     local CERT="$KEY_DIR/ota.x509.pem"
@@ -71,8 +77,8 @@ SIGN_OTA_ZIP() {
 # package (e.g. the SamsungCamera cleanup injection), because re-zipping
 # rewrites the EOCD and strips the whole-file signature footer, otherwise
 # RecoverySystem/LumiFota fails with "no signature in file (no footer)".
-# Usage: SIGN_INCREMENTAL_OTA [DIR]
-SIGN_INCREMENTAL_OTA() {
+# Usage: ota_sign_incremental [DIR]
+ota_sign_incremental() {
     local DIR="${1:-./ROM/$FOLDER_NAME}"
     local INC_ZIP
 
@@ -82,5 +88,5 @@ SIGN_INCREMENTAL_OTA() {
         return 1
     fi
 
-    SIGN_OTA_ZIP "$INC_ZIP"
+    ota_sign_zip "$INC_ZIP"
 }

@@ -2,12 +2,13 @@
 
 source scripts/utils/bash_colors.sh
 
-detect_os() {
+deps_detect_os() {
     if [ -r /etc/os-release ]; then
         . /etc/os-release
     fi
 
-    local MATCH=" $(printf '%s %s' "${ID:-}" "${ID_LIKE:-}") "
+    local MATCH
+    MATCH=" $(printf '%s %s' "${ID:-}" "${ID_LIKE:-}") "
     MATCH="$(printf '%s' "$MATCH" | tr '[:upper:]' '[:lower:]')"
 
     case "$MATCH" in
@@ -27,9 +28,9 @@ detect_os() {
     echo -e "${GREEN}[✓] Detected ${OS_TYPE} based system (${PRETTY_NAME:-${ID:-unknown}}).${RESET}"
 }
 
-detect_os
+deps_detect_os
 
-UBUNTU_PACKAGES() {
+deps_install_debian() {
     PACKAGES=(
         file
         7zip
@@ -96,7 +97,7 @@ UBUNTU_PACKAGES() {
     echo -e "\n¡All dependencies checked and updated!"
 }
 
-ARCH_PACKAGES() {
+deps_install_arch() {
     REPO_PACKAGES=(
         file
         7zip
@@ -182,7 +183,7 @@ ARCH_PACKAGES() {
     echo -e "\n¡All dependencies checked and updated!"
 }
 
-PYTHON_PACKAGES() {
+deps_install_python() {
     PIP_PACKAGES=(
         liblp
         tgcrypto
@@ -220,16 +221,16 @@ PYTHON_PACKAGES() {
     echo -e "\nPython environment verified successfully!"
 }
 
-INSTALL_PACKAGES() {
+deps_install() {
     case "$OS_TYPE" in
-        debian) UBUNTU_PACKAGES ;;
-        arch)   ARCH_PACKAGES ;;
+        debian) deps_install_debian ;;
+        arch)   deps_install_arch ;;
     esac
-    PYTHON_PACKAGES
-    CLEANUP
+    deps_install_python
+    deps_cleanup
 }
 
-CLEANUP() {
+deps_cleanup() {
     # Arch: no cache cleanup. It is not needed for the build and the previous
     # 'pacman -Sc' only added noise (and errors) to the build log.
     if [ "$OS_TYPE" = "arch" ]; then

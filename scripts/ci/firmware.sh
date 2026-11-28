@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Firmware steps, one subcommand per workflow step so the Actions log keeps
+# the same granularity:
+#
+#   firmware.sh download    Download the base (target) firmware for this CSC/IMEI.
+#   firmware.sh extract     Extract super.img and the partition images.
+#   firmware.sh vendor      Download the vendor image for STOCK_DEVICE.
+#   firmware.sh partitions  Create the per-partition images and extract them.
+#
+# Requires: STOCK_DEVICE, TARGET_DEVICE, TARGET_CSC, TARGET_IMEI, DEVICES_DIR,
+#           FIRM_DIR, IMGS_DIR.
+
+set -eo pipefail
+
+: "${STOCK_DEVICE:?STOCK_DEVICE is not set}"
+: "${FIRM_DIR:?FIRM_DIR is not set}"
+: "${IMGS_DIR:?IMGS_DIR is not set}"
+: "${DEVICES_DIR:?DEVICES_DIR is not set}"
+
+source scripts/firmware/FW.sh
+# shellcheck source=/dev/null
+source "$DEVICES_DIR/$STOCK_DEVICE/config"
+
+case "${1:-}" in
+    base)
+        # Preferred path: the base images already extracted and published in the
+        # FW bucket (public). Falls back to Samsung when the bucket is cold.
+        if bash scripts/firmware/fw_bucket.sh pull; then
+            echo "Base firmware restored from the FW bucket."
+        else
+            echo "FW bucket unavailable, downloading the base firmware from Samsung."
+            : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
+            : "${TARGET_CSC:?TARGET_CSC is not set}"
+            : "${TARGET_IMEI:?TARGET_IMEI is not set}"
+            fw_download_firmware "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+            fw_extract_firmware "$IMGS_DIR"
+            fw_extract_super_image "$IMGS_DIR"
+        fi
+        ;;
+    download)
+        : "${TARGET_DEVICE:?TARGET_DEVICE is not set}"
+        : "${TARGET_CSC:?TARGET_CSC is not set}"
+        : "${TARGET_IMEI:?TARGET_IMEI is not set}"
+        fw_download_firmware "$TARGET_DEVICE" "$TARGET_CSC" "$TARGET_IMEI" "$FIRM_DIR"
+        ;;
+    extract)
+        fw_extract_firmware "$IMGS_DIR"
+        fw_extract_super_image "$IMGS_DIR"
+        ;;
+    vendor)
+        fw_download_vendor "$IMGS_DIR"
+        ;;
+    partitions)
+        fw_prepare_partitions "$IMGS_DIR"
+        fw_extract_partitions "$IMGS_DIR" "$FIRM_DIR"
+        ;;
+    *)
+        echo "Usage: $0 <base|download|extract|vendor|partitions>" >&2
+        exit 1
+        ;;
+esac

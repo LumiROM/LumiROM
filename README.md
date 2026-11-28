@@ -38,6 +38,8 @@ It downloads the firmware from Samsung servers using [samloader](https://github.
 
 The whole process can run either on **GitHub Actions** or **locally** on your machine (requires Ubuntu/Debian distro or WSL) - either with the CLI script or with the **LumiROM Builder** terminal UI.
 
+If you want to change something in the build, [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) maps the pipeline, the directory layout and the conventions (function naming, error handling, where each step lives).
+
 ## Changelogs
 Check the [changelogs folder](https://github.com/LumiROM/LumiROM/blob/main/changelogs/README.md) to learn more about each release and useful information.
 
@@ -226,6 +228,9 @@ bash scripts/firmware/cache_manager.sh list      # List all images with sizes
 bash scripts/firmware/cache_manager.sh clear     # Clear cached images
 ```
 
+> [!TIP]
+> The base firmware (Galaxy A34) is identical for every supported device, so I keep it unpacked in a public Hugging Face bucket. A local build pulls the images from that public bucket in a couple of minutes instead of downloading ~8.3 GB from Samsung (no configuration needed); if the bucket is unreachable it falls back to Samsung automatically. Maintainers can refresh the bucket with `bash scripts/firmware/fw_bucket.sh mirror` (it also runs weekly in Actions as `Firmware mirror`).
+
 > [!IMPORTANT]
 > If you're building locally, the script logs everything it does. If something fails, please report the error to me via GitHub issues or on my [Telegram channel](https://t.me/LumiROMs), attaching the LOGS folder.
 
@@ -318,9 +323,9 @@ Package verification failed: no signature in file (no footer)
 ```
 
 Signing is fully automatic:
-- The **full ROM** is signed by `SIGN_OTA_ZIP` (`scripts/package/sign_ota.sh`).
-- The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `SIGN_INCREMENTAL_OTA` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
-- Both workflows (`OneUi9.yml` and `OneUi9-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing, the build fails on purpose so a broken OTA is never published. Signing uses the bundled `bin/apktool/signapk.jar` (self-contained, works with any Java >= 9), falling back to a system `signapk` (`/usr/share/signapk/signapk.jar`) if the bundled jar is absent. See `bin/apktool/signapk-NOTICE.txt` for the bundled jar's third-party licenses.
+- The **full ROM** is signed by `ota_sign_zip` (`scripts/package/sign_ota.sh`).
+- The **incremental OTA** is built by `scripts/package/build_incremental_ota.sh` and then signed by `ota_sign_incremental` **after** its post-processing (the SamsungCamera cleanup re-zips the package, which would otherwise strip an earlier signature).
+- Both workflows (`OneUi9.yml` and `OneUi9-Matrix.yml`) and `build_local.sh` perform this signing using the OTA key from the `OTA_PK8`/`OTA_CERT` secrets (or `~/.lumi/keys/ota.{pk8,x509.pem}` locally). If the key is missing (a fork, or a local build without `~/.lumi/keys`) the package is left unsigned and the build continues; the workflows pass `OTA_SIGN_REQUIRED` from the OTA capability check, so an official run fails instead of silently publishing an unsigned OTA. Signing uses the bundled `bin/apktool/signapk.jar` (self-contained, works with any Java >= 9), falling back to a system `signapk` (`/usr/share/signapk/signapk.jar`) if the bundled jar is absent. See `bin/apktool/signapk-NOTICE.txt` for the bundled jar's third-party licenses.
 
 ### Re-signing already published OTAs
 

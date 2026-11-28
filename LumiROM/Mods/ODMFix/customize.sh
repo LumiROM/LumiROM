@@ -1,3 +1,5 @@
+# shellcheck shell=sh
+# shellcheck disable=SC2034  # read by mod_apply with grep, not by the shell
 SKIPUNZIP=1
 
 # ODM init rules are shared by devices with the same 4.14 platform:
@@ -18,4 +20,4 @@ case "$STOCK_DEVICE" in
         ;;
 esac
 
-MOD_COPY_FILE "$MODPATH" odm "etc/init/$RC" "etc/init/$RC"
+mod_copy_file "$MODPATH" odm "etc/init/$RC" "etc/init/$RC"

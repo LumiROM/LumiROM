@@ -29,7 +29,7 @@ export APEX_WIFI_FIX_PUB="$PWD/scripts/keys/apex-wifi-fix.avbpubkey"
 #  apex digest and its apex_pubkey to keep apexd's verification happy.
 # =====================================================================
 
-HotspotFix_BUILD_PATCHED_JAR() {
+hotspot_build_patched_jar() {
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <WORK_DIR_SOFTAP> <APKTOOL_JAR> <SRC_JAR>"
         return 1
@@ -45,8 +45,16 @@ HotspotFix_BUILD_PATCHED_JAR() {
         return 1
     }
 
-    local SMALI
-    SMALI="$(ls "$SMALI_OUT"/smali*/com/android/server/wifi/WifiNative.smali 2>/dev/null | grep -v '\$' | head -1)"
+    local SMALI=""
+    local CANDIDATE
+    for CANDIDATE in "$SMALI_OUT"/smali*/com/android/server/wifi/WifiNative.smali; do
+        [ -f "$CANDIDATE" ] || continue
+        case "$CANDIDATE" in
+            *'$'*) continue ;;
+        esac
+        SMALI="$CANDIDATE"
+        break
+    done
     if [ -z "$SMALI" ]; then
         echo "${RED} - WifiNative.smali not found inside apex${RESET}"
         return 1
@@ -72,7 +80,7 @@ HotspotFix_BUILD_PATCHED_JAR() {
 # ---------------------------------------------------------------
 # Extract the raw ext4 region from a payload with an existing AVB footer
 # ---------------------------------------------------------------
-HotspotFix_STRIP_AVB_FOOTER() {
+hotspot_strip_avb_footer() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <APEX_PAYLOAD_IMG> <OUTPUT_RAW_IMG>"
         return 1
@@ -92,7 +100,7 @@ HotspotFix_STRIP_AVB_FOOTER() {
 # ---------------------------------------------------------------
 # Grow the raw ext4 payload before writing the larger patched jar
 # ---------------------------------------------------------------
-HotspotFix_GROW_PAYLOAD_FS() {
+hotspot_grow_payload_fs() {
     if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <RAW_FS_IMG> [EXTRA_BYTES]"
         return 1
@@ -146,7 +154,7 @@ HotspotFix_GROW_PAYLOAD_FS() {
 # ---------------------------------------------------------------
 # Rebuild the dm-verity hashtree + vbmeta of the patched payload
 # ---------------------------------------------------------------
-HotspotFix_SIGN_PAYLOAD() {
+hotspot_sign_payload() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <RAW_FS_IMG> <NEW_PAYLOAD_IMG>"
         return 1
@@ -189,7 +197,7 @@ HotspotFix_SIGN_PAYLOAD() {
 # ---------------------------------------------------------------
 # Extract the new payload root digest
 # ---------------------------------------------------------------
-HotspotFix_GET_ROOT_DIGEST() {
+hotspot_get_root_digest() {
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <APEX_PAYLOAD_IMG>"
         return 1
@@ -200,9 +208,9 @@ HotspotFix_GET_ROOT_DIGEST() {
 # ---------------------------------------------------------------
 # Locate the Android SDK's zipalign (preferred) for APEX page alignment
 # ---------------------------------------------------------------
-HotspotFix_FIND_ZIPALIGN() {
-    if [ -n "$ZIPALIGN" ] && [ -x "$ZIPALIGN" ]; then
-        echo "$ZIPALIGN"
+hotspot_find_zipalign() {
+    if [ -n "${ZIPALIGN:-}" ] && [ -x "${ZIPALIGN:-}" ]; then
+        echo "${ZIPALIGN:-}"
         return 0
     fi
     if command -v zipalign >/dev/null 2>&1; then
@@ -210,7 +218,7 @@ HotspotFix_FIND_ZIPALIGN() {
         return 0
     fi
     local root cand roots
-    roots="$ANDROID_HOME $ANDROID_SDK_ROOT $HOME/Android/Sdk $HOME/android-sdk ${ANDROID_HOME:-/nonexistent}"
+    roots="${ANDROID_HOME:-} ${ANDROID_SDK_ROOT:-} $HOME/Android/Sdk $HOME/android-sdk"
     for root in $roots; do
         [ -d "$root/build-tools" ] || continue
         cand=$(ls -1 "$root"/build-tools/*/zipalign 2>/dev/null | sort -V | tail -1)
@@ -225,9 +233,9 @@ HotspotFix_FIND_ZIPALIGN() {
 # ---------------------------------------------------------------
 # Locate the Android SDK's apksigner
 # ---------------------------------------------------------------
-HotspotFix_FIND_APKSIGNER() {
-    if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
-        echo "$APKSIGNER"
+hotspot_find_apksigner() {
+    if [ -n "${APKSIGNER:-}" ] && [ -x "${APKSIGNER:-}" ]; then
+        echo "${APKSIGNER:-}"
         return 0
     fi
     if command -v apksigner >/dev/null 2>&1; then
@@ -235,7 +243,7 @@ HotspotFix_FIND_APKSIGNER() {
         return 0
     fi
     local root cand roots
-    roots="$ANDROID_HOME $ANDROID_SDK_ROOT $HOME/Android/Sdk $HOME/android-sdk"
+    roots="${ANDROID_HOME:-} ${ANDROID_SDK_ROOT:-} $HOME/Android/Sdk $HOME/android-sdk"
     for root in $roots; do
         [ -d "$root/build-tools" ] || continue
         cand=$(ls -1 "$root"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
@@ -257,7 +265,7 @@ HotspotFix_FIND_APKSIGNER() {
 # block, so the order must be: rebuild (no directory entries) -> zipalign
 # -> apksigner with --alignment-preserved, which keeps the 4096-byte
 # apex_payload.img offset dm-verity needs.
-HotspotFix_REPACK_SIGN_APEX() {
+hotspot_repack_sign_apex() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <STAGING_DIR> <OUT_APEX>"
         return 1
@@ -266,15 +274,15 @@ HotspotFix_REPACK_SIGN_APEX() {
     local OUT="$2"
 
     local ZIPALIGN_BIN APKSIGNER_BIN KEY_DIR
-    ZIPALIGN_BIN=$(HotspotFix_FIND_ZIPALIGN) || {
+    ZIPALIGN_BIN=$(hotspot_find_zipalign) || {
         echo "${RED} - zipalign not found (needed to page-align the APEX)${RESET}"
         return 1
     }
-    APKSIGNER_BIN=$(HotspotFix_FIND_APKSIGNER) || {
+    APKSIGNER_BIN=$(hotspot_find_apksigner) || {
         echo "${RED} - apksigner not found (needed to sign the APEX)${RESET}"
         return 1
     }
-    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
+    KEY_DIR="$(key_files)"
     if [ -z "$KEY_DIR" ] || [ ! -f "$KEY_DIR/platform.pk8" ]; then
         echo "${RED} - no platform signing key available for the APEX${RESET}"
         return 1
@@ -323,7 +331,7 @@ HotspotFix_REPACK_SIGN_APEX() {
 # ---------------------------------------------------------------
 # Replace the service-wifi.jar inside the ext4 payload
 # ---------------------------------------------------------------
-HotspotFix_PATCH_PAYLOAD() {
+hotspot_patch_payload() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <PAYLOAD_IMG> <PATCHED_JAR>"
         return 1
@@ -341,7 +349,8 @@ HotspotFix_PATCH_PAYLOAD() {
     debugfs -w -R "sif /javalib/service-wifi.jar uid 1000" "$PAYLOAD_IMG" >/dev/null 2>&1
     debugfs -w -R "sif /javalib/service-wifi.jar gid 1000" "$PAYLOAD_IMG" >/dev/null 2>&1
 
-    local LABEL_FILE="$(dirname "$PATCHED_JAR")/selinux.label"
+    local LABEL_FILE
+    LABEL_FILE="$(dirname "$PATCHED_JAR")/selinux.label"
     printf 'u:object_r:system_file:s0\0' > "$LABEL_FILE"
     debugfs -w -R "ea_set -f $LABEL_FILE /javalib/service-wifi.jar security.selinux" \
         "$PAYLOAD_IMG" >/dev/null 2>&1
@@ -366,7 +375,7 @@ HotspotFix_PATCH_PAYLOAD() {
 # ---------------------------------------------------------------
 # Verify that the jar stored in the payload is complete and valid
 # ---------------------------------------------------------------
-HotspotFix_VERIFY_PAYLOAD_JAR() {
+hotspot_verify_payload_jar() {
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <RAW_FS_IMG> <EXPECTED_JAR> <TMP_JAR>"
         return 1
@@ -392,7 +401,7 @@ HotspotFix_VERIFY_PAYLOAD_JAR() {
     return 0
 }
 
-ADD_SOFTAP_FIX() {
+hotspot_add_fix() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -452,12 +461,12 @@ ADD_SOFTAP_FIX() {
     debugfs -R "dump /javalib/service-wifi.jar $SOFTAP_DIR/patched/service-wifi.jar" \
         "$PAYLOAD" >/dev/null 2>&1
 
-    HotspotFix_BUILD_PATCHED_JAR "$SOFTAP_DIR" "$APKTOOL" "$SOFTAP_DIR/patched/service-wifi.jar" || {
+    hotspot_build_patched_jar "$SOFTAP_DIR" "$APKTOOL" "$SOFTAP_DIR/patched/service-wifi.jar" || {
         echo "${RED} - SoftAp teardown patch aborted${RESET}"
         return 1
     }
 
-    HotspotFix_STRIP_AVB_FOOTER "$PAYLOAD" "$SOFTAP_DIR/patched/payload_raw.img" || {
+    hotspot_strip_avb_footer "$PAYLOAD" "$SOFTAP_DIR/patched/payload_raw.img" || {
         echo "${RED} - failed to strip avb footer${RESET}"
         return 1
     }
@@ -466,25 +475,25 @@ ADD_SOFTAP_FIX() {
     # is a few blocks larger. Grow the filesystem first; otherwise debugfs
     # truncates the jar and drops its central directory (WifiService then
     # fails to load and system_server bootloops).
-    HotspotFix_GROW_PAYLOAD_FS "$SOFTAP_DIR/patched/payload_raw.img" || {
+    hotspot_grow_payload_fs "$SOFTAP_DIR/patched/payload_raw.img" || {
         echo "${RED} - failed to grow the payload filesystem${RESET}"
         return 1
     }
 
-    HotspotFix_PATCH_PAYLOAD "$SOFTAP_DIR/patched/payload_raw.img" \
+    hotspot_patch_payload "$SOFTAP_DIR/patched/payload_raw.img" \
         "$SOFTAP_DIR/patched/service-wifi.jar" || {
         echo "${RED} - patching service-wifi.jar into payload failed${RESET}"
         return 1
     }
 
-    HotspotFix_VERIFY_PAYLOAD_JAR "$SOFTAP_DIR/patched/payload_raw.img" \
+    hotspot_verify_payload_jar "$SOFTAP_DIR/patched/payload_raw.img" \
         "$SOFTAP_DIR/patched/service-wifi.jar" \
         "$SOFTAP_DIR/patched/verify-service-wifi.jar" || {
         echo "${RED} - the patched jar in the payload is incomplete${RESET}"
         return 1
     }
 
-    HotspotFix_SIGN_PAYLOAD "$SOFTAP_DIR/patched/payload_raw.img" "$SOFTAP_DIR/patched/payload_rebuilt.img" || {
+    hotspot_sign_payload "$SOFTAP_DIR/patched/payload_raw.img" "$SOFTAP_DIR/patched/payload_rebuilt.img" || {
         echo "${RED} - failed to re-sign payload${RESET}"
         return 1
     }
@@ -494,7 +503,7 @@ ADD_SOFTAP_FIX() {
     cp -f "$APEX_WIFI_FIX_PUB"  "$SOFTAP_DIR/pit/apex_pubkey"
 
     local ROOT_DIGEST
-    ROOT_DIGEST=$(HotspotFix_GET_ROOT_DIGEST "$PAYLOAD") || ROOT_DIGEST=""
+    ROOT_DIGEST=$(hotspot_get_root_digest "$PAYLOAD") || ROOT_DIGEST=""
     if [ -z "$ROOT_DIGEST" ]; then
         echo "${RED} - failed to compute the new root digest${RESET}"
         return 1
@@ -507,7 +516,7 @@ ADD_SOFTAP_FIX() {
     }
 
     echo "${YELLOW} - Rebuilding and signing the inner APEX${RESET}"
-    HotspotFix_REPACK_SIGN_APEX "$SOFTAP_DIR/apexzip" "$SOFTAP_DIR/pit/original_apex" || {
+    hotspot_repack_sign_apex "$SOFTAP_DIR/apexzip" "$SOFTAP_DIR/pit/original_apex" || {
         echo "${RED} - APEX repack/sign failed${RESET}"
         return 1
     }

@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Incremental OTA steps:
+#
+#   incremental.sh fetch-source   Download the target-files zip of INCREMENTAL_FROM.
+#                                 Sets INCREMENTAL_SOURCE_AVAILABLE=false when
+#                                 it is not published, so the next steps skip.
+#   incremental.sh build          Build the incremental OTA from prev-target-files.zip.
+#   incremental.sh inject-cleanup Re-zip it with the SamsungCamera cleanup.
+#   incremental.sh sign           Sign it (must be the last step that touches the zip).
+#
+# Requires: OUT_DIR, FOLDER_NAME, INCREMENTAL_FROM, STOCK_DEVICE, HF_USER,
+#           GITHUB_ENV.
+
+set -eo pipefail
+
+if [ -z "${GITHUB_ENV:-}" ] && [ -z "${LUMIROM_ENV_FILE:-}" ]; then
+    echo "ERROR: neither GITHUB_ENV nor LUMIROM_ENV_FILE is set" >&2
+    exit 1
+fi
+
+source scripts/package/build_incremental_ota.sh
+source scripts/package/sign_ota.sh
+
+ACTION="${1:-}"
+
+case "$ACTION" in
+    fetch-source)
+        : "${INCREMENTAL_FROM:?INCREMENTAL_FROM is not set}"
+        : "${STOCK_DEVICE:?STOCK_DEVICE is not set}"
+        URL="https://huggingface.co/buckets/${HF_USER:-}/target-files/resolve/${INCREMENTAL_FROM}/${STOCK_DEVICE}/LumiROM_TARGET_${INCREMENTAL_FROM}_${STOCK_DEVICE}.zip?download=true"
+        if curl -sfL -o prev-target-files.zip "$URL"; then
+            echo "Previous target files downloaded."
+        else
+            echo "Previous target files not found for ${INCREMENTAL_FROM}, skipping incremental OTA."
+            echo "INCREMENTAL_SOURCE_AVAILABLE=false" >> "$GITHUB_ENV"
+        fi
+        ;;
+    build)
+        : "${OUT_DIR:?OUT_DIR is not set}"
+        ota_build "${INCREMENTAL_SOURCE_ZIP:-$PWD/prev-target-files.zip}" "$OUT_DIR"
+        ;;
+    inject-cleanup)
+        : "${FOLDER_NAME:?FOLDER_NAME is not set}"
+        INC_ZIP=$(find ./ROM/"$FOLDER_NAME" -type f -name "*INCREMENTAL*.zip" | head -n 1)
+        if [ -z "$INC_ZIP" ]; then
+            echo "No incremental zip found, skipping."
+            exit 0
+        fi
+        inject_camera_cleanup_zip "$INC_ZIP"
+        echo "SamsungCamera cleanup present in the incremental OTA."
+        ;;
+    sign)
+        ota_sign_incremental
+        ;;
+    *)
+        echo "Usage: $0 <fetch-source|build|inject-cleanup|sign>" >&2
+        exit 1
+        ;;
+esac

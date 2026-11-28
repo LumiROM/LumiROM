@@ -2,7 +2,7 @@
 
 source "$(pwd)/scripts/utils/bash_colors.sh"
 
-SIG_HEX() {
+sig_hex() {
     local CERT="$1"
 
     if [ $# -ne 1 ]; then

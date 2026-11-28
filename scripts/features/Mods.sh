@@ -3,7 +3,7 @@
 source scripts/utils/bash_colors.sh
 source scripts/utils/mod_utils.sh
 
-ADD_MODS() {
+mods_add() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -20,16 +20,16 @@ ADD_MODS() {
 
     echo "${BLUE}============ Mods Installation ============${RESET}"
 
-    local MODS_DIR="$(pwd)/LumiROM/Mods"
-    local MOD_ORDER
+    local MODS_DIR
+    MODS_DIR="$(pwd)/LumiROM/Mods"
     local MOD_DIR
     local MOD_COUNT=0
 
-    while IFS=$'\t' read -r MOD_ORDER MOD_DIR; do
+    while IFS=$'\t' read -r _ MOD_DIR; do
         [ -z "$MOD_DIR" ] && continue
-        MOD_APPLY "$MOD_DIR" || return 1
+        mod_apply "$MOD_DIR" || return 1
         MOD_COUNT=$((MOD_COUNT + 1))
-    done < <(MOD_LIST "$MODS_DIR")
+    done < <(mod_list "$MODS_DIR")
 
     echo "${GREEN} - ${MOD_COUNT} mods added${RESET}"
 }

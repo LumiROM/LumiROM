@@ -1,12 +1,50 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_APP_PATCHES_LOADED:-}" ] && return 0
+LUMIROM_APP_PATCHES_LOADED=1
+
 export LC_ALL=C
 
 source scripts/utils/bash_colors.sh
 source scripts/utils/platform_key.sh
 
 
-PATCH_SECSETTINGS() {
+# apps_apply_sed_patch <patch_file> <target>
+# Patch files carry a sed instruction on the first line and the text to insert
+# or append on the rest. The classic `i\` / `a\` / `c\` form keeps the leading
+# whitespace and needs no shell-level escaping (the shell is never asked to
+# parse the file).
+apps_apply_sed_patch() {
+    local PATCH_FILE="$1"
+    local TARGET="$2"
+
+    [ -f "$PATCH_FILE" ] || return 1
+    [ -f "$TARGET" ] || return 1
+
+    local PATCH_INST CONTENT EXPR LINE
+    PATCH_INST="$(head -n 1 "$PATCH_FILE")"
+    CONTENT="$(tail -n +2 "$PATCH_FILE")"
+
+    case "$PATCH_INST" in
+        */i|*/a|*/c)
+            EXPR="${PATCH_INST}\\"
+            while IFS= read -r LINE; do
+                EXPR+=$'\n'"${LINE}\\"
+            done <<< "$CONTENT"
+            EXPR="${EXPR%\\}"
+            ;;
+        *)
+            # Any other instruction (e.g. s) stays on one line.
+            EXPR="$PATCH_INST $CONTENT"
+            ;;
+    esac
+
+    sed -i "$EXPR" "$TARGET"
+}
+
+apps_patch_secsettings() {
     echo ""
     if [ "$#" -ne 1 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_SECSETTINGS_DIR>"
@@ -28,7 +66,8 @@ PATCH_SECSETTINGS() {
     )
 
     for PATCH in "${PATCHES[@]}"; do
-        local PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
+        local PATCH_FILE
+        PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
         if [ ! -f "$PATCH_FILE" ]; then
             echo "${RED}Patch not found: $PATCH_FILE${RESET}"
             return 1
@@ -39,10 +78,11 @@ PATCH_SECSETTINGS() {
             return 1
         fi
     done
-    find "$SECSETTINGS_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
+    find "$SECSETTINGS_DIR" \( -name '*.orig' -o -name '*.rej' \) -delete
 
     # Copy the ROM logo into the decompiled SecSettings tree.
-    local LOGO_SRC="$(pwd)/LumiROM/Mods/SecSettings/res/drawable/logo.png"
+    local LOGO_SRC
+    LOGO_SRC="$(pwd)/LumiROM/Mods/SecSettings/res/drawable/logo.png"
     if [ -f "$LOGO_SRC" ]; then
         mkdir -p "$SECSETTINGS_DIR/res/drawable"
         cp -f "$LOGO_SRC" "$SECSETTINGS_DIR/res/drawable/logo.png"
@@ -56,7 +96,7 @@ PATCH_SECSETTINGS() {
 }
 
 
-REBUILD_AND_SIGN_APK() {
+apps_rebuild_and_sign_apk() {
     echo ""
     if [ "$#" -ne 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <APKTOOL> <DECOMPILED_DIR> <FRAMEWORK_DIR> <OUT_APK>"
@@ -86,7 +126,7 @@ REBUILD_AND_SIGN_APK() {
     rm -f "$OUT_APK"
 
     local KEY_DIR
-    KEY_DIR="$(GET_ACTIVE_KEY_FILES)"
+    KEY_DIR="$(key_files)"
     echo "${YELLOW}Re-signing with platform key from $KEY_DIR${RESET}"
     apksigner sign --key "$KEY_DIR/platform.pk8" --cert "$KEY_DIR/platform.x509.pem" \
         --out "$OUT_APK" "$ALIGNED" || return 1
@@ -96,7 +136,7 @@ REBUILD_AND_SIGN_APK() {
 }
 
 
-PATCH_SETUPWIZARD() {
+apps_patch_setupwizard() {
     echo ""
     if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <DECOMPILED_SETUPWIZARD_DIR> [LOGO_PNG]"
@@ -128,7 +168,8 @@ PATCH_SETUPWIZARD() {
     )
 
     for PATCH in "${PATCHES[@]}"; do
-        local PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
+        local PATCH_FILE
+        PATCH_FILE="$(pwd)/scripts/patches/$PATCH"
         if [ ! -f "$PATCH_FILE" ]; then
             echo "${RED}Patch not found: $PATCH_FILE${RESET}"
             return 1
@@ -139,13 +180,13 @@ PATCH_SETUPWIZARD() {
             return 1
         fi
     done
-    find "$SW_DIR" -name '*.orig' -o -name '*.rej' | xargs -r rm -f
+    find "$SW_DIR" \( -name '*.orig' -o -name '*.rej' \) -delete
 
     echo "${GREEN}SetupWizard patched.${RESET}"
 }
 
 
-LUMISETTINGS_SEARCH_PATCH() {
+apps_lumisettings_search_patch() {
     if [ "$#" -ne 2 ]; then
         echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
         return 1
@@ -184,7 +225,7 @@ LUMISETTINGS_SEARCH_PATCH() {
 }
 
 
-ADD_LUMISETTINGS() {
+apps_add_lumisettings() {
     echo ""
     if [ "$#" -ne 4 ]; then
         echo "Usage: ${FUNCNAME[0]} <SECSETTINGS_DIR> <FRAMEWORK_DIR> <SERVICES_DIR> <SECSETTINGSINTELLIGENCE_DIR>"
@@ -196,7 +237,8 @@ ADD_LUMISETTINGS() {
     local FRAMEWORK_DIR="$2"
     local SERVICES_DIR="$3"
     local INTELLIGENCE_DIR="$4"
-    local MOD_DIR="$(pwd)/LumiROM/Mods/LumiSettings"
+    local MOD_DIR
+    MOD_DIR="$(pwd)/LumiROM/Mods/LumiSettings"
 
     local DIR
     for DIR in "$SECSETTINGS_DIR" "$FRAMEWORK_DIR" "$SERVICES_DIR" "$INTELLIGENCE_DIR"; do
@@ -228,12 +270,7 @@ ADD_LUMISETTINGS() {
             ' "$TARGET" > "$TARGET.lumi_tmp" && mv "$TARGET.lumi_tmp" "$TARGET"
             rm -f "$TMPC"
         else
-            local PATCH_INST CONTENT
-            PATCH_INST="$(head -n 1 "$f")"
-            CONTENT="$(tail -n +2 "$f")"
-            CONTENT="$(sed -e "s/\"/\\\\\"/g" -e "s/\\$/\\\\$/g" -e "s/ /\\\ /g" -e "s/\\\\n/\\\\\\\\\n/g" <<< "$CONTENT")"
-            CONTENT="$(sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' <<< "$CONTENT")"
-            eval "sed -i \"$PATCH_INST $CONTENT\" \"$TARGET\""
+            apps_apply_sed_patch "$f" "$TARGET"
         fi
     done < <(find "$MOD_DIR/SecSettings" -type f)
 
@@ -262,13 +299,13 @@ ADD_LUMISETTINGS() {
         fi
     done < <(find "$MOD_DIR/patches/services.jar" -name '*.patch' | sort -n)
 
-    LUMISETTINGS_SEARCH_PATCH "$SECSETTINGS_DIR" "$INTELLIGENCE_DIR"
+    apps_lumisettings_search_patch "$SECSETTINGS_DIR" "$INTELLIGENCE_DIR"
 
     echo "${GREEN} - LumiSettings applied${RESET}"
 }
 
 
-ADD_KNOXPATCH() {
+apps_add_knoxpatch() {
     echo ""
     if [ "$#" -ne 3 ]; then
         echo "Usage: ${FUNCNAME[0]} <FRAMEWORK_DIR> <KNOXSDK_DIR> <SAMSUNGKEYSTOREUTILS_DIR>"
@@ -279,7 +316,8 @@ ADD_KNOXPATCH() {
     local FRAMEWORK_DIR="$1"
     local KNOXSDK_DIR="$2"
     local SKSU_DIR="$3"
-    local MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
+    local MOD_DIR
+    MOD_DIR="$(pwd)/LumiROM/Mods/KnoxPatch"
 
     if [ "$KEEP_STOCK_FRAMEWORK" = "true" ]; then
         echo "${YELLOW} - Skipping KnoxPatch (diagnostic stock framework build)${RESET}"

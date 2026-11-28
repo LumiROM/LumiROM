@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Loaded from several entry points; the guard keeps the side effects
+# (colors, log files, exports) to the first source.
+[ -n "${LUMIROM_LOGGING_LOADED:-}" ] && return 0
+LUMIROM_LOGGING_LOADED=1
+
 # --- LumiROM Logging System ---
 # This script provides centralized logging functions for build_local.sh
 # All logs are saved to the LOGS directory with timestamps
@@ -19,14 +24,16 @@ mkdir -p "$LOGS_DIR"
 # log_message: Print message with timestamp to console and log file
 log_message() {
     local message="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] $message" | tee -a "$LOG_FILE"
 }
 
 # log_error: Print error message to console, log file, and error log
 log_error() {
     local message="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] ERROR: $message" | tee -a "$LOG_FILE" "$ERROR_LOG"
 }
 
@@ -49,7 +56,7 @@ initialize_logs() {
     local use_galaxy_ai="$7"
     local use_ui_8_tethering_apex="$8"
     local output_filesystem="$9"
-    local lumirom_maintainer="$10"
+    local lumirom_maintainer="${10}"
     
     {
         echo "${BLUE}======================================${RESET}"
@@ -76,7 +83,8 @@ initialize_logs() {
 finalize_logs() {
     local start_time="$1"
     
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local elapsed=$((end_time - start_time))
     local hours=$((elapsed / 3600))
     local mins=$(((elapsed % 3600) / 60))

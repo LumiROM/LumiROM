@@ -1,0 +1,85 @@
+name: Lint
+
+# Cheap checks that catch real breakage (syntax, quoting, workflow expressions)
+# before a 30-minute build does. Linters are pinned so CI matches what the
+# codebase was verified against.
+
+on:
+  push:
+    paths:
+      - "**.sh"
+      - "**.py"
+      - ".github/workflows/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+
+    - name: Install linters
+      run: |
+        curl -fsSL -o /tmp/sc.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.x86_64.tar.xz
+        tar -xJf /tmp/sc.tar.xz -C /tmp
+        sudo install /tmp/shellcheck-v0.10.0/shellcheck /usr/local/bin/shellcheck
+
+        curl -fsSL -o /tmp/al.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+        tar -xzf /tmp/al.tar.gz -C /tmp actionlint
+        sudo install /tmp/actionlint /usr/local/bin/actionlint
+
+        shellcheck --version | head -2
+        actionlint --version | head -1
+
+    - name: bash syntax
+      run: |
+        fail=0
+        while IFS= read -r script; do
+          bash -n "$script" || fail=1
+        done < <(git ls-files '*.sh')
+        exit "$fail"
+
+    - name: shellcheck (warnings)
+      run: |
+        # bin/ holds vendored tools with their own style.
+        mapfile -t files < <(git ls-files '*.sh' | grep -v '^bin/')
+        shellcheck --severity=warning "${files[@]}"
+
+    - name: actionlint
+      run: actionlint .github/workflows/*.yml
+
+    - name: python syntax
+      run: |
+        while IFS= read -r script; do
+          # ast.parse avoids writing __pycache__ next to vendored tools.
+          python3 -c "import ast, sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])" "$script" || exit 1
+        done < <(git ls-files '*.py')
+
+    - name: helper references
+      # Catches a renamed helper that a call site (or a mod payload) still uses
+      # with the old name; the shell would only fail mid-build.
+      run: |
+        if grep -rnE '^[[:space:]]*(MOD|ROM|FW|PKG|OTA|DEPS|KNOX|HOTSPOT|APPS|AI|FOTA)_[A-Z0-9_]+[[:space:]]' LumiROM/Mods --include='*.sh'; then
+          echo "::error::mod payloads still call old uppercase helper names"
+          exit 1
+        fi
+        python3 scripts/dev/check_function_refs.py
+
+    - name: pipeline steps
+      # scripts/ci/steps.sh is the single ordered list; fail if the workflow or
+      # build_local.sh disagree with it.
+      run: python3 scripts/dev/check_pipeline_steps.py
+
+    - name: sed patches apply
+      run: bash scripts/dev/test_sed_patches.sh
+
+    - name: boot images
+      # build_info.txt publishes this, so a boot.img we cannot read is a bug.
+      run: |
+        for img in LumiROM/Devices/*/boot.img; do
+          version="$(python3 scripts/utils/kernel_version.py "$img")" || exit 1
+          echo "$(basename "$(dirname "$img")"): $version"
+        done

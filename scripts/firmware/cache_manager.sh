@@ -4,9 +4,10 @@
 # Provides utilities to check and manage the firmware image cache
 
 source scripts/utils/bash_colors.sh
+source scripts/utils/config.sh
 
 CACHE_DIR="./IMGs"
-BUILD_PARTITIONS_DEFAULT="product,vendor,odm,system_ext,system"
+BUILD_PARTITIONS_DEFAULT="$LUMIROM_BUILD_PARTITIONS"
 
 print_usage() {
     echo "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
@@ -39,7 +40,8 @@ status_cache() {
         return 1
     fi
 
-    local img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
+    local img_count
+    img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
     
     if [ $img_count -eq 0 ]; then
         echo "${YELLOW}⚠️  Cache is empty${RESET}"
@@ -51,8 +53,10 @@ status_cache() {
     echo "${YELLOW}Images:${RESET}"
     
     find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | while read -r img; do
-        local name=$(basename "$img")
-        local size=$(du -h "$img" | cut -f1)
+        local name
+        name=$(basename "$img")
+        local size
+        size=$(du -h "$img" | cut -f1)
         echo "  ${GREEN}✓${RESET} $name (${CYAN}$size${RESET})"
     done
     echo ""
@@ -83,7 +87,8 @@ check_cache() {
         fi
 
         if [ -f "$img_file" ]; then
-            local size=$(du -h "$img_file" | cut -f1)
+            local size
+            size=$(du -h "$img_file" | cut -f1)
             echo "  ${GREEN}✓${RESET} ${CYAN}$partition.img${RESET} (${GREEN}$size${RESET})"
         else
             echo "  ${RED}✗${RESET} ${CYAN}$partition.img${RESET} (${RED}missing${RESET})"
@@ -112,8 +117,10 @@ size_cache() {
         return 1
     fi
 
-    local total_size=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1)
-    local img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
+    local total_size
+    total_size=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1)
+    local img_count
+    img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
     
     if [ $img_count -eq 0 ]; then
         echo "${YELLOW}⚠️  Cache is empty (0 B)${RESET}"
@@ -134,7 +141,8 @@ list_cache() {
         return 1
     fi
 
-    local img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
+    local img_count
+    img_count=$(find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | wc -l)
     
     if [ $img_count -eq 0 ]; then
         echo "${YELLOW}⚠️  Cache is empty${RESET}"
@@ -145,9 +153,12 @@ list_cache() {
     echo ""
     
     find "$CACHE_DIR" -maxdepth 1 -name "*.img" -type f 2>/dev/null | sort | while read -r img; do
-        local name=$(basename "$img")
-        local size=$(du -h "$img" | cut -f1)
-        local size_bytes=$(stat -f%z "$img" 2>/dev/null || stat -c%s "$img" 2>/dev/null)
+        local name
+        name=$(basename "$img")
+        local size
+        size=$(du -h "$img" | cut -f1)
+        local size_bytes
+        size_bytes=$(stat -f%z "$img" 2>/dev/null || stat -c%s "$img" 2>/dev/null)
         
         printf "  ${GREEN}%-20s${RESET} ${CYAN}%-15s${RESET} (${CYAN}%s bytes${RESET})\n" \
                "$name" "$size" "$size_bytes"

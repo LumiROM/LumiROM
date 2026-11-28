@@ -1,3 +1,15 @@
+"""Build configuration for the LumiROM Builder TUI.
+
+The TUI is a thin wrapper over ``build_local.sh``: it collects the same options,
+turns them into argv (:meth:`BuildConfig.to_args`) and runs the CLI in a PTY.
+
+Device support and the base firmware come from the repository itself
+(``LumiROM/Devices/<model>/config`` and ``LumiROM/Devices/base.conf``), so the
+shell and the TUI resolve them from the same files. ``validate()`` mirrors
+``scripts/utils/validation.sh``; the CLI validates again before doing anything,
+so the shell remains the authority.
+"""
+
 from __future__ import annotations
 
 import json
@@ -9,44 +21,53 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEVICES_DIR = REPO_ROOT / "LumiROM" / "Devices"
+BASE_CONF = DEVICES_DIR / "base.conf"
 STATE_FILE = Path(__file__).resolve().parent / ".tui_state.json"
-
-BASE_DEVICE_MAP = {
-    "SM-A325F": "SM-A346B",
-    "SM-A325M": "SM-A346B",
-    "SM-M325F": "SM-A346B",
-    "SM-A225F": "SM-A346B",
-    "SM-A225M": "SM-A346B",
-    "SM-E225F": "SM-A346B",
-    "SM-M225F": "SM-A346B",
-}
-
-BASE_DEVICE_IMEI = {
-    "SM-A346B": "353117555323497",
-}
 
 CSC_RE = re.compile(r"^[A-Za-z]{3}$")
 IMEI_RE = re.compile(r"^[0-9]{15}$")
 
 
+def read_base_conf() -> dict[str, str]:
+    """Parse ``KEY=VALUE`` lines from ``LumiROM/Devices/base.conf``."""
+    try:
+        lines = BASE_CONF.read_text().splitlines()
+    except OSError:
+        return {}
+
+    values: dict[str, str] = {}
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        values[key.strip()] = value.strip()
+    return values
+
+
 def list_devices() -> list[str]:
+    """Models with a directory in ``LumiROM/Devices``."""
     if not DEVICES_DIR.is_dir():
         return []
     return sorted(p.name for p in DEVICES_DIR.iterdir() if p.is_dir())
 
 
 def base_device_for(stock: str) -> str | None:
-    return BASE_DEVICE_MAP.get(stock)
+    """Base firmware for ``stock``, or None when the device has no config."""
+    if not (DEVICES_DIR / stock / "config").is_file():
+        return None
+    return read_base_conf().get("BASE_DEVICE") or None
 
 
 def example_imei_for(stock: str) -> str | None:
-    base = base_device_for(stock)
-    if base is None:
+    """Example IMEI of the base device, used to prefill the form."""
+    if base_device_for(stock) is None:
         return None
-    return BASE_DEVICE_IMEI.get(base)
+    return read_base_conf().get("BASE_IMEI") or None
 
 
 def default_maintainer() -> str:
+    """``git config user.name`` of the repository, or an empty string."""
     try:
         result = subprocess.run(
             ["git", "config", "user.name"],
@@ -102,6 +123,8 @@ class BuildConfig:
         return ["bash", "-c", inner]
 
     def validate(self) -> list[str]:
+        # Mirrors scripts/utils/validation.sh. Keep both in sync; the CLI runs
+        # the shell version again, so a mismatch fails there with its message.
         errors: list[str] = []
         if not self.stock:
             errors.append("Stock device is required.")
@@ -139,6 +162,7 @@ def load_state() -> BuildConfig:
 
 
 def human_size(num: float) -> str:
+    """Format a byte count for the output list."""
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if num < 1024 or unit == "TB":
             return f"{num:.0f} {unit}" if unit == "B" else f"{num:.1f} {unit}"
@@ -147,6 +171,7 @@ def human_size(num: float) -> str:
 
 
 def find_outputs(started: float = 0.0, limit: int = 20) -> list[Path]:
+    """ZIPs in ROM/ and TARGET_FILES/ newer than ``started``, newest first."""
     files = list(REPO_ROOT.glob("ROM/*/*.zip")) + list(REPO_ROOT.glob("TARGET_FILES/*.zip"))
     fresh: list[Path] = []
     for path in files:

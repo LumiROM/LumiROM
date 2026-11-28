@@ -1,4 +1,4 @@
-getprop("ro.boot.em.model") == "SM-A325F" || abort(concat("E3004: ", ifelse(getprop("twrp.console_ansi") == "1", "\x1b[31m", ""), "This package is for a32"));
+getprop("ro.boot.em.model") == "@DEVICE_MODEL@" || abort(concat("E3004: ", ifelse(getprop("twrp.console_ansi") == "1", "\x1b[31m", ""), "This package is for @DEVICE_CODENAME@"));
 ui_print(" ");
 ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[36m", ""), "************************************************"));
 ui_print(" ");
@@ -9,11 +9,11 @@ ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[34m", ""), " /
 ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[34m", ""), "/_____/\__,_/_/ /_/ /_/_/_/ |_|\____/_/ /_/ /_/  "));
 ui_print(" ");
 ui_print(" ");
-ui_print("        0.0.0-01012000 for Galaxy Axx XG");
+ui_print("        @BUILD_TAG@ for @DISPLAY_NAME@");
 ui_print(" ");
 ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[36m", ""), "************************************************"));
-ui_print("One UI version: 0.0");
-ui_print("Source: samsung/a00xdxx/a00x:00/BOMB.000000.000/A000BOMBA0418:user/release-keys");
+ui_print("One UI version: @ONEUI_VERSION@");
+ui_print("Source: @FINGERPRINT@");
 ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[36m", ""), "************************************************"));
 
 # --- LumiROM prism cleanup ---
@@ -59,8 +59,14 @@ block_image_update(map_partition("odm"), package_extract_file("odm.transfer.list
 
 # --- Installing kernel ---
 
+#@IF BOOT_INSTALL
 ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[33m", ""), "Installing boot image..."));
 package_extract_file("boot.img", "/dev/block/by-name/boot");
+#@ENDIF BOOT_INSTALL
+
+#@IF BOOT_SKIP
+ui_print(concat(ifelse(getprop("twrp.console_ansi") == "1", "\x1b[33m", ""), "Boot image unchanged, skipping..."));
+#@ENDIF BOOT_SKIP
 
 # --- Wiping cache ---
 ifelse(is_mounted("/cache"), unmount("/cache"));

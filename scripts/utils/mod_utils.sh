@@ -7,7 +7,7 @@
 # customize.sh script. Only directories with module.prop are auto-applied;
 # feature-specific folders handled by other scripts are ignored.
 
-MOD_PROP_GET() {
+mod_prop_get() {
     local PROP_FILE="$1"
     local KEY="$2"
 
@@ -15,22 +15,22 @@ MOD_PROP_GET() {
     grep -m1 "^${KEY}=" "$PROP_FILE" 2>/dev/null | cut -d= -f2- | tr -d '\r'
 }
 
-MOD_IS_DISABLED() {
+mod_is_disabled() {
     local MOD_DIR="$1"
     local DISABLED
 
     [ -f "$MOD_DIR/disable" ] && return 0
 
-    DISABLED="$(MOD_PROP_GET "$MOD_DIR/module.prop" disabled)"
+    DISABLED="$(mod_prop_get "$MOD_DIR/module.prop" disabled)"
     [ "$DISABLED" = "true" ] || [ "$DISABLED" = "1" ] || [ "$DISABLED" = "yes" ]
 }
 
-MOD_DEVICE_MATCH() {
+mod_device_match() {
     local MOD_DIR="$1"
     local DEVICES
     local DEV
 
-    DEVICES="$(MOD_PROP_GET "$MOD_DIR/module.prop" devices)"
+    DEVICES="$(mod_prop_get "$MOD_DIR/module.prop" devices)"
     [ -z "$DEVICES" ] && return 0
 
     IFS=', ' read -r -a DEV_LIST <<< "$DEVICES"
@@ -44,9 +44,9 @@ MOD_DEVICE_MATCH() {
     return 1
 }
 
-# MOD_PARTITION_DIR <partition>
+# mod_partition_dir <partition>
 # Prints the destination directory in the extracted firmware tree.
-MOD_PARTITION_DIR() {
+mod_partition_dir() {
     local PARTITION="$1"
 
     case "$PARTITION" in
@@ -59,7 +59,7 @@ MOD_PARTITION_DIR() {
             fi
             ;;
         system_ext)
-            # FIX_SYSTEM_EXT merges system_ext into system when the device has
+            # rom_fix_system_ext merges system_ext into system when the device has
             # no separate system_ext partition. Prefer the separate partition
             # only when the device config says it is actually separate.
             if [ "$STOCK_HAS_SEPARATE_SYSTEM_EXT" = "TRUE" ] && [ -d "$EXTRACTED_FIRM_DIR/system_ext" ]; then
@@ -81,9 +81,9 @@ MOD_PARTITION_DIR() {
     esac
 }
 
-# MOD_COPY_TREE <mod_dir> <partition>
+# mod_copy_tree <mod_dir> <partition>
 # Copies the whole partition tree from the mod to the firmware.
-MOD_COPY_TREE() {
+mod_copy_tree() {
     local MOD_DIR="$1"
     local PARTITION="$2"
     local SRC="$MOD_DIR/$PARTITION"
@@ -102,13 +102,13 @@ MOD_COPY_TREE() {
         return 1
     fi
 
-    DST="$(MOD_PARTITION_DIR "$PARTITION")" || {
+    DST="$(mod_partition_dir "$PARTITION")" || {
         echo "Unknown partition: $PARTITION"
         return 1
     }
 
     local CP_FLAGS="-rfa"
-    if [ "$(MOD_PROP_GET "$MOD_DIR/module.prop" overwrite)" = "false" ]; then
+    if [ "$(mod_prop_get "$MOD_DIR/module.prop" overwrite)" = "false" ]; then
         CP_FLAGS="-rfan"
     fi
 
@@ -116,10 +116,10 @@ MOD_COPY_TREE() {
     sudo cp $CP_FLAGS "$SRC/." "$DST/" || return 1
 }
 
-# MOD_COPY_FILE <mod_dir> <partition> <source> <destination>
+# mod_copy_file <mod_dir> <partition> <source> <destination>
 # Copies a single file or directory from the mod to the firmware.
 # Paths are relative to the partition root.
-MOD_COPY_FILE() {
+mod_copy_file() {
     local MOD_DIR="$1"
     local PARTITION="$2"
     local SRC_REL="$3"
@@ -137,14 +137,14 @@ MOD_COPY_FILE() {
         DST_REL="$SRC_REL"
     fi
 
-    DST_ROOT="$(MOD_PARTITION_DIR "$PARTITION")" || {
+    DST_ROOT="$(mod_partition_dir "$PARTITION")" || {
         echo "Unknown partition: $PARTITION"
         return 1
     }
     DST="$DST_ROOT/$DST_REL"
 
     local CP_FLAGS="-rfa"
-    if [ "$(MOD_PROP_GET "$MOD_DIR/module.prop" overwrite)" = "false" ]; then
+    if [ "$(mod_prop_get "$MOD_DIR/module.prop" overwrite)" = "false" ]; then
         CP_FLAGS="-rfan"
     fi
 
@@ -152,26 +152,26 @@ MOD_COPY_FILE() {
     sudo cp $CP_FLAGS "$SRC" "$DST" || return 1
 }
 
-# MOD_APPLY <mod_dir>
+# mod_apply <mod_dir>
 # Applies a single mod: partition trees, optional customize.sh and logging.
-MOD_APPLY() {
+mod_apply() {
     local MOD_DIR="$1"
     local MOD_NAME
     local PARTITION
     local SKIP_AUTO_COPY=0
     local MOD_PARTITIONS=(system system_ext product vendor odm system_dlkm vendor_dlkm odm_dlkm)
 
-    MOD_NAME="$(MOD_PROP_GET "$MOD_DIR/module.prop" name)"
+    MOD_NAME="$(mod_prop_get "$MOD_DIR/module.prop" name)"
     [ -z "$MOD_NAME" ] && MOD_NAME="$(basename "$MOD_DIR")"
 
     echo "${YELLOW} - Adding ${MOD_NAME}${RESET}"
 
-    if MOD_IS_DISABLED "$MOD_DIR"; then
+    if mod_is_disabled "$MOD_DIR"; then
         echo "   disabled"
         return 0
     fi
 
-    if ! MOD_DEVICE_MATCH "$MOD_DIR"; then
+    if ! mod_device_match "$MOD_DIR"; then
         echo "   skipped for $STOCK_DEVICE"
         return 0
     fi
@@ -183,7 +183,7 @@ MOD_APPLY() {
     if [ "$SKIP_AUTO_COPY" -eq 0 ]; then
         for PARTITION in "${MOD_PARTITIONS[@]}"; do
             [ -d "$MOD_DIR/$PARTITION" ] || continue
-            MOD_COPY_TREE "$MOD_DIR" "$PARTITION" || return 1
+            mod_copy_tree "$MOD_DIR" "$PARTITION" || return 1
         done
     fi
 
@@ -197,10 +197,10 @@ MOD_APPLY() {
     return 0
 }
 
-# MOD_LIST <mods_dir>
+# mod_list <mods_dir>
 # Prints "order<TAB>path" for every directory with a module.prop, sorted by
 # order and then by path.
-MOD_LIST() {
+mod_list() {
     local MODS_DIR="$1"
     local MOD_DIR
     local ORDER
@@ -208,7 +208,7 @@ MOD_LIST() {
     while IFS= read -r -d '' MOD_DIR; do
         [ -f "$MOD_DIR/module.prop" ] || continue
 
-        ORDER="$(MOD_PROP_GET "$MOD_DIR/module.prop" order)"
+        ORDER="$(mod_prop_get "$MOD_DIR/module.prop" order)"
         [ -z "$ORDER" ] && ORDER=50
 
         printf '%s\t%s\n' "$ORDER" "$MOD_DIR"
