@@ -37,6 +37,8 @@ case "${1:-}" in
         rom_delete_iccc "$FIRM_DIR"
         rom_debloat_vendor "$FIRM_DIR"
         rom_patch_fstab_erofs "$FIRM_DIR"
+        rom_tune_vendor_swappiness "$FIRM_DIR"
+        rom_disable_av1_codec "$FIRM_DIR"
         ;;
     stock-config)
         rom_apply_stock_config "$FIRM_DIR"

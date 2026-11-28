@@ -117,6 +117,12 @@ tokens and `#@IF KEY` blocks. `render_updater_script` (in
 `scripts/package/updater_script.sh`) fills it and fails if a value is missing;
 nothing rewrites it with `sed` afterwards.
 
+**Vendor tuning.** `rom_tune_vendor_swappiness` lowers the MTK init's
+`vm.swappiness` (130 -> 80) and `rom_disable_av1_codec` hides the software AV1
+decoder, so players fall back to VP9/HEVC, which these SoCs decode in hardware.
+Both run in the `features-vendor` step; the CPU governor default is a kernel
+config, not something the ROM patches at runtime.
+
 **Build metadata.** `build_info.txt` inside every package records the codename,
 version, fingerprint, `base_firmware_version` (the A34 release the images came
 from, when the FW bucket was used) and `kernel_version`, which is read from the

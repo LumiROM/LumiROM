@@ -76,6 +76,9 @@ jobs:
     - name: sed patches apply
       run: bash scripts/dev/test_sed_patches.sh
 
+    - name: vendor tuning
+      run: bash scripts/dev/test_vendor_tuning.sh
+
     - name: boot images
       # build_info.txt publishes this, so a boot.img we cannot read is a bug.
       run: |
